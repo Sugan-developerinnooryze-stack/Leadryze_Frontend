@@ -231,8 +231,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const [fieldServiceOpen, setFieldServiceOpen] = useState(true);
   const [nativeCounts,     setNativeCounts]     = useState<Record<string, number>>({});
   const [fsCounts,         setFsCounts]         = useState<Record<string, number>>({});
-  const [customModules,    setCustomModules]    = useState<{ _id: string; slug: string; name: string; icon: string; color: string; showInSidebar: boolean }[]>([]);
-  const [customModulesOpen, setCustomModulesOpen] = useState(true);
+  // const [customModules,    setCustomModules]    = useState<{ _id: string; slug: string; name: string; icon: string; color: string; showInSidebar: boolean }[]>([]);
+  // const [customModulesOpen, setCustomModulesOpen] = useState(true);
 
   useEffect(() => {
     if (!token) return;
@@ -245,9 +245,9 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     api.get('/api/v1/native-crm/fs-counts')
       .then((r: { data: { data: Record<string, number> } }) => setFsCounts(r.data.data || {}))
       .catch(() => {});
-    api.get('/api/v1/custom-modules')
-      .then((r: { data: { data: any[] } }) => setCustomModules(r.data.data || []))
-      .catch(() => {});
+    // api.get('/api/v1/custom-modules')
+    //   .then((r: { data: { data: any[] } }) => setCustomModules(r.data.data || []))
+    //   .catch(() => {});
   }, [token, location.pathname]);
 
   const allVisibleModules: CRMModules = Object.fromEntries(
