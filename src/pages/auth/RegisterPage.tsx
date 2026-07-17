@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
 export default function RegisterPage() {
@@ -10,6 +11,8 @@ export default function RegisterPage() {
   const [email, setEmail]         = useState('');
   const [password, setPassword]   = useState('');
   const [confirm, setConfirm]     = useState('');
+  const [showPwd, setShowPwd]         = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError]         = useState('');
 
   const onSubmit = (e: FormEvent) => {
@@ -17,6 +20,8 @@ export default function RegisterPage() {
     setError('');
     if (password !== confirm) { setError('Passwords do not match'); return; }
     if (password.length < 8)  { setError('Password must be at least 8 characters'); return; }
+    if (!/[A-Z]/.test(password)) { setError('Password must contain at least one uppercase letter'); return; }
+    if (!/[0-9]/.test(password)) { setError('Password must contain at least one number'); return; }
     handleRegister({ firstName, lastName, companyName, email, password });
   };
 
@@ -64,15 +69,36 @@ export default function RegisterPage() {
 
             <div>
               <label className="label" htmlFor="password">Password</label>
-              <input id="password" type="password" className="input" value={password}
-                onChange={(e) => setPassword(e.target.value)} required minLength={8}
-                placeholder="Min. 8 characters" />
+              <div className="relative">
+                <input id="password" type={showPwd ? 'text' : 'password'} className="input pr-10" value={password}
+                  onChange={(e) => setPassword(e.target.value)} required minLength={8}
+                  placeholder="Min. 8 characters" />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  tabIndex={-1}
+                >
+                  {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Min. 8 characters, 1 uppercase letter, 1 number</p>
             </div>
 
             <div>
               <label className="label" htmlFor="confirm">Confirm Password</label>
-              <input id="confirm" type="password" className="input" value={confirm}
-                onChange={(e) => setConfirm(e.target.value)} required />
+              <div className="relative">
+                <input id="confirm" type={showConfirm ? 'text' : 'password'} className="input pr-10" value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)} required />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  tabIndex={-1}
+                >
+                  {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             <button type="submit" className="btn-primary w-full mt-2" disabled={isLoading}>
