@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PrinterIcon, XMarkIcon, ArrowDownTrayIcon, PencilIcon, ArrowRightCircleIcon, LinkIcon } from '@heroicons/react/24/outline';
+import { PrinterIcon, XMarkIcon, ArrowDownTrayIcon, PencilIcon, ArrowRightCircleIcon } from '@heroicons/react/24/outline';
 import { buildPrefill } from '../../../modules/native-crm/shared/buildPrefill';
 import { useContractQuery, useContractUpdate } from '../../../modules/native-crm/queries/contracts.queries';
 import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-settings.queries';
 import { useCustomersListQuery } from '../../../modules/native-crm/queries/customers.queries';
+import ShareMenuButton from '../../../modules/native-crm/shared/ShareMenuButton';
+import FSShareModal from '../../../modules/native-crm/shared/FSShareModal';
+import { canViewPII } from '../../../modules/native-crm/shared/piiAccess';
+import { useAuthStore } from '../../../stores/auth.store';
 import api from '../../../services/api';
 import RichEditor from '../../../components/RichEditor';
 import { useServicesListQuery } from '../../../modules/native-crm/queries/services.queries';
@@ -33,6 +37,7 @@ export default function ContractPrintPage() {
   const [downloading, setDownloading] = useState(false);
   const [sharing, setSharing]         = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [shareModalTab, setShareModalTab] = useState<'email' | 'whatsapp' | null>(null);
   const [editing, setEditing]         = useState(false);
   const [draft, setDraft]             = useState<any>(null);
   const [dragSvcIdx, setDragSvcIdx]   = useState<number | null>(null);
@@ -48,6 +53,8 @@ export default function ContractPrintPage() {
   const customer = custList?.items?.find((c: any) => c.customerId === item?.customerId) ?? null;
   const cur      = CUR_SYMBOL[settings?.currency ?? 'AUD'] ?? '$';
   const doc      = editing ? draft : item;
+  const user     = useAuthStore((s) => s.user);
+  const canShareContact = canViewPII('customers', settings, user?.role);
 
   function enterEdit() { setDraft(structuredClone(item)); setEditing(true); }
   function cancelEdit() { setDraft(null); setEditing(false); }
@@ -196,10 +203,14 @@ export default function ContractPrintPage() {
               </button>
             </>
           )}
-          <button onClick={handleShare} disabled={sharing}
-            className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-60">
-            <LinkIcon className="h-4 w-4" />{shareCopied ? 'Link copied!' : sharing ? 'Generating…' : 'Share Link'}
-          </button>
+          <ShareMenuButton
+            copying={sharing}
+            copyLabel={shareCopied ? 'Copied!' : sharing ? 'Generating…' : 'Copy Link'}
+            onCopyLink={handleShare}
+            onEmail={() => setShareModalTab('email')}
+            onWhatsApp={() => setShareModalTab('whatsapp')}
+            showContactShare={canShareContact}
+          />
           <button onClick={handleDownload} disabled={downloading}
             className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-60">
             <ArrowDownTrayIcon className="h-4 w-4" />{downloading ? 'Generating…' : 'Download PDF'}
@@ -579,6 +590,17 @@ export default function ContractPrintPage() {
       </div>
 
       <style>{`@media print { body { margin: 0; background: white; } @page { size: A4; margin: 0; } }`}</style>
+
+      {shareModalTab && (
+        <FSShareModal
+          module="contracts"
+          docId={id ?? ''}
+          docLabel={item.contractId}
+          customer={customer}
+          initialTab={shareModalTab}
+          onClose={() => setShareModalTab(null)}
+        />
+      )}
     </div>
   );
 }

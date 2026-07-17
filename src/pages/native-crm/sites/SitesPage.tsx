@@ -16,6 +16,8 @@ import {
 
 const FIELDS: FSFieldDef[] = [
   { key: 'branchId', label: 'Company', type: 'branch-select' },
+  { key: 'customerId',    label: 'Customer',       type: 'lookup',
+    lookupModule: 'customers', lookupValueField: '_id', lookupLabelField: 'name' },
   { key: 'name',          label: 'Site Name',      type: 'text',    required: true },
   { key: 'address',       label: 'Address',        type: 'text',    required: true },
   { key: 'city',          label: 'City',           type: 'text' },
@@ -30,6 +32,7 @@ const FIELDS: FSFieldDef[] = [
 const COLUMNS: FSColumnDef[] = [
   { key: 'siteId',        label: 'ID' },
   { key: 'name',          label: 'Site Name' },
+  { key: 'customerId',    label: 'Customer', render: (r) => r.customerId?.name ?? 'â€"' },
   { key: 'address',       label: 'Address' },
   { key: 'city',          label: 'City' },
   { key: 'contactPerson', label: 'Contact' },

@@ -6,6 +6,8 @@ export type FSFieldType =
   | 'lookup'
   | 'multilookup'
   | 'multiselect'
+  | 'emaillist'
+  | 'phonelist'
   | 'servicelines'
   | 'branch-select';
 
@@ -26,6 +28,12 @@ export interface FSFieldDef {
   withTotals?:          boolean;
   categoryFilterField?: string;
   multilookupValueField?: string;
+
+  // Renders a small "Same as X" button next to the label that copies another
+  // field's current value in on click — the field stays a normal editable
+  // input afterward, so the user can still type over it by hand.
+  copyFromKey?:         string;
+  copyFromLabel?:       string;
 }
 
 export interface FSColumnDef<T = any> {

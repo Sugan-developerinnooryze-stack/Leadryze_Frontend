@@ -79,9 +79,9 @@ const FIELD_SERVICE_MODULES = [
   { key: 'products',   label: 'Products',   icon: CubeIcon,              color: '#0d9488' },
   { key: 'assets',     label: 'Assets',     icon: WrenchScrewdriverIcon, color: '#6366f1' },
   { key: 'vehicles',   label: 'Vehicles',   icon: TruckIcon,             color: '#0284c7' },
-  { key: 'branches',           label: 'Branches',         icon: BuildingOffice2Icon,       color: '#6366f1' },
+  // { key: 'branches',           label: 'Branches',         icon: BuildingOffice2Icon,       color: '#6366f1' },
   { key: 'settings',          label: 'FS Settings',      icon: Cog6ToothIcon,             color: '#64748b' },
-  { key: 'native-logs',       label: 'Native Logs',      icon: ClipboardDocumentListIcon, color: '#64748b' },
+  // { key: 'native-logs',       label: 'Native Logs',      icon: ClipboardDocumentListIcon, color: '#64748b' },
   { key: 'custom-fields',     label: 'Custom Fields',    icon: AdjustmentsHorizontalIcon, color: '#7c3aed' },
   { key: 'template-designer', label: 'PDF Designer',     icon: DocumentTextIcon,          color: '#db2777' },
 ] as const;
@@ -540,7 +540,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         </div>
 
         {/* ── Custom Modules section ───────────────────────────────────── */}
-        {(customModules.filter((m) => m.showInSidebar).length > 0 || isFullAccess) && (
+        {/* {(customModules.filter((m) => m.showInSidebar).length > 0 || isFullAccess) && (
           <div className="pt-3">
             <button
               onClick={() => setCustomModulesOpen((o) => !o)}
@@ -591,7 +591,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               </div>
             )}
           </div>
-        )}
+        )} */}
 
         {/* ── My CRM section ───────────────────────────────────────────── */}
         {flags.nav_myCrm !== false && (

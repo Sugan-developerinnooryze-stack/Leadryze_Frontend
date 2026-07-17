@@ -3,12 +3,15 @@ import type { NativeCustomField } from '../queries/custom-fields.queries';
 import { useCustomFieldUpload } from '../queries/custom-fields.queries';
 import type { IFormField } from '../queries/custom-form-templates.queries';
 import { COUNTRIES, CURRENCIES, getCountry, getCurrency } from './phone-currency-data';
+import PhoneInput from './PhoneInput';
+import { evalFormulaWith } from './formulaEval';
 
 interface CustomFieldRendererProps {
   field:           NativeCustomField;
   value:           any;
   onChange:        (val: any) => void;
   templateFields?: IFormField[];
+  defaultDialCode?: string;
 }
 
 // ── Cascade / formula helpers ─────────────────────────────────────────────────
@@ -21,18 +24,8 @@ function isVisible(f: IFormField, subForm: Record<string, any>): boolean {
 }
 
 function evalFormula(formula: string, subForm: Record<string, any>): string {
-  try {
-    const expr = formula.replace(/\{(\w+)\}/g, (_, k) => {
-      const v = subForm[k];
-      if (v === null || v === undefined) return '0';
-      // currency objects: extract amount
-      if (typeof v === 'object' && !Array.isArray(v) && 'amount' in v) return String((v as any).amount ?? 0);
-      return String(v ?? 0);
-    });
-    // eslint-disable-next-line no-new-func
-    const result = new Function(`return (${expr})`)();
-    return String(result);
-  } catch { return '—'; }
+  // CSP-safe parser — the app's Content-Security-Policy blocks new Function/eval
+  return evalFormulaWith(formula, subForm);
 }
 
 // ── Phone field with country code ─────────────────────────────────────────────
@@ -156,13 +149,8 @@ function TableSubField({ field, val, setSub }: {
   const setCell = (ri: number, colKey: string, v: any) =>
     setRows(rows.map((r, j) => j === ri ? { ...r, [colKey]: v } : r));
 
-  const evalCol = (formula: string, row: Record<string, any>) => {
-    try {
-      const expr = formula.replace(/\{(\w+)\}/g, (_, k) => String(row[k] ?? 0));
-      // eslint-disable-next-line no-new-func
-      return String(new Function(`return (${expr})`)());
-    } catch { return '—'; }
-  };
+  // CSP-safe parser — the app's Content-Security-Policy blocks new Function/eval
+  const evalCol = (formula: string, row: Record<string, any>) => evalFormulaWith(formula, row);
 
   if (cols.length === 0) {
     return <p className="text-xs text-gray-400 italic">No columns defined — configure the template first.</p>;
@@ -444,7 +432,7 @@ function UploadButton({
 }
 
 // ── Main renderer ─────────────────────────────────────────────────────────────
-export default function CustomFieldRenderer({ field, value, onChange, templateFields }: CustomFieldRendererProps) {
+export default function CustomFieldRenderer({ field, value, onChange, templateFields, defaultDialCode }: CustomFieldRendererProps) {
   switch (field.fieldType) {
 
     case 'custom_form':
@@ -556,7 +544,7 @@ export default function CustomFieldRenderer({ field, value, onChange, templateFi
       return <input type="email" value={value ?? ''} onChange={(e) => onChange(e.target.value)} className={BASE_CLS} />;
 
     case 'phone':
-      return <input type="tel" value={value ?? ''} onChange={(e) => onChange(e.target.value)} className={BASE_CLS} />;
+      return <PhoneInput value={value ?? ''} onChange={onChange} defaultDialCode={defaultDialCode} />;
 
     case 'url':
       return <input type="url" value={value ?? ''} onChange={(e) => onChange(e.target.value)} className={BASE_CLS} />;

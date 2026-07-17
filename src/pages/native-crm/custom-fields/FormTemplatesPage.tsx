@@ -10,6 +10,7 @@ import {
   type IFormField,
 } from '../../../modules/native-crm/queries/custom-form-templates.queries';
 import { COUNTRIES, CURRENCIES } from '../../../modules/native-crm/shared/phone-currency-data';
+import { previewFormula } from '../../../modules/native-crm/shared/formulaEval';
 
 // ── Field type registry ───────────────────────────────────────────────────────
 
@@ -452,14 +453,8 @@ function FormulaBuilder({ formula, availableKeys, onChange }: {
   const [preview, setPreview] = useState<{ valid: boolean; result: string }>({ valid: true, result: '' });
 
   useEffect(() => {
-    if (!formula?.trim()) { setPreview({ valid: true, result: '' }); return; }
-    const expr = formula.replace(/\{(\w+)\}/g, '1');
-    try {
-      // eslint-disable-next-line no-new-func
-      setPreview({ valid: true, result: String(new Function(`return (${expr})`)()) });
-    } catch {
-      setPreview({ valid: false, result: '' });
-    }
+    // CSP-safe parser — the app's Content-Security-Policy blocks new Function/eval
+    setPreview(previewFormula(formula));
   }, [formula]);
 
   const insertAtCursor = (text: string) => {

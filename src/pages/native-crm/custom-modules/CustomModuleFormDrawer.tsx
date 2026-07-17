@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { XMarkIcon, StarIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
-import type { ICustomModuleField, CascadeNode } from '../../../modules/native-crm/queries/custom-modules.queries';
+import { TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
+import type { ICustomModuleField, CascadeNode, ITableColumn } from '../../../modules/native-crm/queries/custom-modules.queries';
 import { useCustomRecordsQuery } from '../../../modules/native-crm/queries/custom-modules.queries';
 import { useCustomFieldUpload } from '../../../modules/native-crm/queries/custom-fields.queries';
 import { useCustomersListQuery  } from '../../../modules/native-crm/queries/customers.queries';
@@ -13,6 +14,9 @@ import { useQuotationsListQuery } from '../../../modules/native-crm/queries/quot
 import { useServicesListQuery   } from '../../../modules/native-crm/queries/services.queries';
 import { useCategoriesListQuery } from '../../../modules/native-crm/queries/categories.queries';
 import { usePartsListQuery      } from '../../../modules/native-crm/queries/parts.queries';
+import { useFSSettingsQuery     } from '../../../modules/native-crm/queries/fs-settings.queries';
+import PhoneInput from '../../../modules/native-crm/shared/PhoneInput';
+import { evalFormulaWith } from '../../../modules/native-crm/shared/formulaEval';
 import { useExpensesListQuery   } from '../../../modules/native-crm/queries/expenses.queries';
 import { useProductsListQuery   } from '../../../modules/native-crm/queries/products.queries';
 import { useAssetsListQuery     } from '../../../modules/native-crm/queries/assets.queries';
@@ -73,6 +77,97 @@ const RELATIONSHIP_AVAILABLE_FIELDS: Record<string, Array<{ key: string; label: 
 /* ── Shared input style ───────────────────────────────────────────────────── */
 
 const inp = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent';
+
+/* ── TableFieldGrid — the Table/Grid runtime widget ──────────────────────────
+   Renders an editable grid from a field's meta.columns definition. Value is
+   stored as Array<Record<string, any>> — one plain object per row, keyed by
+   column key. Formula columns are read-only and recomputed per row from that
+   row's own cell values (same {col_key} substitution engine used elsewhere). */
+
+function evalTableFormula(formula: string, row: Record<string, any>): string {
+  // CSP-safe parser — the app's Content-Security-Policy blocks new Function/eval
+  return evalFormulaWith(formula, row);
+}
+
+function TableFieldGrid({ columns, value, onChange }: {
+  columns: ITableColumn[];
+  value:   Record<string, any>[];
+  onChange: (rows: Record<string, any>[]) => void;
+}) {
+  const rows = Array.isArray(value) ? value : [];
+
+  const addRow = () => onChange([...rows, {}]);
+  const delRow = (i: number) => onChange(rows.filter((_, j) => j !== i));
+  const setCell = (i: number, colKey: string, v: any) =>
+    onChange(rows.map((r, j) => (j === i ? { ...r, [colKey]: v } : r)));
+
+  if (!columns.length) {
+    return <p className="text-xs text-gray-400 italic px-1">No columns defined — configure this field in Manage Modules first.</p>;
+  }
+
+  return (
+    <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              {columns.map((c) => (
+                <th key={c.key} className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
+                  {c.label}
+                  {c.type === 'formula' && (
+                    <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700 normal-case">fx</span>
+                  )}
+                </th>
+              ))}
+              <th className="w-10" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {rows.map((row, i) => (
+              <tr key={i}>
+                {columns.map((c) => (
+                  <td key={c.key} className="px-3 py-1.5">
+                    {c.type === 'formula' ? (
+                      <span className="text-xs font-mono text-emerald-700">{evalTableFormula(c.formula ?? '', row)}</span>
+                    ) : c.type === 'dropdown' ? (
+                      <select
+                        value={row[c.key] ?? ''}
+                        onChange={(e) => setCell(i, c.key, e.target.value)}
+                        className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand-400"
+                      >
+                        <option value="">Select…</option>
+                        {(c.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    ) : (
+                      <input
+                        type={c.type === 'number' ? 'number' : 'text'}
+                        value={row[c.key] ?? ''}
+                        onChange={(e) => setCell(i, c.key, e.target.value)}
+                        className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand-400"
+                      />
+                    )}
+                  </td>
+                ))}
+                <td className="px-2 text-center">
+                  <button type="button" onClick={() => delRow(i)} className="text-gray-300 hover:text-red-400">
+                    <TrashIcon className="h-4 w-4" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <button
+        type="button"
+        onClick={addRow}
+        className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-brand-600 hover:bg-brand-50 border-t border-gray-100 transition-colors"
+      >
+        <PlusIcon className="h-3.5 w-3.5" /> Add Row
+      </button>
+    </div>
+  );
+}
 
 /* ── ImageUploader ────────────────────────────────────────────────────────── */
 
@@ -245,6 +340,11 @@ export default function CustomModuleFormDrawer({
   const [form,    setForm]    = useState<Record<string, unknown>>({});
   const [errors,  setErrors]  = useState<Record<string, string>>({});
   const [saving,  setSaving]  = useState(false);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(t);
+  }, []);
 
   // Load all lookup data (React Query caches them — same pattern as FSDrawer)
   const { data: customersData  } = useCustomersListQuery ({ page: 1, limit: 500 });
@@ -263,6 +363,7 @@ export default function CustomModuleFormDrawer({
   const { data: leadsData      } = useLeadsQuery         ({ page: 1, limit: 500 });
   const { data: dealsData      } = useDealsQuery         ({ page: 1, limit: 500 });
   const { data: branchesData   } = useBranchesQuery     ();
+  const { data: settings       } = useFSSettingsQuery   ();
 
   const lookupDataMap: Record<string, any[]> = {
     customers:  customersData?.items  ?? [],
@@ -287,7 +388,7 @@ export default function CustomModuleFormDrawer({
   useEffect(() => {
     const init: Record<string, unknown> = {};
     fields.forEach((f) => {
-      if (f.fieldType === 'multiselect' || f.fieldType === 'images' || f.fieldType === 'categoryselect') {
+      if (f.fieldType === 'multiselect' || f.fieldType === 'images' || f.fieldType === 'categoryselect' || f.fieldType === 'table') {
         init[f.key] = Array.isArray(record?.[f.key]) ? record![f.key] : [];
       } else {
         init[f.key] = record?.[f.key] ?? '';
@@ -350,8 +451,8 @@ export default function CustomModuleFormDrawer({
     const err = errors[f.key];
 
     const wrap = (content: React.ReactNode) => (
-      <div key={f.key} className="space-y-1">
-        <label className="block text-sm font-medium text-gray-700">
+      <div key={f.key} className="space-y-1.5">
+        <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
           {f.label}
           {f.required && <span className="text-red-500 ml-0.5">*</span>}
         </label>
@@ -368,7 +469,7 @@ export default function CustomModuleFormDrawer({
         return wrap(<input type="email" className={inp} value={val as string ?? ''} onChange={(e) => set(f.key, e.target.value)} />);
 
       case 'phone':
-        return wrap(<input type="tel" className={inp} value={val as string ?? ''} onChange={(e) => set(f.key, e.target.value)} />);
+        return wrap(<PhoneInput value={val as string ?? ''} onChange={(v) => set(f.key, v)} defaultDialCode={settings?.defaultCountryCode ?? '+91'} />);
 
       case 'url':
         return wrap(<input type="url" className={inp} value={val as string ?? ''} onChange={(e) => set(f.key, e.target.value)} placeholder="https://" />);
@@ -582,6 +683,15 @@ export default function CustomModuleFormDrawer({
           />
         );
 
+      case 'table':
+        return wrap(
+          <TableFieldGrid
+            columns={f.meta?.columns ?? []}
+            value={val as Record<string, any>[] ?? []}
+            onChange={(rows) => set(f.key, rows)}
+          />
+        );
+
       default:
         return wrap(<input type="text" className={inp} value={val as string ?? ''} onChange={(e) => set(f.key, e.target.value)} />);
     }
@@ -590,48 +700,64 @@ export default function CustomModuleFormDrawer({
   return (
     <>
       {/* Overlay */}
-      <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40" onClick={onClose} />
 
       {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-[480px] bg-white shadow-2xl z-50 flex flex-col">
+      <div className={`fixed right-0 top-0 h-full w-full max-w-[52vw] min-w-[600px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-out ${visible ? 'translate-x-0' : 'translate-x-full'}`}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
-          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+        <div className="flex items-center justify-between px-7 py-5 border-b border-gray-100 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-8 rounded-full bg-brand-500 shrink-0" />
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 leading-tight">{title}</h2>
+              <p className="text-xs text-gray-400 mt-0.5">{record?._id ? 'Edit record' : 'Create new record'}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+          >
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-          <div className="px-6 py-5 space-y-5">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-y-auto px-7 py-5 space-y-5">
+            {errors._server && (
+              <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">{errors._server}</p>
+            )}
             {fields.map((f) => renderField(f))}
             {fields.length === 0 && (
               <p className="text-sm text-gray-400 text-center py-8">No fields defined for this module yet.</p>
             )}
-            {errors._server && (
-              <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{errors._server}</p>
-            )}
+          </div>
+
+          {/* Footer */}
+          <div className="px-7 py-5 border-t border-gray-100 flex items-center justify-center gap-3 shrink-0 bg-gray-50/60">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-6 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-60 transition-colors flex items-center gap-2 min-w-[120px] justify-center"
+            >
+              {saving && (
+                <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+              )}
+              {saving ? 'Saving…' : record?._id ? 'Save Changes' : 'Create'}
+            </button>
           </div>
         </form>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3 shrink-0 bg-gray-50">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={saving}
-            className="px-5 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50"
-          >
-            {saving ? 'Saving…' : record?._id ? 'Save Changes' : 'Create'}
-          </button>
-        </div>
       </div>
     </>
   );

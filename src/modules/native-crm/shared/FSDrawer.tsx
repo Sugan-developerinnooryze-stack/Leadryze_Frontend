@@ -22,6 +22,7 @@ import {
   splitHours, joinHours, availabilityNote, availabilityShort, toDatetimeLocal,
   type StaffAvailability,
 } from './duration';
+import PhoneInput from './PhoneInput';
 
 interface FSDrawerProps {
   title:      string;
@@ -86,7 +87,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
   useEffect(() => {
     const initial: Record<string, any> = {};
     fields.forEach((f) => {
-      if (f.type === 'servicelines' || f.type === 'multilookup' || f.type === 'multiselect') {
+      if (f.type === 'servicelines' || f.type === 'multilookup' || f.type === 'multiselect' || f.type === 'emaillist' || f.type === 'phonelist') {
         initial[f.key] = record?.[f.key] ?? [];
       } else if (f.type === 'lookup') {
         // Handle populated Mongoose objects (e.g. record.teamId = { _id: "...", name: "..." })
@@ -199,7 +200,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
   const validate = () => {
     const errs: Record<string, string> = {};
     fields.forEach((f) => {
-      if (f.filterOnly || f.type === 'servicelines' || f.type === 'multilookup' || f.type === 'multiselect') return;
+      if (f.filterOnly || f.type === 'servicelines' || f.type === 'multilookup' || f.type === 'multiselect' || f.type === 'emaillist' || f.type === 'phonelist') return;
       if (f.required && !form[f.key]?.toString().trim()) errs[f.key] = `${f.label} is required`;
     });
     activeCustomFields.forEach((f) => {
@@ -234,6 +235,10 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
           } else if ((f.type === 'select' || f.type === 'date' || f.type === 'datetime' || f.type === 'duration')
                      && (val === '' || val === null || val === undefined)) {
             // Omit empty selects/dates — zod z.enum() rejects '' and Mongo can't cast '' to Date
+          } else if ((f.type === 'emaillist' || f.type === 'phonelist') && Array.isArray(val)) {
+            // Drop blank rows (e.g. "+ Add Email" clicked but left empty) — zod's
+            // per-element email/string checks would otherwise reject the whole array
+            payload[f.key] = val.map((v: string) => v?.trim()).filter(Boolean);
           } else {
             payload[f.key] = val;
           }
@@ -337,6 +342,72 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
               </label>
             );
           })}
+        </div>
+      );
+    }
+
+    if (field.type === 'emaillist') {
+      const rows: string[] = Array.isArray(value) ? value : [];
+      return (
+        <div className="space-y-2">
+          {rows.map((row, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                type="email"
+                value={row}
+                placeholder={`Email ${i + 1}`}
+                onChange={e => handleChange(field.key, rows.map((r, j) => (j === i ? e.target.value : r)))}
+                className={`${base} flex-1`}
+              />
+              <button
+                type="button"
+                onClick={() => handleChange(field.key, rows.filter((_, j) => j !== i))}
+                className="shrink-0 p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => handleChange(field.key, [...rows, ''])}
+            className="px-3 py-1.5 text-xs rounded-lg border border-brand-300 text-brand-600 hover:bg-brand-50 transition-colors"
+          >
+            + Add Email
+          </button>
+        </div>
+      );
+    }
+
+    if (field.type === 'phonelist') {
+      const rows: string[] = Array.isArray(value) ? value : [];
+      return (
+        <div className="space-y-2">
+          {rows.map((row, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <PhoneInput
+                value={row}
+                onChange={v => handleChange(field.key, rows.map((r, j) => (j === i ? v : r)))}
+                defaultDialCode={settings?.defaultCountryCode ?? '+91'}
+                placeholder={`Phone ${i + 1}`}
+                className="flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => handleChange(field.key, rows.filter((_, j) => j !== i))}
+                className="shrink-0 p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => handleChange(field.key, [...rows, ''])}
+            className="px-3 py-1.5 text-xs rounded-lg border border-brand-300 text-brand-600 hover:bg-brand-50 transition-colors"
+          >
+            + Add Phone
+          </button>
         </div>
       );
     }
@@ -677,9 +748,19 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
       );
     }
 
+    if (field.type === 'phone') {
+      return (
+        <PhoneInput
+          value={value ?? ''}
+          onChange={v => handleChange(field.key, v)}
+          defaultDialCode={settings?.defaultCountryCode ?? '+91'}
+          placeholder={field.placeholder}
+        />
+      );
+    }
+
     const inputType =
       field.type === 'email'                                  ? 'email'
-      : field.type === 'phone'                               ? 'tel'
       : field.type === 'number' || field.type === 'currency' ? 'number'
       : 'text';
 
@@ -749,17 +830,30 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
                   field.type === 'servicelines' ||
                   field.type === 'multilookup' ||
                   field.type === 'multiselect' ||
+                  field.type === 'emaillist' ||
+                  field.type === 'phonelist' ||
                   field.type === 'boolean' ||
                   /address|note|description|remark|instruction|reason/i.test(field.key);
                 return (
                   <div key={field.key} className={fullWidth ? 'col-span-2' : 'col-span-1'}>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-                      {field.label}
-                      {field.required && <span className="text-red-500 ml-0.5">*</span>}
-                      {field.filterOnly && (
-                        <span className="ml-1.5 text-xs font-normal text-gray-400 normal-case tracking-normal">(filter only)</span>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        {field.label}
+                        {field.required && <span className="text-red-500 ml-0.5">*</span>}
+                        {field.filterOnly && (
+                          <span className="ml-1.5 text-xs font-normal text-gray-400 normal-case tracking-normal">(filter only)</span>
+                        )}
+                      </label>
+                      {field.copyFromKey && (
+                        <button
+                          type="button"
+                          onClick={() => handleChange(field.key, form[field.copyFromKey!] ?? '')}
+                          className="text-[11px] font-medium text-brand-600 hover:text-brand-700 normal-case tracking-normal"
+                        >
+                          {field.copyFromLabel ?? 'Same as above'}
+                        </button>
                       )}
-                    </label>
+                    </div>
                     {renderField(field)}
                     {errors[field.key] && (
                       <p className="mt-1 text-xs text-red-500">{errors[field.key]}</p>
@@ -787,6 +881,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
                               ? formTemplates.find((t) => t._id === cf.formTemplateId)?.fields
                               : undefined
                           }
+                          defaultDialCode={settings?.defaultCountryCode ?? '+91'}
                         />
                         {errors[`cf_${cf.fieldKey}`] && (
                           <p className="mt-1 text-xs text-red-500">{errors[`cf_${cf.fieldKey}`]}</p>

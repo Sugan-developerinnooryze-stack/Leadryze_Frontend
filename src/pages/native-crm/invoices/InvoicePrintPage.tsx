@@ -4,6 +4,10 @@ import { PrinterIcon, XMarkIcon, ArrowDownTrayIcon, PencilIcon } from '@heroicon
 import { useInvoiceQuery, useInvoiceUpdate } from '../../../modules/native-crm/queries/invoices.queries';
 import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-settings.queries';
 import { useCustomersListQuery } from '../../../modules/native-crm/queries/customers.queries';
+import ShareMenuButton from '../../../modules/native-crm/shared/ShareMenuButton';
+import FSShareModal from '../../../modules/native-crm/shared/FSShareModal';
+import { canViewPII } from '../../../modules/native-crm/shared/piiAccess';
+import { useAuthStore } from '../../../stores/auth.store';
 import api from '../../../services/api';
 import RichEditor from '../../../components/RichEditor';
 import { useServicesListQuery } from '../../../modules/native-crm/queries/services.queries';
@@ -30,6 +34,9 @@ export default function InvoicePrintPage() {
   const navigate   = useNavigate();
   const [variant, setVariant]         = useState('classic');
   const [downloading, setDownloading] = useState(false);
+  const [sharing, setSharing]         = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [shareModalTab, setShareModalTab] = useState<'email' | 'whatsapp' | null>(null);
   const [editing, setEditing]         = useState(false);
   const [draft, setDraft]             = useState<any>(null);
   const [dragSvcIdx, setDragSvcIdx]   = useState<number | null>(null);
@@ -45,6 +52,8 @@ export default function InvoicePrintPage() {
   const customer = custList?.items?.find((c: any) => c.customerId === item?.customerId) ?? null;
   const cur      = CUR_SYMBOL[settings?.currency ?? 'AUD'] ?? '$';
   const doc      = editing ? draft : item;
+  const user     = useAuthStore((s) => s.user);
+  const canShareContact = canViewPII('customers', settings, user?.role);
 
   function enterEdit() { setDraft(structuredClone(item)); setEditing(true); }
   function cancelEdit() { setDraft(null); setEditing(false); }
@@ -99,6 +108,20 @@ export default function InvoicePrintPage() {
       return { ...d, parts: pts };
     });
   }
+
+  const handleShare = async () => {
+    if (!item) return;
+    setSharing(true);
+    try {
+      const res = await api.post('/api/v1/portal/generate-token', { docType: 'invoice', docId: item._id });
+      const token = res.data?.data?.token;
+      if (token) {
+        await navigator.clipboard.writeText(`${window.location.origin}/portal/${token}`);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2500);
+      }
+    } catch { } finally { setSharing(false); }
+  };
 
   const handleDownload = async () => {
     if (!id) return;
@@ -163,6 +186,14 @@ export default function InvoicePrintPage() {
               </button>
             </>
           )}
+          <ShareMenuButton
+            copying={sharing}
+            copyLabel={shareCopied ? 'Copied!' : sharing ? 'Generating…' : 'Copy Link'}
+            onCopyLink={handleShare}
+            onEmail={() => setShareModalTab('email')}
+            onWhatsApp={() => setShareModalTab('whatsapp')}
+            showContactShare={canShareContact}
+          />
           <button onClick={handleDownload} disabled={downloading}
             className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-60">
             <ArrowDownTrayIcon className="h-4 w-4" />{downloading ? 'Generating…' : 'Download PDF'}
@@ -515,6 +546,17 @@ export default function InvoicePrintPage() {
       </div>
 
       <style>{`@media print { body { margin: 0; background: white; } @page { size: A4; margin: 0; } }`}</style>
+
+      {shareModalTab && (
+        <FSShareModal
+          module="invoices"
+          docId={id ?? ''}
+          docLabel={item.invoiceId}
+          customer={customer}
+          initialTab={shareModalTab}
+          onClose={() => setShareModalTab(null)}
+        />
+      )}
     </div>
   );
 }

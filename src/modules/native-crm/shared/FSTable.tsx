@@ -446,6 +446,13 @@ export default function FSTable({
     return columns.filter((c) => !c.exportOnly).map((c) => c.key);
   });
 
+  // Tracks every column key this module has ever encountered, so the
+  // auto-add effect below can tell "brand new column" apart from "user
+  // deliberately unchecked this in Edit Columns" — without this, any column
+  // the user hides gets silently re-added the next time allTableCols recomputes.
+  const seenKey = moduleKey ? `fs-cols-seen-${moduleKey}` : null;
+  const seenRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     if (storageKey) {
       try { const s = localStorage.getItem(storageKey); if (s) { setVisible(JSON.parse(s)); return; } } catch {/* */}
@@ -454,17 +461,40 @@ export default function FSTable({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleKey]);
 
-  // Auto-add column keys that appear in allTableCols but are absent from visible
-  // (handles sub-field columns added after the user's first visit to this module)
   useEffect(() => {
+    if (!seenKey) { seenRef.current = new Set(); return; }
+    try {
+      const s = localStorage.getItem(seenKey);
+      if (s) {
+        seenRef.current = new Set(JSON.parse(s));
+        return;
+      }
+    } catch {/* */}
+    // First run after this feature shipped (or first-ever visit): treat every
+    // column currently known as already "seen" so nothing already hidden by
+    // the user gets force-reselected.
+    seenRef.current = new Set(allTableCols.map((c) => c.key));
+    try { localStorage.setItem(seenKey, JSON.stringify([...seenRef.current])); } catch {/* */}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moduleKey]);
+
+  // Auto-add column keys that appear in allTableCols but have never been seen
+  // before (handles sub-field columns added after the user's first visit).
+  // Columns the user has seen and manually unchecked are left alone.
+  useEffect(() => {
+    const seen = seenRef.current;
+    const newKeys = allTableCols.filter((c) => !seen.has(c.key)).map((c) => c.key);
+    allTableCols.forEach((c) => seen.add(c.key));
+    if (seenKey) { try { localStorage.setItem(seenKey, JSON.stringify([...seen])); } catch {/* */} }
+    if (!newKeys.length) return;
     setVisible((prev) => {
-      const newKeys = allTableCols.filter((c) => !prev.includes(c.key)).map((c) => c.key);
-      if (!newKeys.length) return prev;
-      const next = [...prev, ...newKeys];
+      const additions = newKeys.filter((k) => !prev.includes(k));
+      if (!additions.length) return prev;
+      const next = [...prev, ...additions];
       if (storageKey) { try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch {/* */} }
       return next;
     });
-  }, [allTableCols, storageKey]);
+  }, [allTableCols, storageKey, seenKey]);
 
   const saveVisible = (keys: string[]) => {
     setVisible(keys);
@@ -607,7 +637,7 @@ export default function FSTable({
                   {col.label}
                 </th>
               ))}
-              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <th className="sticky right-0 z-20 px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                 Actions
               </th>
             </tr>
@@ -631,8 +661,11 @@ export default function FSTable({
                     {col.render ? col.render(row) : (row[col.key] ?? '—')}
                   </td>
                 ))}
-                <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <td
+                  className="sticky right-0 z-10 px-4 py-3 text-right bg-white group-hover:bg-gray-50 transition-colors shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-end gap-1">
                     {extraRowActions?.(row)}
                     <button onClick={(e) => { e.stopPropagation(); onEdit(row); }} title="Edit" className="p-1.5 rounded-lg text-gray-400 hover:text-brand-600 hover:bg-brand-50 transition-colors">
                       <PencilSquareIcon className="h-4 w-4" />

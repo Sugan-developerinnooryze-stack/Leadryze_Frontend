@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeftIcon, PencilSquareIcon, PrinterIcon, ArrowDownTrayIcon,
-  LinkIcon, ArrowRightCircleIcon, CheckCircleIcon,
+  ArrowRightCircleIcon, CheckCircleIcon,
 } from '@heroicons/react/24/outline';
 import { useWorkorderQuery } from '../../../modules/native-crm/queries/workorders.queries';
 import { useCustomersListQuery } from '../../../modules/native-crm/queries/customers.queries';
@@ -11,6 +11,11 @@ import { useSitesListQuery } from '../../../modules/native-crm/queries/sites.que
 import { useTeamsListQuery } from '../../../modules/native-crm/queries/teams.queries';
 import { useStaffsListQuery } from '../../../modules/native-crm/queries/staffs.queries';
 import { buildPrefill } from '../../../modules/native-crm/shared/buildPrefill';
+import { renderFieldValue } from '../../../modules/native-crm/shared/fieldValueRenderer';
+import ShareMenuButton from '../../../modules/native-crm/shared/ShareMenuButton';
+import FSShareModal from '../../../modules/native-crm/shared/FSShareModal';
+import { canViewPII } from '../../../modules/native-crm/shared/piiAccess';
+import { useAuthStore } from '../../../stores/auth.store';
 import api from '../../../services/api';
 
 const CUR: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
@@ -66,10 +71,13 @@ export default function WorkorderViewPage() {
   const [downloading, setDownloading] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [shareModalTab, setShareModalTab] = useState<'email' | 'whatsapp' | null>(null);
 
   const { data: item, isLoading } = useWorkorderQuery(id ?? '');
   const { data: settings } = useFSSettingsQuery();
   const { data: custList } = useCustomersListQuery({ page: 1, limit: 500 });
+  const user = useAuthStore((s) => s.user);
+  const canShareContact = canViewPII('customers', settings, user?.role);
   const { data: siteList } = useSitesListQuery({ limit: 500 });
   const { data: teamList } = useTeamsListQuery({ limit: 500 });
   const { data: staffList } = useStaffsListQuery({ limit: 500 });
@@ -157,10 +165,14 @@ export default function WorkorderViewPage() {
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50">
             <PencilSquareIcon className="h-4 w-4" />Edit
           </button>
-          <button onClick={handleShare} disabled={sharing}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 disabled:opacity-60">
-            <LinkIcon className="h-4 w-4" />{shareCopied ? 'Copied!' : sharing ? 'Generating…' : 'Share Link'}
-          </button>
+          <ShareMenuButton
+            copying={sharing}
+            copyLabel={shareCopied ? 'Copied!' : sharing ? 'Generating…' : 'Copy Link'}
+            onCopyLink={handleShare}
+            onEmail={() => setShareModalTab('email')}
+            onWhatsApp={() => setShareModalTab('whatsapp')}
+            showContactShare={canShareContact}
+          />
           <button onClick={handleDownload} disabled={downloading}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 disabled:opacity-60">
             <ArrowDownTrayIcon className="h-4 w-4" />{downloading ? 'Generating…' : 'Download PDF'}
@@ -397,19 +409,30 @@ export default function WorkorderViewPage() {
                       {Object.entries(v as Record<string, any>).map(([sk, sv]) => (
                         <div key={sk} className="flex items-start gap-2">
                           <span className="text-xs text-gray-400 w-32 shrink-0">{sk}</span>
-                          <span className="text-xs text-gray-700 font-medium">{String(sv ?? '—')}</span>
+                          <span className="text-xs text-gray-700 font-medium">{renderFieldValue(sv)}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  <InfoRow label={k} value={Array.isArray(v) ? (v as string[]).join(', ') : String(v)} />
+                  <InfoRow label={k} value={renderFieldValue(v)} />
                 )}
               </div>
             ))}
           </Card>
         )}
       </div>
+
+      {shareModalTab && (
+        <FSShareModal
+          module="workorders"
+          docId={id ?? ''}
+          docLabel={item.workOrderId}
+          customer={customer}
+          initialTab={shareModalTab}
+          onClose={() => setShareModalTab(null)}
+        />
+      )}
     </div>
   );
 }

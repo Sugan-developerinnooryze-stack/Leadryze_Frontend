@@ -9,8 +9,9 @@ import {
   useCustomModuleUpdate,
   useCustomModuleDelete,
 } from '../../../modules/native-crm/queries/custom-modules.queries';
-import type { CustomModuleDef, ICustomModuleField, CustomModuleFieldType, CascadeNode } from '../../../modules/native-crm/queries/custom-modules.queries';
+import type { CustomModuleDef, ICustomModuleField, CustomModuleFieldType, CascadeNode, ITableColumn } from '../../../modules/native-crm/queries/custom-modules.queries';
 import FSDeleteModal from '../../../modules/native-crm/shared/FSDeleteModal';
+import TableColumnEditor from '../../../modules/native-crm/shared/TableColumnEditor';
 
 /* ── Field type catalogue ─────────────────────────────────────────────────── */
 
@@ -64,6 +65,12 @@ const FIELD_TYPE_GROUPS: { label: string; color: string; types: FieldTypeDef[] }
       { value: 'relationship', label: 'Relationship', group: 'link' },
     ],
   },
+  {
+    label: 'Table', color: 'teal',
+    types: [
+      { value: 'table', label: 'Table / Grid', group: 'table' },
+    ],
+  },
 ];
 
 const ALL_TYPES: FieldTypeDef[] = FIELD_TYPE_GROUPS.flatMap((g) => g.types);
@@ -75,6 +82,7 @@ const GROUP_COLOR: Record<string, string> = {
   date:   'border-amber-400',
   media:  'border-pink-400',
   link:   'border-indigo-400',
+  table:  'border-teal-400',
 };
 const GROUP_BADGE: Record<string, string> = {
   text:   'bg-blue-50 text-blue-700',
@@ -83,6 +91,7 @@ const GROUP_BADGE: Record<string, string> = {
   date:   'bg-amber-50 text-amber-700',
   media:  'bg-pink-50 text-pink-700',
   link:   'bg-indigo-50 text-indigo-700',
+  table:  'bg-teal-50 text-teal-700',
 };
 
 function typeGroup(t: CustomModuleFieldType): string {
@@ -627,6 +636,13 @@ function FieldCard({
           );
         })()}
 
+        {field.fieldType === 'table' && (
+          <TableColumnEditor
+            columns={field.meta?.columns ?? []}
+            onChange={(cols: ITableColumn[]) => onChange({ meta: { ...field.meta, columns: cols } })}
+          />
+        )}
+
         {(field.fieldType === 'image' || field.fieldType === 'images') && (
           <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">
             📎 Supports JPG, PNG, PDF up to 5 MB.
@@ -722,7 +738,15 @@ export default function CustomModuleBuilderPage() {
   // Drag state
   const dragSrc = useRef<number | null>(null);
 
-  /* Load selected module */
+  // Latest `modules` without being a reload trigger below — React Query hands
+  // back a new array reference on every background refetch (e.g. window
+  // refocus) even when nothing changed, which must NOT re-sync the form and
+  // wipe in-progress edits.
+  const modulesRef = useRef(modules);
+  useEffect(() => { modulesRef.current = modules; }, [modules]);
+
+  /* Load selected module — only when the SELECTION changes, never on a
+     background refetch of the modules list (see modulesRef above). */
   useEffect(() => {
     if (selectedId === 'new' || selectedId === null) {
       setName(''); setSingularName(''); setIcon('📋'); setColor('#6366f1');
@@ -730,7 +754,7 @@ export default function CustomModuleBuilderPage() {
       setFields([blank()]); setActiveField(null); setSaveError('');
       return;
     }
-    const mod = modules.find((m) => m._id === selectedId);
+    const mod = modulesRef.current.find((m) => m._id === selectedId);
     if (!mod) return;
     setName(mod.name); setSingularName(mod.singularName);
     setIcon(mod.icon ?? '📋'); setColor(mod.color ?? '#6366f1');
@@ -741,7 +765,8 @@ export default function CustomModuleBuilderPage() {
         : [blank()]
     );
     setActiveField(null); setSaveError('');
-  }, [selectedId, modules]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
   const updateField = (id: string, patch: Partial<BuilderField>) => {
     setFields((prev) => prev.map((f) => (f._id === id ? { ...f, ...patch } : f)));

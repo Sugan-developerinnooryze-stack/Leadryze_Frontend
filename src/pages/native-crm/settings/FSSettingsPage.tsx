@@ -12,6 +12,8 @@ import { useTenantLockAuditQuery } from '../../../modules/native-crm/queries/rec
 import { useQueryClient } from '@tanstack/react-query';
 import { useBranchesQuery, useCreateBranch } from '../../../modules/native-crm/queries/branch.queries';
 import { Branch, useBranchStore } from '../../../stores/branch.store';
+import PhoneInput from '../../../modules/native-crm/shared/PhoneInput';
+import { COUNTRY_CODE_OPTIONS } from '../../../modules/native-crm/shared/countryCodes';
 
 const TABS = ['Company', 'Address', 'Documents', 'Bank Details', 'Branding', 'Templates', 'Workflow', 'Permission'];
 
@@ -478,9 +480,29 @@ export default function FSSettingsPage() {
               <FieldRow label="PAN"><TextInput value={merged.pan} onChange={set('pan')} /></FieldRow>
               <FieldRow label="Business Reg. Number"><TextInput value={merged.businessRegNumber} onChange={set('businessRegNumber')} /></FieldRow>
               <FieldRow label="Company Email"><TextInput value={merged.companyEmail} onChange={set('companyEmail')} placeholder="info@company.com" /></FieldRow>
-              <FieldRow label="Phone"><TextInput value={merged.phone} onChange={set('phone')} /></FieldRow>
-              <FieldRow label="WhatsApp"><TextInput value={merged.whatsapp} onChange={set('whatsapp')} /></FieldRow>
+              <FieldRow label="Phone">
+                <PhoneInput value={merged.phone ?? ''} onChange={set('phone')} defaultDialCode={merged.defaultCountryCode ?? '+91'} />
+              </FieldRow>
+              <FieldRow label="WhatsApp">
+                <PhoneInput value={merged.whatsapp ?? ''} onChange={set('whatsapp')} defaultDialCode={merged.defaultCountryCode ?? '+91'} />
+              </FieldRow>
               <FieldRow label="Website"><TextInput value={merged.website} onChange={set('website')} placeholder="https://www.company.com" /></FieldRow>
+              <FieldRow label="Default Country Code">
+                <select
+                  value={merged.defaultCountryCode ?? '+91'}
+                  onChange={(e) => set('defaultCountryCode')(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400"
+                >
+                  {COUNTRY_CODE_OPTIONS.map((c) => (
+                    <option key={`${c.iso2}-${c.dialCode}`} value={c.dialCode}>
+                      {c.flag} {c.name} ({c.dialCode})
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-400">
+                  Pre-selected country code for every new phone field across Customers, Leads, Staff, Sites, and more. Each field can still be changed individually.
+                </p>
+              </FieldRow>
             </div>
           )}
 

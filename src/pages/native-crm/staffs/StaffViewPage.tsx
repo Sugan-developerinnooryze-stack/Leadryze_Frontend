@@ -9,6 +9,7 @@ import FSTable from '../../../modules/native-crm/shared/FSTable';
 import { FSStatusBadge } from '../../../modules/native-crm/shared/types';
 import type { FSColumnDef } from '../../../modules/native-crm/shared/types';
 import CredentialsPanel from '../../../modules/native-crm/shared/CredentialsPanel';
+import { renderFieldValue } from '../../../modules/native-crm/shared/fieldValueRenderer';
 
 const TABS = [
   { id: 'overview',    label: 'Overview',    icon: UserIcon },
@@ -170,7 +171,7 @@ export default function StaffViewPage() {
                   </div>
                   <div className="px-6 py-4">
                     {Object.entries(item.customFields).map(([k, v]) => (
-                      <InfoRow key={k} label={k.replace(/_/g, ' ').toUpperCase()} value={String(v)} />
+                      <InfoRow key={k} label={k.replace(/_/g, ' ').toUpperCase()} value={renderFieldValue(v)} />
                     ))}
                   </div>
                 </div>

@@ -6,6 +6,7 @@ import {
   KeyIcon,
 } from '@heroicons/react/24/outline';
 import CredentialsPanel from '../../../modules/native-crm/shared/CredentialsPanel';
+import { renderFieldValue } from '../../../modules/native-crm/shared/fieldValueRenderer';
 import { useCustomerQuery } from '../../../modules/native-crm/queries/customers.queries';
 import { useQuotationsListQuery } from '../../../modules/native-crm/queries/quotations.queries';
 import { useContractsListQuery } from '../../../modules/native-crm/queries/contracts.queries';
@@ -176,12 +177,25 @@ export default function CustomerViewPage() {
                   <InfoRow label="Full Name" value={item.name} />
                   <InfoRow label="Email" value={item.email} />
                   <InfoRow label="Phone" value={item.phone} />
+                  <InfoRow label="Additional Emails" value={item.addEmail?.filter(Boolean).join(', ')} />
+                  <InfoRow label="Additional Phones" value={item.addPhone?.filter(Boolean).join(', ')} />
                   <InfoRow label="Address" value={item.address} />
                   <InfoRow label="City" value={item.city} />
                   <InfoRow label="State" value={item.state} />
                   <InfoRow label="Postcode" value={item.postcode} />
                   <InfoRow label="Country" value={item.country} />
                   <InfoRow label="Notes" value={item.notes} />
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                  <h3 className="text-sm font-semibold text-gray-700">Billing & Delivery</h3>
+                </div>
+                <div className="px-6 py-4">
+                  <InfoRow label="Billing Name" value={item.billingName} />
+                  <InfoRow label="Billing Address" value={item.billingAddress} />
+                  <InfoRow label="Delivery Address" value={item.deliveryAddress} />
                 </div>
               </div>
 
@@ -192,7 +206,7 @@ export default function CustomerViewPage() {
                   </div>
                   <div className="px-6 py-4">
                     {Object.entries(item.customFields).map(([k, v]) => (
-                      <InfoRow key={k} label={k.replace(/_/g, ' ').toUpperCase()} value={String(v)} />
+                      <InfoRow key={k} label={k.replace(/_/g, ' ').toUpperCase()} value={renderFieldValue(v)} />
                     ))}
                   </div>
                 </div>

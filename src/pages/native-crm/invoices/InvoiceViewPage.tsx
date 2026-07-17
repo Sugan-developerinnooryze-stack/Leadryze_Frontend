@@ -6,6 +6,11 @@ import {
 import { useInvoiceQuery } from '../../../modules/native-crm/queries/invoices.queries';
 import { useCustomersListQuery } from '../../../modules/native-crm/queries/customers.queries';
 import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-settings.queries';
+import { renderFieldValue } from '../../../modules/native-crm/shared/fieldValueRenderer';
+import ShareMenuButton from '../../../modules/native-crm/shared/ShareMenuButton';
+import FSShareModal from '../../../modules/native-crm/shared/FSShareModal';
+import { canViewPII } from '../../../modules/native-crm/shared/piiAccess';
+import { useAuthStore } from '../../../stores/auth.store';
 import api from '../../../services/api';
 
 const CUR: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
@@ -54,10 +59,15 @@ export default function InvoiceViewPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [shareModalTab, setShareModalTab] = useState<'email' | 'whatsapp' | null>(null);
 
   const { data: item, isLoading } = useInvoiceQuery(id ?? '');
   const { data: settings } = useFSSettingsQuery();
   const { data: custList } = useCustomersListQuery({ page: 1, limit: 500 });
+  const user = useAuthStore((s) => s.user);
+  const canShareContact = canViewPII('customers', settings, user?.role);
 
   const customer = custList?.items?.find((c: any) => c.customerId === item?.customerId) ?? null;
   const cur = CUR[settings?.currency ?? 'AUD'] ?? '$';
@@ -69,6 +79,20 @@ export default function InvoiceViewPage() {
   const gst = item?.gstPercentage ?? 0;
   const afterDiscount = combined - discount;
   const total = afterDiscount * (1 + gst / 100);
+
+  const handleShare = async () => {
+    if (!item) return;
+    setSharing(true);
+    try {
+      const res = await api.post('/api/v1/portal/generate-token', { docType: 'invoice', docId: item._id });
+      const token = res.data?.data?.token;
+      if (token) {
+        await navigator.clipboard.writeText(`${window.location.origin}/portal/${token}`);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2500);
+      }
+    } catch { } finally { setSharing(false); }
+  };
 
   const handleDownload = async () => {
     if (!id) return;
@@ -125,6 +149,14 @@ export default function InvoiceViewPage() {
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50">
             <PencilSquareIcon className="h-4 w-4" />Edit
           </button>
+          <ShareMenuButton
+            copying={sharing}
+            copyLabel={shareCopied ? 'Copied!' : sharing ? 'Generating…' : 'Copy Link'}
+            onCopyLink={handleShare}
+            onEmail={() => setShareModalTab('email')}
+            onWhatsApp={() => setShareModalTab('whatsapp')}
+            showContactShare={canShareContact}
+          />
           <button onClick={handleDownload} disabled={downloading}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 disabled:opacity-60">
             <ArrowDownTrayIcon className="h-4 w-4" />{downloading ? 'Generating…' : 'Download PDF'}
@@ -336,19 +368,30 @@ export default function InvoiceViewPage() {
                       {Object.entries(v as Record<string, any>).map(([sk, sv]) => (
                         <div key={sk} className="flex items-start gap-2">
                           <span className="text-xs text-gray-400 w-32 shrink-0">{sk}</span>
-                          <span className="text-xs text-gray-700 font-medium">{String(sv ?? '—')}</span>
+                          <span className="text-xs text-gray-700 font-medium">{renderFieldValue(sv)}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  <InfoRow label={k} value={Array.isArray(v) ? (v as string[]).join(', ') : String(v)} />
+                  <InfoRow label={k} value={renderFieldValue(v)} />
                 )}
               </div>
             ))}
           </Card>
         )}
       </div>
+
+      {shareModalTab && (
+        <FSShareModal
+          module="invoices"
+          docId={id ?? ''}
+          docLabel={item.invoiceId}
+          customer={customer}
+          initialTab={shareModalTab}
+          onClose={() => setShareModalTab(null)}
+        />
+      )}
     </div>
   );
 }

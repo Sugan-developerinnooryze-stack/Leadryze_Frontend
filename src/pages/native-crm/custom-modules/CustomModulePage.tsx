@@ -11,7 +11,8 @@ import {
   useCustomRecordUpdate,
   useCustomRecordDelete,
 } from '../../../modules/native-crm/queries/custom-modules.queries';
-import type { ICustomModuleField, CustomRecord } from '../../../modules/native-crm/queries/custom-modules.queries';
+import type { ICustomModuleField, CustomRecord, ITableColumn } from '../../../modules/native-crm/queries/custom-modules.queries';
+import { evalFormulaWith } from '../../../modules/native-crm/shared/formulaEval';
 import { useCustomersListQuery  } from '../../../modules/native-crm/queries/customers.queries';
 import { useStaffsListQuery     } from '../../../modules/native-crm/queries/staffs.queries';
 import { useTeamsListQuery      } from '../../../modules/native-crm/queries/teams.queries';
@@ -33,6 +34,13 @@ import CustomModuleFormDrawer from './CustomModuleFormDrawer';
 /* ── Column builder ───────────────────────────────────────────────────────── */
 
 type LookupMap = Map<string, Record<string, any>>;
+
+function summarizeTableRows(rows: Record<string, any>[], columns?: ITableColumn[]): string {
+  const labelFor = (key: string) => columns?.find((c) => c.key === key)?.label ?? key;
+  return rows
+    .map((row) => Object.entries(row).map(([k, v]) => `${labelFor(k)}: ${v ?? ''}`).join(', '))
+    .join(' | ');
+}
 
 function getRelLabel(record: Record<string, any>, target: string): string {
   if (!record) return '';
@@ -153,6 +161,60 @@ function toFSColumns(
             const id  = r.data?.[f.key] as string | undefined;
             const rec = id ? map?.get(id) : undefined;
             return String(rec?.[sfKey] ?? '');
+          },
+        });
+      });
+
+      return;
+    }
+
+    if (f.fieldType === 'table') {
+      const tableCols = f.meta?.columns ?? [];
+
+      if (tableCols.length === 0) {
+        // No columns defined on this field yet — fall back to a single summary column
+        cols.push({
+          key:   f.key,
+          label: f.label,
+          render: (r) => {
+            const val = r.data?.[f.key];
+            if (!Array.isArray(val) || val.length === 0) return <span className="text-gray-400">—</span>;
+            return <span className="text-xs text-gray-700 whitespace-nowrap">{summarizeTableRows(val, tableCols)}</span>;
+          },
+          exportValue: (r) => {
+            const val = r.data?.[f.key];
+            return Array.isArray(val) ? summarizeTableRows(val, tableCols) : '';
+          },
+        });
+        return;
+      }
+
+      // One real column per defined table column (qty/nos/parts/total/...) — same
+      // "own checkbox in Edit Columns + own Excel column" treatment as relationship
+      // sub-fields above, instead of one flattened cell.
+      tableCols.forEach((tc) => {
+        // Formula columns are never stored on the row (the drawer computes them
+        // live for display only) — recompute from the row's real cell values,
+        // same {col_key} engine used everywhere else, instead of reading a key
+        // that was never persisted.
+        const cellValue = (row: Record<string, any>) =>
+          tc.type === 'formula' ? evalFormulaWith(tc.formula ?? '', row) : row?.[tc.key];
+
+        cols.push({
+          key:   `${f.key}__${tc.key}`,
+          label: `${f.label} (${tc.label})`,
+          render: (r) => {
+            const rows = (r.data?.[f.key] ?? []) as Record<string, any>[];
+            const vals = Array.isArray(rows)
+              ? rows.map(cellValue).filter((v) => v !== undefined && v !== null && v !== '')
+              : [];
+            if (vals.length === 0) return <span className="text-gray-400">—</span>;
+            return <span className="text-xs text-gray-700 whitespace-nowrap">{vals.join(', ')}</span>;
+          },
+          exportValue: (r) => {
+            const rows = (r.data?.[f.key] ?? []) as Record<string, any>[];
+            if (!Array.isArray(rows)) return '';
+            return rows.map(cellValue).filter((v) => v !== undefined && v !== null && v !== '').join(', ');
           },
         });
       });

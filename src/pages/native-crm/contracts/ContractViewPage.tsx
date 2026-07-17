@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeftIcon, PencilSquareIcon, PrinterIcon, ArrowDownTrayIcon,
-  LinkIcon, ArrowRightCircleIcon,
+  ArrowRightCircleIcon,
 } from '@heroicons/react/24/outline';
 import {
   useContractQuery,
@@ -13,6 +13,11 @@ import { useCustomersListQuery } from '../../../modules/native-crm/queries/custo
 import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-settings.queries';
 import { buildPrefill } from '../../../modules/native-crm/shared/buildPrefill';
 import { toDatetimeLocal } from '../../../modules/native-crm/shared/duration';
+import { renderFieldValue } from '../../../modules/native-crm/shared/fieldValueRenderer';
+import ShareMenuButton from '../../../modules/native-crm/shared/ShareMenuButton';
+import FSShareModal from '../../../modules/native-crm/shared/FSShareModal';
+import { canViewPII } from '../../../modules/native-crm/shared/piiAccess';
+import { useAuthStore } from '../../../stores/auth.store';
 import api from '../../../services/api';
 
 const CUR: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
@@ -68,21 +73,52 @@ const VISIT_STATUS_COLORS: Record<string, string> = {
   cancelled: 'bg-gray-100 text-gray-500',
 };
 
-/** Contract master engine — schedule table with per-visit Work Order actions. */
+/** Fixed display order + labels for the frequency-wise schedule sections. */
+const FREQ_ORDER = [
+  'daily', 'weekly', 'fortnightly', 'monthly', 'bimonthly',
+  'quarterly', 'halfyearly', 'yearly', 'custom_interval', 'custom_dates', 'once',
+];
+const FREQ_LABELS: Record<string, string> = {
+  daily: 'Daily', weekly: 'Weekly', fortnightly: 'Fortnightly', monthly: 'Monthly',
+  bimonthly: 'Bi-Monthly', quarterly: 'Quarterly', halfyearly: 'Half-Yearly',
+  yearly: 'Yearly', custom_interval: 'Custom', custom_dates: 'Custom Dates', once: 'One-Time',
+};
+
+/** Contract master engine — schedule grouped frequency-wise with per-visit Work Order actions. */
 function ScheduleSection({ item, navigate }: { item: any; navigate: (to: any, opts?: any) => void }) {
-  const [page, setPage] = useState(1);
+  const [pageData, setPageData] = useState<Record<string, number>>({});
   const [generating, setGenerating] = useState(false);
   const visitStatusMutation = useVisitStatusUpdate();
   const generateMutation    = useGenerateWorkorders();
 
   const visits: any[] = item.visits ?? [];
   const balance = item.serviceBalance;
-  const PER_PAGE = 15;
-  const totalPages = Math.max(1, Math.ceil(visits.length / PER_PAGE));
-  const pageVisits = visits.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const ROWS_PER_SECTION = 10;
   const plannedCount = visits.filter((v) => v.status === 'planned').length;
 
+  // Frequency of each visit-service: stored on the snapshot for new contracts;
+  // older visits fall back to matching the contract line's rule by service name.
+  const nameToFreq: Record<string, string> = {};
+  (item.services ?? []).forEach((l: any) => {
+    if (l?.name && l?.scheduleRule?.frequency) nameToFreq[l.name] = l.scheduleRule.frequency;
+  });
+  const freqOf = (s: any): string => s?.frequency ?? nameToFreq[s?.name] ?? '';
+
+  // Group: a merged visit (e.g. Daily + Weekly on the same date) appears in BOTH sections
+  const groups = FREQ_ORDER
+    .map((freq) => ({
+      freq,
+      label: FREQ_LABELS[freq] ?? freq,
+      rows: visits.filter((v) => (v.services ?? []).some((s: any) => freqOf(s) === freq)),
+    }))
+    .filter((g) => g.rows.length > 0);
+  const ungrouped = visits.filter((v) => !(v.services ?? []).some((s: any) => FREQ_ORDER.includes(freqOf(s))));
+  if (ungrouped.length) groups.push({ freq: 'other', label: 'Other', rows: ungrouped });
+
   if (!visits.length) return null;
+
+  const setSectionPage = (freq: string, next: number) =>
+    setPageData((prev) => ({ ...prev, [freq]: next }));
 
   const createWorkorderFor = (v: any) => {
     navigate('/native-crm/workorders', {
@@ -166,76 +202,113 @@ function ScheduleSection({ item, navigate }: { item: any; navigate: (to: any, op
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {pageVisits.map((v: any) => (
-                <tr key={v.visitNumber} className="hover:bg-gray-50 transition-colors">
-                  <td className="py-2.5 px-4 text-gray-400 font-mono text-xs">{v.visitNumber}</td>
-                  <td className="py-2.5 px-4 text-gray-800">
-                    {[...new Set((v.services ?? []).map((s: any) => s.name))].join(', ') || '—'}
-                  </td>
-                  <td className="py-2.5 px-4 text-gray-600 whitespace-nowrap">{fmtD(v.serviceDate)}</td>
-                  <td className="py-2.5 px-4 text-right text-gray-700">{Number(v.amount ?? 0).toFixed(2)}</td>
-                  <td className="py-2.5 px-4">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${VISIT_STATUS_COLORS[v.status] ?? 'bg-gray-100 text-gray-500'}`}>
-                      {v.status}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-4">
-                    <div className="flex items-center justify-end gap-1.5">
-                      {v.status === 'planned' && (
-                        <>
-                          <button
-                            onClick={() => createWorkorderFor(v)}
-                            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-brand-600 text-white hover:bg-brand-700 transition-colors"
-                          >
-                            Work Order
-                          </button>
-                          <button
-                            onClick={() => visitStatusMutation.mutate({ id: item._id, visitNumber: v.visitNumber, status: 'cancelled' })}
-                            title="Cancel this visit"
-                            className="px-2 py-1 rounded-lg text-xs font-medium text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          >
-                            ✕
-                          </button>
-                        </>
-                      )}
-                      {(v.status === 'scheduled' || v.status === 'completed') && (
-                        v.woId ? (
-                          <button
-                            onClick={() => navigate(`/native-crm/workorders/${v.woId}`)}
-                            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
-                          >
-                            View WorkOrder{v.workOrderId ? ` (${v.workOrderId})` : ''}
-                          </button>
-                        ) : (
-                          <span className="text-xs text-gray-400">WO created</span>
-                        )
-                      )}
-                      {v.status === 'cancelled' && (
-                        <button
-                          onClick={() => visitStatusMutation.mutate({ id: item._id, visitNumber: v.visitNumber, status: 'planned' })}
-                          className="px-2.5 py-1 rounded-lg text-xs font-medium text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors"
-                        >
-                          Restore
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {groups.map((group) => {
+                const sectionPage = pageData[group.freq] ?? 1;
+                const sectionPages = Math.max(1, Math.ceil(group.rows.length / ROWS_PER_SECTION));
+                const rows = group.rows.slice((sectionPage - 1) * ROWS_PER_SECTION, sectionPage * ROWS_PER_SECTION);
+                return (
+                  <Fragment key={group.freq}>
+                    {/* Section header — one per frequency, like "Daily Services (7)" */}
+                    <tr className="bg-purple-50">
+                      <td colSpan={6} className="py-2.5 px-4 text-left">
+                        <span className="text-sm font-semibold text-purple-600">
+                          {group.label} Services ({group.rows.length})
+                        </span>
+                      </td>
+                    </tr>
+
+                    {rows.map((v: any) => (
+                      <tr key={`${group.freq}-${v.visitNumber}`} className="hover:bg-gray-50 transition-colors">
+                        <td className="py-2.5 px-4 text-gray-400 font-mono text-xs">{v.visitNumber}</td>
+                        <td className="py-2.5 px-4 text-gray-800">
+                          {[...new Set((v.services ?? []).map((s: any) => s.name))].join(', ') || '—'}
+                          {(v.services ?? []).length > 1 && (
+                            <span className="ml-1.5 text-[10px] font-medium text-purple-500 bg-purple-50 px-1.5 py-0.5 rounded-full">merged day</span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-4 text-gray-600 whitespace-nowrap">{fmtD(v.serviceDate)}</td>
+                        <td className="py-2.5 px-4 text-right text-gray-700">{Number(v.amount ?? 0).toFixed(2)}</td>
+                        <td className="py-2.5 px-4">
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${VISIT_STATUS_COLORS[v.status] ?? 'bg-gray-100 text-gray-500'}`}>
+                            {v.status}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-4">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {v.status === 'planned' && (
+                              <>
+                                <button
+                                  onClick={() => createWorkorderFor(v)}
+                                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-brand-600 text-white hover:bg-brand-700 transition-colors"
+                                >
+                                  Work Order
+                                </button>
+                                <button
+                                  onClick={() => visitStatusMutation.mutate({ id: item._id, visitNumber: v.visitNumber, status: 'cancelled' })}
+                                  title="Cancel this visit"
+                                  className="px-2 py-1 rounded-lg text-xs font-medium text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                >
+                                  ✕
+                                </button>
+                              </>
+                            )}
+                            {(v.status === 'scheduled' || v.status === 'completed') && (
+                              v.woId ? (
+                                <button
+                                  onClick={() => navigate(`/native-crm/workorders/${v.woId}`)}
+                                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                                >
+                                  View WorkOrder{v.workOrderId ? ` (${v.workOrderId})` : ''}
+                                </button>
+                              ) : (
+                                <span className="text-xs text-gray-400">WO created</span>
+                              )
+                            )}
+                            {v.status === 'cancelled' && (
+                              <button
+                                onClick={() => visitStatusMutation.mutate({ id: item._id, visitNumber: v.visitNumber, status: 'planned' })}
+                                className="px-2.5 py-1 rounded-lg text-xs font-medium text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors"
+                              >
+                                Restore
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {/* Per-section pagination */}
+                    {sectionPages > 1 && (
+                      <tr>
+                        <td colSpan={6} className="py-2.5 px-4">
+                          <div className="flex items-center justify-center gap-3">
+                            <button
+                              onClick={() => setSectionPage(group.freq, Math.max(1, sectionPage - 1))}
+                              disabled={sectionPage <= 1}
+                              className="px-3 py-1 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                            >
+                              Prev
+                            </button>
+                            <span className="text-xs text-gray-500">
+                              Page {sectionPage} of {sectionPages} · {group.rows.length} {group.label.toLowerCase()} visits
+                            </span>
+                            <button
+                              onClick={() => setSectionPage(group.freq, Math.min(sectionPages, sectionPage + 1))}
+                              disabled={sectionPage >= sectionPages}
+                              className="px-3 py-1 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
-        {totalPages > 1 && (
-          <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
-            <p className="text-xs text-gray-500">Page {page} of {totalPages} · {visits.length} visits</p>
-            <div className="flex gap-2">
-              <button onClick={() => setPage((p) => p - 1)} disabled={page <= 1}
-                className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40">Previous</button>
-              <button onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages}
-                className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40">Next</button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -247,10 +320,13 @@ export default function ContractViewPage() {
   const [downloading, setDownloading] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [shareModalTab, setShareModalTab] = useState<'email' | 'whatsapp' | null>(null);
 
   const { data: item, isLoading } = useContractQuery(id ?? '');
   const { data: settings } = useFSSettingsQuery();
   const { data: custList } = useCustomersListQuery({ page: 1, limit: 500 });
+  const user = useAuthStore((s) => s.user);
+  const canShareContact = canViewPII('customers', settings, user?.role);
 
   const customer = custList?.items?.find((c: any) => c.customerId === item?.customerId) ?? null;
   const cur = CUR[settings?.currency ?? 'AUD'] ?? '$';
@@ -342,10 +418,14 @@ export default function ContractViewPage() {
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50">
             <PencilSquareIcon className="h-4 w-4" />Edit
           </button>
-          <button onClick={handleShare} disabled={sharing}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 disabled:opacity-60">
-            <LinkIcon className="h-4 w-4" />{shareCopied ? 'Copied!' : sharing ? 'Generating…' : 'Share Link'}
-          </button>
+          <ShareMenuButton
+            copying={sharing}
+            copyLabel={shareCopied ? 'Copied!' : sharing ? 'Generating…' : 'Copy Link'}
+            onCopyLink={handleShare}
+            onEmail={() => setShareModalTab('email')}
+            onWhatsApp={() => setShareModalTab('whatsapp')}
+            showContactShare={canShareContact}
+          />
           <button onClick={handleDownload} disabled={downloading}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 disabled:opacity-60">
             <ArrowDownTrayIcon className="h-4 w-4" />{downloading ? 'Generating…' : 'Download PDF'}
@@ -556,19 +636,30 @@ export default function ContractViewPage() {
                       {Object.entries(v as Record<string, any>).map(([sk, sv]) => (
                         <div key={sk} className="flex items-start gap-2">
                           <span className="text-xs text-gray-400 w-32 shrink-0">{sk}</span>
-                          <span className="text-xs text-gray-700 font-medium">{String(sv ?? '—')}</span>
+                          <span className="text-xs text-gray-700 font-medium">{renderFieldValue(sv)}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  <InfoRow label={k} value={Array.isArray(v) ? (v as string[]).join(', ') : String(v)} />
+                  <InfoRow label={k} value={renderFieldValue(v)} />
                 )}
               </div>
             ))}
           </Card>
         )}
       </div>
+
+      {shareModalTab && (
+        <FSShareModal
+          module="contracts"
+          docId={id ?? ''}
+          docLabel={item.contractId}
+          customer={customer}
+          initialTab={shareModalTab}
+          onClose={() => setShareModalTab(null)}
+        />
+      )}
     </div>
   );
 }

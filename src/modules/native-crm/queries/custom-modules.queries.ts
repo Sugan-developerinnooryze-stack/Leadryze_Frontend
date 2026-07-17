@@ -13,7 +13,17 @@ export type CustomModuleFieldType =
   | 'date' | 'datetime' | 'textarea' | 'boolean' | 'url' | 'rating'
   | 'select' | 'multiselect' | 'relationship'
   | 'image' | 'images'
-  | 'categoryselect';
+  | 'categoryselect'
+  | 'table';
+
+/** One column of a Table/Grid field. Formula columns compute from other columns in the same row. */
+export interface ITableColumn {
+  key:      string;
+  label:    string;
+  type:     'text' | 'number' | 'dropdown' | 'formula';
+  options?: string[];
+  formula?: string;
+}
 
 export interface ICustomModuleField {
   key:       string;
@@ -28,6 +38,7 @@ export interface ICustomModuleField {
     cascadeTree?:      CascadeNode[];
     levelNames?:       string[];
     subFields?:        string[];
+    columns?:          ITableColumn[];
   };
   order: number;
 }
