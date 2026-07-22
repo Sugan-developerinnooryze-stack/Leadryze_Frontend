@@ -50,6 +50,7 @@ import {
   StarIcon,
   WrenchScrewdriverIcon,
   AdjustmentsHorizontalIcon,
+  BellAlertIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth.store';
@@ -81,7 +82,9 @@ const FIELD_SERVICE_MODULES = [
   { key: 'vehicles',   label: 'Vehicles',   icon: TruckIcon,             color: '#0284c7' },
   // { key: 'branches',           label: 'Branches',         icon: BuildingOffice2Icon,       color: '#6366f1' },
   { key: 'settings',          label: 'FS Settings',      icon: Cog6ToothIcon,             color: '#64748b' },
-  // { key: 'native-logs',       label: 'Native Logs',      icon: ClipboardDocumentListIcon, color: '#64748b' },
+ // { key: 'settings/notifications', label: 'Notification Settings', icon: BellAlertIcon,   color: '#0ea5e9' },
+ // { key: 'message-history',   label: 'Message History',  icon: EnvelopeIcon,              color: '#10b981' },
+   { key: 'native-logs',       label: 'Native Logs',      icon: ClipboardDocumentListIcon, color: '#64748b' },
   { key: 'custom-fields',     label: 'Custom Fields',    icon: AdjustmentsHorizontalIcon, color: '#7c3aed' },
   { key: 'template-designer', label: 'PDF Designer',     icon: DocumentTextIcon,          color: '#db2777' },
 ] as const;
@@ -231,8 +234,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const [fieldServiceOpen, setFieldServiceOpen] = useState(true);
   const [nativeCounts,     setNativeCounts]     = useState<Record<string, number>>({});
   const [fsCounts,         setFsCounts]         = useState<Record<string, number>>({});
-  // const [customModules,    setCustomModules]    = useState<{ _id: string; slug: string; name: string; icon: string; color: string; showInSidebar: boolean }[]>([]);
-  // const [customModulesOpen, setCustomModulesOpen] = useState(true);
+  const [customModules,    setCustomModules]    = useState<{ _id: string; slug: string; name: string; icon: string; color: string; showInSidebar: boolean }[]>([]);
+  const [customModulesOpen, setCustomModulesOpen] = useState(true);
 
   useEffect(() => {
     if (!token) return;
@@ -245,9 +248,9 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     api.get('/api/v1/native-crm/fs-counts')
       .then((r: { data: { data: Record<string, number> } }) => setFsCounts(r.data.data || {}))
       .catch(() => {});
-    // api.get('/api/v1/custom-modules')
-    //   .then((r: { data: { data: any[] } }) => setCustomModules(r.data.data || []))
-    //   .catch(() => {});
+    api.get('/api/v1/custom-modules')
+      .then((r: { data: { data: any[] } }) => setCustomModules(r.data.data || []))
+      .catch(() => {});
   }, [token, location.pathname]);
 
   const allVisibleModules: CRMModules = Object.fromEntries(
@@ -540,7 +543,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         </div>
 
         {/* ── Custom Modules section ───────────────────────────────────── */}
-        {/* {(customModules.filter((m) => m.showInSidebar).length > 0 || isFullAccess) && (
+        {(customModules.filter((m) => m.showInSidebar).length > 0 || isFullAccess) && (
           <div className="pt-3">
             <button
               onClick={() => setCustomModulesOpen((o) => !o)}
@@ -591,7 +594,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               </div>
             )}
           </div>
-        )} */}
+        )}
 
         {/* ── My CRM section ───────────────────────────────────────────── */}
         {flags.nav_myCrm !== false && (
