@@ -55,6 +55,12 @@ const ProductsPage          = lazy(() => import('./pages/native-crm/products/Pro
 const AssetsPage            = lazy(() => import('./pages/native-crm/assets/AssetsPage'));
 const VehiclesPage          = lazy(() => import('./pages/native-crm/vehicles/VehiclesPage'));
 const FSSettingsPage          = lazy(() => import('./pages/native-crm/settings/FSSettingsPage'));
+const NotificationSettingsPage = lazy(() => import('./pages/native-crm/settings/NotificationSettingsPage'));
+const PipelineSettingsPage     = lazy(() => import('./pages/native-crm/settings/PipelineSettingsPage'));
+const ConfigurationHubPage     = lazy(() => import('./pages/native-crm/settings/ConfigurationHubPage'));
+const AutomationRulesPage      = lazy(() => import('./pages/native-crm/settings/AutomationRulesPage'));
+const ImportExportPage         = lazy(() => import('./pages/native-crm/settings/ImportExportPage'));
+const MessageHistoryPage       = lazy(() => import('./pages/native-crm/MessageHistoryPage'));
 const NativeLogsPage          = lazy(() => import('./pages/native-crm/native-logs/NativeLogsPage'));
 const BranchesPage            = lazy(() => import('./pages/native-crm/branches/BranchesPage'));
 const CustomFieldsAdminPage   = lazy(() => import('./pages/native-crm/custom-fields/CustomFieldsAdminPage'));
@@ -72,6 +78,8 @@ const CustomModulePage        = lazy(() => import('./pages/native-crm/custom-mod
 const CustomerPortalPage      = lazy(() => import('./pages/portal/CustomerPortalPage'));
 const ContactsPage    = lazy(() => import('./modules/crm/contacts/pages/ContactsPage'));
 const CompaniesPage   = lazy(() => import('./modules/crm/companies/pages/CompaniesPage'));
+const ContactViewPage = lazy(() => import('./pages/native-crm/contacts/ContactViewPage'));
+const CompanyViewPage = lazy(() => import('./pages/native-crm/companies/CompanyViewPage'));
 const DealsPage       = lazy(() => import('./modules/crm/deals/pages/DealsPage'));
 const TasksPage       = lazy(() => import('./modules/crm/tasks/pages/TasksPage'));
 const TicketsPage     = lazy(() => import('./modules/crm/tickets/pages/TicketsPage'));
@@ -173,7 +181,13 @@ export default function App() {
           <Route path="native-crm/products"             element={S(ProductsPage)} />
           <Route path="native-crm/assets"               element={S(AssetsPage)} />
           <Route path="native-crm/vehicles"             element={S(VehiclesPage)} />
+          <Route path="native-crm/configuration"          element={S(ConfigurationHubPage)} />
+          <Route path="native-crm/settings/automations"    element={S(AutomationRulesPage)} />
+          <Route path="native-crm/settings/import-export"  element={S(ImportExportPage)} />
           <Route path="native-crm/settings"             element={S(FSSettingsPage)} />
+          <Route path="native-crm/settings/notifications" element={S(NotificationSettingsPage)} />
+          <Route path="native-crm/settings/pipelines"      element={S(PipelineSettingsPage)} />
+          <Route path="native-crm/message-history"        element={S(MessageHistoryPage)} />
           <Route path="native-crm/native-logs"         element={S(NativeLogsPage)} />
           <Route path="native-crm/branches"            element={S(BranchesPage)} />
           <Route path="native-crm/custom-fields"                   element={S(CustomFieldsAdminPage)} />
@@ -186,7 +200,9 @@ export default function App() {
           <Route path="native-crm/custom/:slug"       element={S(CustomModulePage)} />
           <Route path="native-crm/:module"    element={S(NativeCRMPage)} />
           <Route path="crm/contacts"           element={S(ContactsPage)} />
+          <Route path="crm/contacts/:id"       element={S(ContactViewPage)} />
           <Route path="crm/companies"          element={S(CompaniesPage)} />
+          <Route path="crm/companies/:id"      element={S(CompanyViewPage)} />
           <Route path="crm/deals"              element={S(DealsPage)} />
           <Route path="crm/tasks"              element={S(TasksPage)} />
           <Route path="crm/tickets"            element={S(TicketsPage)} />

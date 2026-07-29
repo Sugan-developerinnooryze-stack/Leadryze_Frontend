@@ -32,11 +32,12 @@ interface FSShareModalProps {
   customer:    ShareCustomer | null;
   onClose:     () => void;
   initialTab?: 'email' | 'whatsapp';
+  templateId?: string; // designer template for the attached PDF (default template used when omitted)
 }
 
 interface WaNumber { value: string; checked: boolean; }
 
-export default function FSShareModal({ module, docId, docLabel, customer, onClose, initialTab = 'email' }: FSShareModalProps) {
+export default function FSShareModal({ module, docId, docLabel, customer, onClose, initialTab = 'email', templateId }: FSShareModalProps) {
   const [tab, setTab] = useState<'email' | 'whatsapp'>(initialTab);
 
   const typeLabel = DOC_LABEL[module];
@@ -71,7 +72,10 @@ export default function FSShareModal({ module, docId, docLabel, customer, onClos
     try {
       // Match the "Download PDF" button's template choice so the emailed PDF
       // never silently differs from what the same document looks like there.
-      await api.post(`/api/v1/native-crm/pdf/${module}/${docId}/share-email?template=classic`, {
+      // A designer templateId takes priority; the backend otherwise falls back
+      // to the tenant's default designer template, then the legacy variant.
+      const qs = templateId ? `templateId=${templateId}` : 'template=classic';
+      await api.post(`/api/v1/native-crm/pdf/${module}/${docId}/share-email?${qs}`, {
         to: to.trim(),
         cc: finalCc,
         subject,

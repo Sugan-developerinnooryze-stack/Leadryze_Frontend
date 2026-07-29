@@ -7,6 +7,7 @@ const config: ModulePageConfig = {
   labelSingular: 'Company',
   apiBase:       '/api/v1/native-crm/companies',
   statusField:   'companyStatus',
+  detailRoute:   (id) => `/crm/companies/${id}`,
   fields: [
     { key: 'name',          label: 'Company Name',     type: 'text',   required: true },
     { key: 'domain',        label: 'Website / Domain', type: 'text',   tableCol: true, placeholder: 'company.com' },

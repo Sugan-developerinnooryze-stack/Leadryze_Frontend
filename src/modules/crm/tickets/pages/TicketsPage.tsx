@@ -2,11 +2,14 @@ import { LifebuoyIcon } from '@heroicons/react/24/outline';
 import CrmLayout from '../../shared/CrmLayout';
 import type { ModulePageConfig } from '../../shared/types/crm.types';
 
-const config: ModulePageConfig = {
+export const config: ModulePageConfig = {
   label:         'Tickets',
   labelSingular: 'Ticket',
   apiBase:       '/api/v1/native-crm/tickets',
   statusField:   'ticketStatus',
+  pipelineModule: 'ticket',
+  altView:       'kanban',
+  altViewLabel:  'Kanban board',
   fields: [
     { key: 'subject',      label: 'Subject',     type: 'text',    required: true },
     { key: 'priority',     label: 'Priority',    type: 'select',  tableCol: true,

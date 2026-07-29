@@ -2,11 +2,15 @@ import { PhoneIcon } from '@heroicons/react/24/outline';
 import CrmLayout from '../../shared/CrmLayout';
 import type { ModulePageConfig } from '../../shared/types/crm.types';
 
-const config: ModulePageConfig = {
+export const config: ModulePageConfig = {
   label:         'Calls',
   labelSingular: 'Call',
   apiBase:       '/api/v1/native-crm/calls',
   statusField:   'callStatus',
+  altView:            'calendar',
+  altViewLabel:       'Calendar',
+  calendarDateField:  'date',
+  upcomingDateField:  'date',
   fields: [
     { key: 'contactName', label: 'Contact Name',    type: 'text',    required: true },
     { key: 'direction',   label: 'Direction',       type: 'select',  tableCol: true,

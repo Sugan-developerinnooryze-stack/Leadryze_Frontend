@@ -16,6 +16,7 @@ import { CompanyBadge } from '../../../components/native-crm/CompanyBadge';
 import { CompanyFilterBar } from '../../../components/native-crm/CompanyFilterBar';
 import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-settings.queries';
 import { buildPrefill } from '../../../modules/native-crm/shared/buildPrefill';
+import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
 
 const STEP_LABEL: Record<string, string> = { workorder: 'WO', invoice: 'Invoice' };
 const STEP_PATH:  Record<string, string> = {
@@ -63,6 +64,13 @@ export default function ContractsPage() {
   const [delTarget, setDelTarget] = useState<any | null>(null);
 
   const { data: settings } = useFSSettingsQuery();
+
+  // Tenant-configurable pipeline stages override the static defaults above —
+  // falls back to today's hardcoded list while loading/on error/unconfigured.
+  const { stages: pipelineStages } = usePipelineStages('contract');
+  const statusOptions = pipelineStages.length > 0
+    ? [...pipelineStages].sort((a, b) => a.order - b.order).map((s) => s.key)
+    : STATUS_OPTIONS;
 
   useEffect(() => {
     const state = location.state as any;
@@ -113,7 +121,7 @@ export default function ContractsPage() {
           className="text-sm border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-400"
         >
           <option value="">All Status</option>
-          {STATUS_OPTIONS.map((s) => (
+          {statusOptions.map((s) => (
             <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
           ))}
         </select>

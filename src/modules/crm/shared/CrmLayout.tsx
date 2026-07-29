@@ -1,37 +1,26 @@
-import { useState, useEffect, useCallback, Fragment, useMemo, useRef } from 'react';
-import * as XLSX from 'xlsx';
+import { useState, useEffect, useCallback, Fragment, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   PlusIcon, PencilSquareIcon, TrashIcon, XMarkIcon,
-  MagnifyingGlassIcon, FunnelIcon, ArrowDownTrayIcon,
+  MagnifyingGlassIcon, FunnelIcon,
   TableCellsIcon, ChevronDownIcon, ChevronUpIcon,
   ChevronUpDownIcon, AdjustmentsHorizontalIcon,
-  ArrowUpTrayIcon, DocumentArrowDownIcon,
+  ClockIcon, LinkIcon,
 } from '@heroicons/react/24/outline';
 import type { FC, SVGProps } from 'react';
 import api from '../../../services/api';
-import CrmField from './CrmField';
+import RecordDrawer from './RecordDrawer';
 import ColumnEditor from './ColumnEditor';
+import FileActionsDropdown, { deriveAllColumns, fmtVal } from './FileActionsDropdown';
+import KanbanBoard from './KanbanBoard';
+import CalendarView from './CalendarView';
+import FsRelationPicker, { FsRelation } from './FsRelationPicker';
 import { statusColor } from './crm.colors';
 import type { FieldConfig, ModulePageConfig, CrmRecord, CrmPageMeta } from './types/crm.types';
 import { useCustomFieldsQuery } from '../../native-crm/queries/custom-fields.queries';
-import type { NativeCustomField } from '../../native-crm/queries/custom-fields.queries';
-import CustomFieldRenderer from '../../native-crm/shared/CustomFieldRenderer';
-
-/* ── Constants ──────────────────────────────────────────────────────────────── */
-const SKIP_KEYS = new Set([
-  '_id', 'tenantId', '__v', 'createdBy', 'updatedAt', 'createdAt',
-  'customFields', 'tags', 'numId',
-]);
+import { usePipelineStages } from '../../native-crm/queries/pipeline-config.queries';
 
 /* ── Helpers ────────────────────────────────────────────────────────────────── */
-function toLabel(key: string): string {
-  return key
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/[_-]/g, ' ')
-    .replace(/^./, (s) => s.toUpperCase())
-    .trim();
-}
-
 function StatusBadge({ value }: { value: string }) {
   if (!value || value === '—') return <span className="text-gray-400 text-sm">—</span>;
   const c = statusColor(value);
@@ -39,476 +28,6 @@ function StatusBadge({ value }: { value: string }) {
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${c.bg} ${c.text}`}>
       {value.replace(/_/g, ' ')}
     </span>
-  );
-}
-
-function fmtVal(v: unknown, type: FieldConfig['type']): string {
-  if (v === null || v === undefined || v === '') return '—';
-  const s = String(v);
-  if (type === 'date' && s.includes('T')) return s.slice(0, 10);
-  if (type === 'datetime' && s.includes('T')) return s.slice(0, 16).replace('T', ' ');
-  if (type === 'currency') return `$${Number(s).toLocaleString()}`;
-  return s;
-}
-
-function getCellValue(row: CrmRecord, col: FieldConfig): string {
-  if (col.key.startsWith('cf__')) {
-    const subKey = col.key.slice(4);
-    const cfs = row.customFields as Record<string, unknown> | undefined;
-    return String(cfs?.[subKey] ?? '');
-  }
-  return fmtVal(row[col.key], col.type);
-}
-
-/* ── Dynamic column derivation ──────────────────────────────────────────────── */
-function deriveAllColumns(
-  configFields: FieldConfig[],
-  records: CrmRecord[],
-  customFields: NativeCustomField[],
-): FieldConfig[] {
-  const all: FieldConfig[] = [...configFields];
-  const existingKeys = new Set(configFields.map((f) => f.key));
-
-  if (records.length > 0) {
-    for (const key of Object.keys(records[0])) {
-      if (SKIP_KEYS.has(key) || existingKeys.has(key)) continue;
-      all.push({ key, label: toLabel(key), type: 'text' });
-      existingKeys.add(key);
-    }
-  }
-
-  for (const cf of customFields.filter((f) => f.isActive)) {
-    const cfKey = `cf__${cf.fieldKey}`;
-    if (existingKeys.has(cfKey)) continue;
-    all.push({ key: cfKey, label: cf.label, type: (cf.fieldType as FieldConfig['type']) ?? 'text' });
-    existingKeys.add(cfKey);
-  }
-
-  return all;
-}
-
-function buildImportPayload(
-  row: Record<string, string>,
-  allCols: FieldConfig[],
-): Record<string, unknown> {
-  const payload: Record<string, unknown> = {};
-  const customFieldsMap: Record<string, unknown> = {};
-
-  for (const [label, val] of Object.entries(row)) {
-    if (!val) continue;
-    const col = allCols.find((c) => c.label === label);
-    if (!col) continue;
-    if (col.key.startsWith('cf__')) {
-      customFieldsMap[col.key.slice(4)] = val;
-    } else {
-      payload[col.key] = val;
-    }
-  }
-
-  if (Object.keys(customFieldsMap).length > 0) payload.customFields = customFieldsMap;
-  return payload;
-}
-
-/* ── ImportModal ────────────────────────────────────────────────────────────── */
-function ImportModal({
-  importCols, apiBase, onClose, onDone,
-}: {
-  importCols: FieldConfig[];
-  apiBase:    string;
-  onClose:    () => void;
-  onDone:     () => void;
-}) {
-  const [rows,     setRows]     = useState<Record<string, string>[]>([]);
-  const [progress, setProgress] = useState('');
-  const [loading,  setLoading]  = useState(false);
-
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const wb   = XLSX.read(ev.target?.result, { type: 'array' });
-      const ws   = wb.Sheets[wb.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: '' });
-      setRows(data);
-      setProgress(`${data.length} rows parsed. Click Import to upload.`);
-    };
-    reader.readAsArrayBuffer(file);
-  };
-
-  const handleImport = async () => {
-    if (!rows.length) return;
-    setLoading(true);
-    let done = 0;
-    for (const row of rows) {
-      const payload = buildImportPayload(row, importCols);
-      try { await api.post(apiBase, payload); done++; } catch {}
-      setProgress(`Importing… ${done}/${rows.length}`);
-    }
-    setProgress(`Done! ${done} of ${rows.length} imported.`);
-    setLoading(false);
-    setTimeout(onDone, 1200);
-  };
-
-  return (
-    <>
-      <div className="fixed inset-0 bg-black/40 z-50" onClick={onClose} />
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Import from File</h2>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400">
-              <XMarkIcon className="h-5 w-5" />
-            </button>
-          </div>
-          <p className="text-sm text-gray-500 mb-4">
-            Upload an Excel (.xlsx) or CSV file. Column headers must match the template.
-          </p>
-          <input
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            onChange={handleFile}
-            className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer mb-4"
-          />
-          {progress && <p className="text-xs text-gray-500 mb-4">{progress}</p>}
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleImport}
-              disabled={!rows.length || loading}
-              className="flex-1 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
-            >
-              {loading && <div className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-              {loading ? 'Importing…' : `Import${rows.length > 0 ? ` (${rows.length})` : ''}`}
-            </button>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
-/* ── FileActionsDropdown ────────────────────────────────────────────────────── */
-function FileActionsDropdown({
-  moduleName, tableCols, allCols, sortedRecords, selectedIds, apiBase, onRefresh, page, limit,
-}: {
-  moduleName:    string;
-  tableCols:     FieldConfig[];
-  allCols:       FieldConfig[];
-  sortedRecords: CrmRecord[];
-  selectedIds:   Set<string>;
-  apiBase:       string;
-  onRefresh:     () => void;
-  page:          number;
-  limit:         number;
-}) {
-  const [open,       setOpen]       = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const rows = selectedIds.size > 0
-    ? sortedRecords.filter((r) => selectedIds.has(r._id))
-    : sortedRecords;
-
-  const importCols = allCols.filter(
-    (c) => !SKIP_KEYS.has(c.key) && !c.key.startsWith('_'),
-  );
-
-  const exportExcel = () => {
-    const headers = ['S.No.', ...tableCols.map((c) => c.label)];
-    const data = rows.map((r, i) => [
-      (page - 1) * limit + i + 1,
-      ...tableCols.map((c) => getCellValue(r, c)),
-    ]);
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, moduleName);
-    XLSX.writeFile(wb, `${moduleName}.xlsx`);
-    setOpen(false);
-  };
-
-  const exportCsvFn = () => {
-    const esc = (s: string) => `"${s.replace(/"/g, '""')}"`;
-    const lines = [
-      ['S.No.', ...tableCols.map((c) => c.label)].join(','),
-      ...rows.map((r, i) => [
-        (page - 1) * limit + i + 1,
-        ...tableCols.map((c) => esc(getCellValue(r, c))),
-      ].join(',')),
-    ];
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
-    a.download = `${moduleName}.csv`;
-    a.click();
-    setOpen(false);
-  };
-
-  const downloadTemplate = () => {
-    const headers = importCols.map((c) => c.label);
-    const ws = XLSX.utils.aoa_to_sheet([headers]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Template');
-    XLSX.writeFile(wb, `${moduleName}_template.xlsx`);
-    setOpen(false);
-  };
-
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-      >
-        <ArrowDownTrayIcon className="h-4 w-4" />
-        <span className="hidden sm:inline">File</span>
-        <ChevronDownIcon className="h-3.5 w-3.5 text-gray-400" />
-      </button>
-
-      {open && (
-        <div className="absolute right-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[200px]">
-          <button
-            onClick={exportExcel}
-            className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            <ArrowDownTrayIcon className="h-4 w-4 text-green-600" />
-            Export Excel
-          </button>
-          <button
-            onClick={exportCsvFn}
-            className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            <ArrowDownTrayIcon className="h-4 w-4 text-blue-600" />
-            Export CSV
-          </button>
-          <div className="border-t border-gray-100 my-1" />
-          <button
-            onClick={downloadTemplate}
-            className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            <DocumentArrowDownIcon className="h-4 w-4 text-gray-500" />
-            Download Template
-          </button>
-          <button
-            onClick={() => { setOpen(false); setImportOpen(true); }}
-            className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            <ArrowUpTrayIcon className="h-4 w-4 text-purple-600" />
-            Import from File
-          </button>
-        </div>
-      )}
-
-      {importOpen && (
-        <ImportModal
-          importCols={importCols}
-          apiBase={apiBase}
-          onClose={() => setImportOpen(false)}
-          onDone={() => { setImportOpen(false); onRefresh(); }}
-        />
-      )}
-    </div>
-  );
-}
-
-/* ── RecordDrawer ───────────────────────────────────────────────────────────── */
-function RecordDrawer({
-  config, record, moduleName, onClose, onSaved,
-}: {
-  config:     ModulePageConfig;
-  record:     CrmRecord | null;
-  moduleName: string;
-  onClose:    () => void;
-  onSaved:    () => void;
-}) {
-  const isEdit = !!record;
-
-  const { data: rawCustomFields = [] } = useCustomFieldsQuery(moduleName);
-  const activeCustomFields = rawCustomFields.filter((cf) => cf.isActive);
-
-  const initForm = useCallback(() => {
-    const f: Record<string, string> = {};
-    for (const field of config.fields) f[field.key] = record ? String(record[field.key] ?? '') : '';
-    return f;
-  }, [config.fields, record]);
-
-  const initCustomForm = useCallback(() => {
-    const cf: Record<string, unknown> = {};
-    const existingCF = record?.customFields as Record<string, unknown> | undefined;
-    for (const f of activeCustomFields) {
-      cf[f.fieldKey] = existingCF?.[f.fieldKey] ?? '';
-    }
-    return cf;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [record, activeCustomFields.map((f) => f._id).join(',')]);
-
-  const [form,       setForm]       = useState<Record<string, string>>(initForm);
-  const [customForm, setCustomForm] = useState<Record<string, unknown>>(initCustomForm);
-  const [errors,     setErrors]     = useState<Record<string, string>>({});
-  const [saving,     setSaving]     = useState(false);
-
-  useEffect(() => { setForm(initForm()); setErrors({}); }, [initForm]);
-  useEffect(() => { setCustomForm(initCustomForm()); }, [initCustomForm]);
-
-  const validate = () => {
-    const errs: Record<string, string> = {};
-    for (const f of config.fields) {
-      if (f.required && !form[f.key]?.trim()) errs[f.key] = `${f.label} is required`;
-      if (f.type === 'email' && form[f.key] && !/^[\w.+%-]+@[\w.-]+\.\w{2,}$/.test(form[f.key]))
-        errs[f.key] = 'Not a valid email address';
-    }
-    for (const f of activeCustomFields) {
-      if (f.required && !customForm[f.fieldKey]) errs[`cf_${f.fieldKey}`] = `${f.label} is required`;
-    }
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
-
-  const submit = async (addAnother = false) => {
-    if (!validate()) return;
-    setSaving(true);
-    try {
-      const payload: Record<string, unknown> = { ...form };
-      if (activeCustomFields.length > 0) payload.customFields = customForm;
-      if (isEdit) await api.put(`${config.apiBase}/${record!._id}`, payload);
-      else        await api.post(config.apiBase, payload);
-      onSaved();
-      if (addAnother) { setForm(initForm()); setCustomForm(initCustomForm()); setErrors({}); }
-      else onClose();
-    } catch {
-      setErrors({ _global: 'Save failed. Please try again.' });
-    } finally { setSaving(false); }
-  };
-
-  const nameOf = record
-    ? String(record.firstName && record.lastName
-        ? `${record.firstName} ${record.lastName}`
-        : record.name ?? record.title ?? record.subject ?? record.contactName ?? record._id)
-    : '';
-
-  return (
-    <>
-      <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
-      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl z-50 flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">
-              {isEdit ? `Edit ${config.labelSingular}` : `Create ${config.labelSingular}`}
-            </h2>
-            {isEdit && <p className="text-xs text-gray-400 mt-0.5 truncate">{nameOf}</p>}
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <XMarkIcon className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
-          {errors._global && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-              {errors._global}
-            </div>
-          )}
-          {config.fields.map((field) => (
-            <CrmField
-              key={field.key}
-              field={field}
-              value={form[field.key] ?? ''}
-              onChange={(v) => setForm((prev) => ({ ...prev, [field.key]: v }))}
-              error={errors[field.key]}
-            />
-          ))}
-
-          {/* Custom Fields section */}
-          {activeCustomFields.length > 0 && (
-            <div className="pt-2 border-t border-gray-100">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
-                Custom Fields
-              </p>
-              <div className="space-y-4">
-                {activeCustomFields.map((cf) => (
-                  <div key={cf._id}>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {cf.label}
-                      {cf.required && <span className="text-red-500 ml-0.5">*</span>}
-                    </label>
-                    <CustomFieldRenderer
-                      field={cf}
-                      value={customForm[cf.fieldKey]}
-                      onChange={(val) => setCustomForm((prev) => ({ ...prev, [cf.fieldKey]: val }))}
-                    />
-                    {errors[`cf_${cf.fieldKey}`] && (
-                      <p className="text-xs text-red-500 mt-1">{errors[`cf_${cf.fieldKey}`]}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 shrink-0">
-          {isEdit ? (
-            <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => submit(false)}
-                disabled={saving}
-                className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 rounded-lg text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
-              >
-                {saving && <div className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-                {saving ? 'Saving…' : 'Save Changes'}
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <button
-                onClick={() => submit(false)}
-                disabled={saving}
-                className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 rounded-lg text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
-              >
-                {saving && <div className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-                {saving ? 'Creating…' : 'Create'}
-              </button>
-              <button
-                onClick={() => submit(true)}
-                disabled={saving}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Create and add another
-              </button>
-              <button
-                onClick={onClose}
-                className="w-full text-sm text-gray-400 hover:text-gray-600 transition-colors py-1"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </>
   );
 }
 
@@ -622,6 +141,8 @@ interface CrmLayoutProps {
 }
 
 export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
+  const navigate = useNavigate();
+
   /* ── module key (e.g. "contacts") ── */
   const moduleName = useMemo(
     () => config.apiBase.split('/').pop() ?? config.label.toLowerCase(),
@@ -639,6 +160,11 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
   const [page,    setPage]    = useState(1);
   const [limit,   setLimit]   = useState(20);
   const [viewTab, setViewTab] = useState<ViewTab>('all');
+  const [viewMode, setViewMode] = useState<'table' | 'alt'>('table');
+  const [tableViewMenuOpen, setTableViewMenuOpen] = useState(false);
+  const [upcomingOnly, setUpcomingOnly] = useState(false);
+  const [linkedFilter, setLinkedFilter] = useState<FsRelation>({});
+  const [linkedFilterOpen, setLinkedFilterOpen] = useState(false);
 
   /* ── sort ── */
   const [sortKey, setSortKey] = useState('');
@@ -688,9 +214,24 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   /* ── derived ── */
-  const statusOptions = config.statusField
+  const staticStatusOptions = config.statusField
     ? (config.fields.find((f) => f.key === config.statusField)?.options ?? [])
     : [];
+  // Tenant-configurable pipeline (native-crm/pipeline-config) overrides the
+  // static options list for modules that have opted in via
+  // `config.pipelineModule` — always called (hooks rule), but the query
+  // itself only fires when pipelineModule is set (see `enabled` inside the
+  // hook), so unmigrated modules keep today's static behavior unchanged.
+  const { stages: pipelineStages } = usePipelineStages(config.pipelineModule);
+  const statusOptions = config.pipelineModule && pipelineStages.length > 0
+    ? [...pipelineStages].sort((a, b) => a.order - b.order).map((s) => s.key)
+    : staticStatusOptions;
+  // Feeds KanbanBoard's column pills so the color a tenant picks in Pipeline
+  // & Stages settings actually shows up on the board — undefined (falls back
+  // to statusColor()) for modules with no tenant-configured pipeline.
+  const stageColors = config.pipelineModule && pipelineStages.length > 0
+    ? Object.fromEntries(pipelineStages.map((s) => [s.key, s.color]))
+    : undefined;
 
   /* ── fetch ── */
   const fetchRecords = useCallback(async () => {
@@ -699,13 +240,18 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
       const params: Record<string, unknown> = { page, limit };
       if (search)  params.search = search;
       if (statusF) params.status = statusF;
+      if (upcomingOnly && config.upcomingDateField) params.upcoming = true;
+      if (linkedFilter.relatedModule && linkedFilter.relatedId) {
+        params.relatedModule = linkedFilter.relatedModule;
+        params.relatedId = linkedFilter.relatedId;
+      }
       const res = await api.get<{ data: CrmRecord[]; meta: CrmPageMeta }>(config.apiBase, { params });
       setRecords(res.data.data ?? []);
       setMeta(res.data.meta ?? { total: 0, page: 1, totalPages: 1 });
       setSelectedIds(new Set());
     } catch { setRecords([]); }
     finally { setLoading(false); }
-  }, [config.apiBase, page, limit, search, statusF]);
+  }, [config.apiBase, config.upcomingDateField, page, limit, search, statusF, upcomingOnly, linkedFilter]);
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
@@ -747,6 +293,12 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
   /* ── helpers ── */
   const openCreate = () => { setEditRecord(null); setDrawerOpen(true); };
   const openEdit   = (r: CrmRecord) => { setEditRecord(r); setDrawerOpen(true); };
+  const handleKanbanStatusChange = async (r: CrmRecord, next: string) => {
+    if (!config.statusField) return;
+    setRecords((prev) => prev.map((x) => (x._id === r._id ? { ...x, [config.statusField!]: next } : x)));
+    try { await api.put(`${config.apiBase}/${r._id}`, { [config.statusField]: next }); }
+    catch { fetchRecords(); }
+  };
   const displayName = (r: CrmRecord) =>
     String(r.firstName && r.lastName ? `${r.firstName} ${r.lastName}` : r.name ?? r.title ?? r.subject ?? r.contactName ?? '—');
 
@@ -800,12 +352,44 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
         </div>
 
         <div className="flex items-center gap-2 ml-auto flex-wrap">
-          {/* Table view badge */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 bg-white cursor-default select-none">
-            <TableCellsIcon className="h-4 w-4" />
-            <span>Table view</span>
-            <ChevronDownIcon className="h-3.5 w-3.5 text-gray-400" />
-          </div>
+          {/* View switcher — only interactive when this module has an
+              alternate view (Kanban/Calendar); otherwise a plain label. */}
+          {config.altView ? (
+            <div className="relative">
+              <button
+                onClick={() => setTableViewMenuOpen((v) => !v)}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 bg-white hover:bg-gray-50 transition-colors"
+              >
+                <TableCellsIcon className="h-4 w-4" />
+                <span>{viewMode === 'table' ? 'Table view' : (config.altViewLabel ?? 'Board view')}</span>
+                <ChevronDownIcon className="h-3.5 w-3.5 text-gray-400" />
+              </button>
+              {tableViewMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setTableViewMenuOpen(false)} />
+                  <div className="absolute top-full mt-1.5 left-0 z-20 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[160px]">
+                    <button
+                      onClick={() => { setViewMode('table'); setTableViewMenuOpen(false); }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${viewMode === 'table' ? 'text-blue-700 font-medium' : 'text-gray-700'}`}
+                    >
+                      Table view
+                    </button>
+                    <button
+                      onClick={() => { setViewMode('alt'); setTableViewMenuOpen(false); }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${viewMode === 'alt' ? 'text-blue-700 font-medium' : 'text-gray-700'}`}
+                    >
+                      {config.altViewLabel ?? (config.altView === 'kanban' ? 'Kanban board' : 'Calendar')}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 bg-white cursor-default select-none">
+              <TableCellsIcon className="h-4 w-4" />
+              <span>Table view</span>
+            </div>
+          )}
 
           {/* Edit columns */}
           <button
@@ -873,6 +457,43 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
             )}
           </div>
 
+          {/* Upcoming quick-filter — only for modules with a natural date field */}
+          {config.upcomingDateField && (
+            <button
+              onClick={() => { setUpcomingOnly((v) => !v); setPage(1); }}
+              className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg text-sm transition-colors ${
+                upcomingOnly ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <ClockIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Upcoming</span>
+            </button>
+          )}
+
+          {/* Filter by linked Field Service/Contact/Company record */}
+          <div className="relative">
+            <button
+              onClick={() => setLinkedFilterOpen((v) => !v)}
+              className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg text-sm transition-colors ${
+                linkedFilter.relatedId ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <LinkIcon className="h-4 w-4" />
+              <span className="hidden sm:inline truncate max-w-[140px]">{linkedFilter.relatedId ? linkedFilter.relatedLabel : 'Linked record'}</span>
+            </button>
+            {linkedFilterOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setLinkedFilterOpen(false)} />
+                <div className="absolute top-full mt-1.5 right-0 z-20 bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-80">
+                  <FsRelationPicker
+                    value={linkedFilter}
+                    onChange={(v) => { setLinkedFilter(v); setPage(1); if (v.relatedId) setLinkedFilterOpen(false); }}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
           {/* Active sort chip */}
           {sortKey && (
             <button
@@ -882,14 +503,6 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
               {sortDir === 'asc' ? <ChevronUpIcon className="h-3.5 w-3.5" /> : <ChevronDownIcon className="h-3.5 w-3.5" />}
               <span className="hidden sm:inline">{config.fields.find((f) => f.key === sortKey)?.label ?? sortKey}</span>
               <XMarkIcon className="h-3 w-3" />
-            </button>
-          )}
-
-          {/* Sort (shortcut) */}
-          {!sortKey && (
-            <button className="hidden sm:flex items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
-              <ChevronUpDownIcon className="h-4 w-4" />
-              Sort
             </button>
           )}
 
@@ -939,8 +552,34 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
         </div>
       )}
 
+      {/* ── Alternate view (Kanban/Calendar) ─────────────────────────────── */}
+      {viewMode === 'alt' && config.altView && (
+        <div className="flex-1 overflow-auto">
+          {config.altView === 'kanban' ? (
+            <KanbanBoard
+              records={sortedRecords}
+              statusField={config.statusField ?? ''}
+              statusOptions={statusOptions}
+              stageColors={stageColors}
+              iconColor={iconColor}
+              displayName={displayName}
+              onOpenRecord={openEdit}
+              onStatusChange={handleKanbanStatusChange}
+            />
+          ) : (
+            <CalendarView
+              records={sortedRecords}
+              dateField={config.calendarDateField ?? 'createdAt'}
+              iconColor={iconColor}
+              displayName={displayName}
+              onOpenRecord={openEdit}
+            />
+          )}
+        </div>
+      )}
+
       {/* ── Table ─────────────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-auto">
+      <div className={`flex-1 overflow-auto ${viewMode === 'alt' && config.altView ? 'hidden' : ''}`}>
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="flex gap-2">
@@ -1053,7 +692,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
                             {displayName(r).slice(0, 2).toUpperCase()}
                           </div>
                           <button
-                            onClick={() => openEdit(r)}
+                            onClick={() => (config.detailRoute ? navigate(config.detailRoute(r._id)) : openEdit(r))}
                             className="text-sm font-medium text-blue-700 hover:underline truncate max-w-[160px] text-left"
                           >
                             {displayName(r)}

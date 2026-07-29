@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { DocumentTextIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { useNavigate, useLocation } from 'react-router-dom';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
@@ -16,6 +16,7 @@ import { CompanyBadge } from '../../../components/native-crm/CompanyBadge';
 import { CompanyFilterBar } from '../../../components/native-crm/CompanyFilterBar';
 import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-settings.queries';
 import { buildPrefill } from '../../../modules/native-crm/shared/buildPrefill';
+import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
 
 const FIELDS: FSFieldDef[] = [
   { key: 'branchId',      label: 'Company',       type: 'branch-select' },
@@ -60,6 +61,17 @@ export default function QuotationsPage() {
   const [delTarget, setDelTarget] = useState<any | null>(null);
 
   const { data: settings } = useFSSettingsQuery();
+
+  // Tenant-configurable pipeline stages override the static defaults above —
+  // falls back to today's hardcoded list while loading/on error/unconfigured.
+  const { stages: pipelineStages } = usePipelineStages('quotation');
+  const statusOptions = pipelineStages.length > 0
+    ? [...pipelineStages].sort((a, b) => a.order - b.order).map((s) => s.key)
+    : STATUS_OPTIONS;
+  const fields = useMemo(
+    () => FIELDS.map((f) => (f.key === 'status' ? { ...f, options: statusOptions } : f)),
+    [statusOptions],
+  );
 
   // Open drawer pre-filled when navigated here from another module
   useEffect(() => {
@@ -111,7 +123,7 @@ export default function QuotationsPage() {
           className="text-sm border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-400"
         >
           <option value="">All Status</option>
-          {STATUS_OPTIONS.map((s) => (
+          {statusOptions.map((s) => (
             <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
           ))}
         </select>
@@ -168,7 +180,7 @@ export default function QuotationsPage() {
       {drawer.open && (
         <FSDrawer
           title={drawer.record ? 'Edit Quotation' : 'New Quotation'}
-          fields={FIELDS}
+          fields={fields}
           record={drawer.record}
           onClose={() => setDrawer({ open: false, record: null })}
           onSaved={() => {}}

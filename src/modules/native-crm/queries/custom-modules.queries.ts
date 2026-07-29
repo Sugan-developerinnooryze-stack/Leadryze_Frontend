@@ -53,6 +53,9 @@ export interface CustomModuleDef {
   showInSidebar: boolean;
   menuOrder:    number;
   fields:       ICustomModuleField[];
+  /** Key of the 'select' field (if any) this module treats as its pipeline —
+   * see native-crm/pipeline-config, module `custom:<slug>`. */
+  pipelineFieldKey?: string;
   createdAt:    string;
   updatedAt:    string;
 }

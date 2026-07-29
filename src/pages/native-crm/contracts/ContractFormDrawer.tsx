@@ -14,6 +14,7 @@ import { useCustomFormTemplatesQuery } from '../../../modules/native-crm/queries
 import CustomFieldRenderer from '../../../modules/native-crm/shared/CustomFieldRenderer';
 import { toDatetimeLocal, availabilityNote, type StaffAvailability } from '../../../modules/native-crm/shared/duration';
 import ContractServiceLinesEditor, { type ContractServiceLine } from './ContractServiceLinesEditor';
+import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import api from '../../../services/api';
 
 interface Props {
@@ -48,6 +49,13 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
   const isAdmin = ['SUPER_ADMIN', 'TENANT_ADMIN'].includes(user?.role ?? '');
   const branches      = useBranchStore((s) => s.branches);
   const currentBranch = useBranchStore((s) => s.currentBranch);
+
+  // Tenant-configurable pipeline stages override the static STATUSES default —
+  // falls back to today's hardcoded list while loading/on error/unconfigured.
+  const { stages: pipelineStages } = usePipelineStages('contract');
+  const statusOptions = pipelineStages.length > 0
+    ? [...pipelineStages].sort((a, b) => a.order - b.order).map((s) => s.key)
+    : STATUSES;
 
   /* ── form state ─────────────────────────────────────────────────────────── */
   const [form, setForm] = useState<Record<string, any>>({});
@@ -374,7 +382,7 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
                 <div>
                   <label className={lbl}>Status</label>
                   <select className={inp} value={form.status ?? 'draft'} onChange={(e) => set('status', e.target.value)}>
-                    {STATUSES.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+                    {statusOptions.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
                   </select>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import type { FieldConfig } from './types/crm.types';
+import { useStaffsListQuery } from '../../native-crm/queries/staffs.queries';
 
 interface Props {
   field:    FieldConfig;
@@ -86,6 +87,23 @@ function SearchableSelect({ field, value, onChange, error }: Props) {
   );
 }
 
+/* ── Staff select (dynamic — NativeStaff, not a static options[] list) ──── */
+function StaffSelect({ value, onChange, error }: Omit<Props, 'field'>) {
+  const { data } = useStaffsListQuery({ page: 1, limit: 1000 });
+  const staff = data?.items ?? [];
+  const base =
+    'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ' +
+    (error ? 'border-red-400 bg-red-50' : 'border-gray-300');
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} className={base}>
+      <option value="">Unassigned</option>
+      {staff.map((s: any) => (
+        <option key={s.staffId} value={s.staffId}>{`${s.firstName ?? ''} ${s.lastName ?? ''}`.trim()}</option>
+      ))}
+    </select>
+  );
+}
+
 /* ── CrmField ────────────────────────────────────────────────────── */
 export default function CrmField({ field, value, onChange, error }: Props) {
   const base =
@@ -94,7 +112,9 @@ export default function CrmField({ field, value, onChange, error }: Props) {
 
   let input: React.ReactNode;
 
-  if (field.type === 'select' && field.options) {
+  if (field.type === 'staffSelect') {
+    input = <StaffSelect value={value} onChange={onChange} error={error} />;
+  } else if (field.type === 'select' && field.options) {
     if (field.searchable) {
       input = <SearchableSelect field={field} value={value} onChange={onChange} error={error} />;
     } else {

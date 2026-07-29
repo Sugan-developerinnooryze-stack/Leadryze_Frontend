@@ -7,6 +7,7 @@ const config: ModulePageConfig = {
   labelSingular: 'Contact',
   apiBase:       '/api/v1/native-crm/contacts',
   statusField:   'status',
+  detailRoute:   (id) => `/crm/contacts/${id}`,
   fields: [
     /* ── Identity ── */
     { key: 'email',         label: 'Email',           type: 'email',   required: true,  tableCol: true },

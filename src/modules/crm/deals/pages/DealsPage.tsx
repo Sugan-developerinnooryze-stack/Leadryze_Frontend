@@ -7,6 +7,7 @@ const config: ModulePageConfig = {
   labelSingular: 'Deal',
   apiBase:       '/api/v1/native-crm/deals',
   statusField:   'stage',
+  pipelineModule: 'deal',
   fields: [
     { key: 'title',       label: 'Deal Title',  type: 'text',    required: true },
     { key: 'amount',      label: 'Amount',      type: 'currency', tableCol: true },
@@ -17,6 +18,7 @@ const config: ModulePageConfig = {
     { key: 'closeDate',   label: 'Close Date',  type: 'date',    tableCol: true },
     { key: 'contactName', label: 'Contact',     type: 'text',    tableCol: true },
     { key: 'companyName', label: 'Company',     type: 'text' },
+    { key: 'assignedStaffId', label: 'Assigned Staff', type: 'staffSelect' },
     { key: 'notes',       label: 'Notes',       type: 'textarea' },
   ],
 };

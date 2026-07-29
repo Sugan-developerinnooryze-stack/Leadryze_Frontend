@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { BanknotesIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { useNavigate, useLocation } from 'react-router-dom';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
@@ -14,6 +14,7 @@ import {
 } from '../../../modules/native-crm/queries/invoices.queries';
 import { CompanyBadge } from '../../../components/native-crm/CompanyBadge';
 import { CompanyFilterBar } from '../../../components/native-crm/CompanyFilterBar';
+import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
 
 const FIELDS: FSFieldDef[] = [
   { key: 'branchId',      label: 'Company',           type: 'branch-select' },
@@ -54,6 +55,17 @@ export default function InvoicesPage() {
   const [page,      setPage]      = useState(1);
   const [drawer,    setDrawer]    = useState<{ open: boolean; record: any | null }>({ open: false, record: null });
   const [delTarget, setDelTarget] = useState<any | null>(null);
+
+  // Tenant-configurable pipeline stages override the static defaults above —
+  // falls back to today's hardcoded list while loading/on error/unconfigured.
+  const { stages: pipelineStages } = usePipelineStages('invoice');
+  const statusOptions = pipelineStages.length > 0
+    ? [...pipelineStages].sort((a, b) => a.order - b.order).map((s) => s.key)
+    : STATUS_OPTIONS;
+  const fields = useMemo(
+    () => FIELDS.map((f) => (f.key === 'status' ? { ...f, options: statusOptions } : f)),
+    [statusOptions],
+  );
 
   useEffect(() => {
     const state = location.state as any;
@@ -104,7 +116,7 @@ export default function InvoicesPage() {
           className="text-sm border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-400"
         >
           <option value="">All Status</option>
-          {STATUS_OPTIONS.map((s) => (
+          {statusOptions.map((s) => (
             <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
           ))}
         </select>
@@ -141,7 +153,7 @@ export default function InvoicesPage() {
       {drawer.open && (
         <FSDrawer
           title={drawer.record ? 'Edit Invoice' : 'New Invoice'}
-          fields={FIELDS}
+          fields={fields}
           record={drawer.record}
           onClose={() => setDrawer({ open: false, record: null })}
           onSaved={() => {}}

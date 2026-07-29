@@ -4,6 +4,11 @@ import api from '../../../services/api';
 const BASE = '/api/v1/native-crm/custom-fields';
 const KEY  = ['native-crm', 'custom-fields'] as const;
 
+// Adding/editing/removing a custom field changes what the PDF template
+// designer's variable palette should show for that module — invalidate its
+// catalog cache too, so the palette refreshes without a manual reload.
+const TEMPLATE_CATALOG_KEY = ['native-crm', 'custom-templates', 'catalog'] as const;
+
 export interface NativeCustomField {
   _id:             string;
   module:          string;
@@ -30,7 +35,10 @@ export function useCustomFieldCreate() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => api.post(BASE, data),
-    onSuccess:  () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess:  () => {
+      qc.invalidateQueries({ queryKey: KEY });
+      qc.invalidateQueries({ queryKey: TEMPLATE_CATALOG_KEY });
+    },
   });
 }
 
@@ -38,7 +46,10 @@ export function useCustomFieldUpdate() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => api.put(`${BASE}/${id}`, data),
-    onSuccess:  () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess:  () => {
+      qc.invalidateQueries({ queryKey: KEY });
+      qc.invalidateQueries({ queryKey: TEMPLATE_CATALOG_KEY });
+    },
   });
 }
 
@@ -46,7 +57,10 @@ export function useCustomFieldDelete() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.delete(`${BASE}/${id}`),
-    onSuccess:  () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess:  () => {
+      qc.invalidateQueries({ queryKey: KEY });
+      qc.invalidateQueries({ queryKey: TEMPLATE_CATALOG_KEY });
+    },
   });
 }
 

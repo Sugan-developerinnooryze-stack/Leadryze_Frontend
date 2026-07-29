@@ -4,7 +4,11 @@ import {
   XMarkIcon, UserPlusIcon, PhoneIcon, EnvelopeIcon, BuildingOfficeIcon,
   ArrowRightCircleIcon, CheckCircleIcon, ChevronDownIcon,
   ClockIcon, CurrencyRupeeIcon, TrophyIcon, ArrowTrendingUpIcon,
+  AdjustmentsHorizontalIcon,
 } from '@heroicons/react/24/outline';
+import FileActionsDropdown, { fmtVal } from '../../../modules/crm/shared/FileActionsDropdown';
+import ColumnEditor from '../../../modules/crm/shared/ColumnEditor';
+import type { FieldConfig } from '../../../modules/crm/shared/types/crm.types';
 import {
   useLeadsQuery, useLeadCreate, useLeadUpdate,
   useLeadDelete, useLeadUpdateStage,
@@ -12,6 +16,8 @@ import {
   useLeadConvertToOpportunity, useLeadConvertToCustomer,
 } from '../../../modules/native-crm/queries/leads.queries';
 import { useEntityTimelineQuery } from '../../../modules/native-crm/queries/timeline.queries';
+import { useStaffsListQuery } from '../../../modules/native-crm/queries/staffs.queries';
+import { usePipelineStages, type PipelineStage } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import { RecordLockBanner } from '../../../components/native-crm/RecordLockBanner';
 import { CompanyBadge } from '../../../components/native-crm/CompanyBadge';
 import { CompanyFilterBar } from '../../../components/native-crm/CompanyFilterBar';
@@ -20,18 +26,22 @@ import { useQueryClient } from '@tanstack/react-query';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STAGES = [
-  { key: 'new',              label: 'New',              color: '#6366f1' },
-  { key: 'contacted',        label: 'Contacted',        color: '#0ea5e9' },
-  { key: 'qualified',        label: 'Qualified',        color: '#f59e0b' },
-  { key: 'meeting_scheduled',label: 'Meeting Scheduled',color: '#8b5cf6' },
-  { key: 'proposal_sent',    label: 'Proposal Sent',    color: '#ec4899' },
-  { key: 'negotiation',      label: 'Negotiation',      color: '#f97316' },
-  { key: 'won',              label: 'Won',              color: '#10b981' },
-  { key: 'lost',             label: 'Lost',             color: '#ef4444' },
-  { key: 'on_hold',          label: 'On Hold',          color: '#94a3b8' },
-  { key: 'disqualified',     label: 'Disqualified',     color: '#64748b' },
-] as const;
+// Today's defaults — used as the fallback while a tenant's own configured
+// Lead pipeline (native-crm/pipeline-config) loads, or if they've never
+// customized it. Kept identical to the backend's seed defaults so nothing
+// visibly changes for tenants who haven't edited their pipeline.
+const DEFAULT_LEAD_STAGES: PipelineStage[] = [
+  { key: 'new',               label: 'New',               color: '#6366f1', order: 0, isTerminal: false, outcome: null,   isActive: true },
+  { key: 'contacted',         label: 'Contacted',         color: '#0ea5e9', order: 1, isTerminal: false, outcome: null,   isActive: true },
+  { key: 'qualified',         label: 'Qualified',         color: '#f59e0b', order: 2, isTerminal: false, outcome: null,   isActive: true },
+  { key: 'meeting_scheduled', label: 'Meeting Scheduled', color: '#8b5cf6', order: 3, isTerminal: false, outcome: null,   isActive: true },
+  { key: 'proposal_sent',     label: 'Proposal Sent',     color: '#ec4899', order: 4, isTerminal: false, outcome: null,   isActive: true },
+  { key: 'negotiation',       label: 'Negotiation',       color: '#f97316', order: 5, isTerminal: false, outcome: null,   isActive: true },
+  { key: 'won',               label: 'Won',               color: '#10b981', order: 6, isTerminal: true,  outcome: 'won',  isActive: true },
+  { key: 'lost',              label: 'Lost',              color: '#ef4444', order: 7, isTerminal: true,  outcome: 'lost', isActive: true },
+  { key: 'on_hold',           label: 'On Hold',           color: '#94a3b8', order: 8, isTerminal: false, outcome: null,   isActive: true },
+  { key: 'disqualified',      label: 'Disqualified',      color: '#64748b', order: 9, isTerminal: true,  outcome: null,   isActive: true },
+];
 
 const SOURCES = [
   'website','landing_page','chatbot','whatsapp','facebook',
@@ -70,9 +80,49 @@ const EMPTY_FORM = {
   email: '', phone: '', mobile: '', whatsapp: '',
   address: '', city: '', state: '', country: '', postalCode: '',
   status: 'new', source: 'manual', rating: 'warm', priority: 'medium',
-  score: 0, expectedRevenue: '', budget: '', leadOwner: '',
+  score: 0, expectedRevenue: '', budget: '', leadOwner: '', leadOwnerStaffId: '',
   requirement: '', painPoints: '', notes: '',
 };
+
+// Full field set — used by the File dropdown (Export Excel/CSV, Download
+// Template, Import from File), same mechanism Deals/Categories/etc. already
+// use, so a filled-in template round-trips correctly.
+const LEAD_FIELD_CONFIG: FieldConfig[] = [
+  { key: 'leadId',          label: 'Lead ID',          type: 'text' },
+  { key: 'firstName',       label: 'First Name',       type: 'text' },
+  { key: 'lastName',        label: 'Last Name',        type: 'text' },
+  { key: 'company',         label: 'Company',          type: 'text' },
+  { key: 'designation',     label: 'Designation',      type: 'text' },
+  { key: 'email',           label: 'Email',            type: 'email' },
+  { key: 'phone',           label: 'Phone',            type: 'phone' },
+  { key: 'mobile',          label: 'Mobile',           type: 'phone' },
+  { key: 'status',          label: 'Status',           type: 'text' },
+  { key: 'source',          label: 'Source',           type: 'text' },
+  { key: 'rating',          label: 'Rating',           type: 'text' },
+  { key: 'priority',        label: 'Priority',         type: 'text' },
+  { key: 'leadOwner',       label: 'Owner',            type: 'text' },
+  { key: 'leadOwnerStaffId', label: 'Owner Staff ID',  type: 'text' },
+  { key: 'city',            label: 'City',             type: 'text' },
+  { key: 'state',           label: 'State',            type: 'text' },
+  { key: 'country',         label: 'Country',          type: 'text' },
+  { key: 'expectedRevenue', label: 'Expected Revenue', type: 'currency' },
+  { key: 'tags',            label: 'Tags',             type: 'text' },
+  { key: 'isConverted',     label: 'Converted',        type: 'text' },
+  { key: 'createdAt',       label: 'Created At',       type: 'date' },
+];
+
+// Fields already visually represented by the list view's own rich columns
+// (Lead/Contact/Source/Stage/Rating/Revenue) — excluded from the optional
+// "Edit columns" extras so nothing shows twice.
+const CORE_COVERED_KEYS = new Set([
+  'leadId', 'firstName', 'lastName', 'company', 'email', 'phone',
+  'status', 'source', 'rating', 'expectedRevenue',
+]);
+const LEAD_EXTRA_COLUMNS: FieldConfig[] = LEAD_FIELD_CONFIG.filter((f) => !CORE_COVERED_KEYS.has(f.key));
+
+// Leads has no bulk-selection UI — a stable empty Set so FileActionsDropdown
+// always treats "all loaded leads" as the export/selection scope.
+const EMPTY_SELECTION = new Set<string>();
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -142,7 +192,7 @@ function LeadCard({
 function KanbanColumn({
   stage, leads, onDragStart, onDrop, onCardClick,
 }: {
-  stage: typeof STAGES[number];
+  stage: PipelineStage;
   leads: any[];
   onDragStart: (e: React.DragEvent, lead: any) => void;
   onDrop: (e: React.DragEvent, stageKey: string) => void;
@@ -196,6 +246,19 @@ function LeadForm({ form, setForm, onSubmit, saving, submitLabel }: {
   const set = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
   const branches = useBranchStore((s) => s.branches.filter((b) => b.status === 'active'));
   const [section, setSection] = useState<'basic'|'contact'|'address'|'sales'>('basic');
+  const { stages } = usePipelineStages('lead', DEFAULT_LEAD_STAGES);
+  const { data: staffData } = useStaffsListQuery({ page: 1, limit: 1000 });
+  const staffOptions = staffData?.items ?? [];
+
+  // Owner is a real staff reference (leadOwnerStaffId) so automation rules
+  // can actually email the assigned owner — leadOwner is kept in sync as
+  // that staff's display name for existing exports/search that read it as
+  // plain text.
+  const setOwner = (staffId: string) => {
+    const staff = staffOptions.find((s: any) => s.staffId === staffId);
+    const name = staff ? `${staff.firstName ?? ''} ${staff.lastName ?? ''}`.trim() : '';
+    setForm((p: any) => ({ ...p, leadOwnerStaffId: staffId, leadOwner: name }));
+  };
 
   const tabs = [
     { key: 'basic',   label: 'Basic Info' },
@@ -267,7 +330,15 @@ function LeadForm({ form, setForm, onSubmit, saving, submitLabel }: {
           </Field>
           <Field label="Status">
             <select className={inp()} value={form.status} onChange={(e) => set('status', e.target.value)}>
-              {STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+              {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Owner">
+            <select className={inp()} value={form.leadOwnerStaffId ?? ''} onChange={(e) => setOwner(e.target.value)}>
+              <option value="">Unassigned</option>
+              {staffOptions.map((s: any) => (
+                <option key={s.staffId} value={s.staffId}>{`${s.firstName ?? ''} ${s.lastName ?? ''}`.trim()}</option>
+              ))}
             </select>
           </Field>
           <div className="col-span-2">
@@ -533,7 +604,8 @@ function LeadDetailPanel({
   onEdit: (lead: any) => void;
 }) {
   const [tab, setTab] = useState<'overview'|'sales'|'timeline'|'convert'>('overview');
-  const stageMeta = STAGES.find((s) => s.key === lead.status);
+  const { stages } = usePipelineStages('lead', DEFAULT_LEAD_STAGES);
+  const stageMeta = stages.find((s) => s.key === lead.status);
   const { data: timelineEvents = [], isLoading: tlLoading } = useEntityTimelineQuery('leads', lead._id);
   const qc = useQueryClient();
 
@@ -717,8 +789,17 @@ export default function LeadsPage() {
   const [form,        setForm]        = useState<any>({ ...EMPTY_FORM });
   const [saving,      setSaving]      = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [columnEditorOpen, setColumnEditorOpen] = useState(false);
+  const [extraVisibleKeys, setExtraVisibleKeys] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('crm-cols-leads-extra');
+      if (saved) return JSON.parse(saved) as string[];
+    } catch {}
+    return [];
+  });
   const dragLeadRef = useRef<any>(null);
   const currentBranch = useBranchStore((s) => s.currentBranch);
+  const queryClient = useQueryClient();
 
   const { data, isLoading } = useLeadsQuery({
     search:      search || undefined,
@@ -733,9 +814,20 @@ export default function LeadsPage() {
   const deleteMut      = useLeadDelete();
   const stageMut       = useLeadUpdateStage();
   const { data: statsData } = useLeadsStatsQuery();
+  const { stages } = usePipelineStages('lead', DEFAULT_LEAD_STAGES);
+
+  // Optional extra table columns, controlled via Edit Columns — persisted
+  // separately from the core rich columns, which always stay visible.
+  const extraCols = extraVisibleKeys
+    .map((k) => LEAD_EXTRA_COLUMNS.find((f) => f.key === k))
+    .filter(Boolean) as FieldConfig[];
+  const handleApplyExtraColumns = (keys: string[]) => {
+    setExtraVisibleKeys(keys);
+    try { localStorage.setItem('crm-cols-leads-extra', JSON.stringify(keys)); } catch {}
+  };
 
   // ── Kanban grouping
-  const byStage = STAGES.reduce<Record<string, any[]>>((acc, s) => {
+  const byStage = stages.reduce<Record<string, any[]>>((acc, s) => {
     acc[s.key] = leads.filter((l) => l.status === s.key);
     return acc;
   }, {} as any);
@@ -831,6 +923,23 @@ export default function LeadsPage() {
                 <TableCellsIcon className="h-4 w-4" />
               </button>
             </div>
+            <button onClick={() => setColumnEditorOpen(true)}
+              title="Choose which extra columns show in the list view"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium transition-colors">
+              <AdjustmentsHorizontalIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Edit columns{extraCols.length > 0 ? ` (${extraCols.length})` : ''}</span>
+            </button>
+            <FileActionsDropdown
+              moduleName="Leads"
+              tableCols={LEAD_FIELD_CONFIG}
+              allCols={LEAD_FIELD_CONFIG}
+              sortedRecords={leads}
+              selectedIds={EMPTY_SELECTION}
+              apiBase="/api/v1/native-crm/leads"
+              onRefresh={() => queryClient.invalidateQueries({ queryKey: ['native-crm', 'leads'] })}
+              page={1}
+              limit={Math.max(leads.length, 1)}
+            />
             <button onClick={openCreate}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition-colors">
               <PlusIcon className="h-4 w-4" /> New Lead
@@ -896,7 +1005,7 @@ export default function LeadsPage() {
             </div>
           ) : view === 'kanban' ? (
             <div className="flex gap-3 p-4 min-w-max h-full">
-              {STAGES.map((stage) => (
+              {stages.map((stage) => (
                 <KanbanColumn
                   key={stage.key}
                   stage={stage}
@@ -921,15 +1030,18 @@ export default function LeadsPage() {
                       <th className="px-4 py-3 text-left font-semibold">Rating</th>
                       <th className="px-4 py-3 text-right font-semibold">Revenue</th>
                       <th className="px-4 py-3 text-left font-semibold">Company</th>
+                      {extraCols.map((col) => (
+                        <th key={col.key} className="px-4 py-3 text-left font-semibold">{col.label}</th>
+                      ))}
                       <th className="px-4 py-3 text-right font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                     {leads.length === 0 && (
-                      <tr><td colSpan={8} className="py-12 text-center text-gray-400">No leads found</td></tr>
+                      <tr><td colSpan={8 + extraCols.length} className="py-12 text-center text-gray-400">No leads found</td></tr>
                     )}
                     {leads.map((lead) => {
-                      const s = STAGES.find((x) => x.key === lead.status);
+                      const s = stages.find((x) => x.key === lead.status);
                       return (
                         <tr key={lead._id} className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer" onClick={() => openDetail(lead)}>
                           <td className="px-4 py-3">
@@ -964,6 +1076,11 @@ export default function LeadsPage() {
                           <td className="px-4 py-3">
                             <CompanyBadge branchId={lead.branchId} />
                           </td>
+                          {extraCols.map((col) => (
+                            <td key={col.key} className="px-4 py-3 text-xs text-gray-500">
+                              {fmtVal(lead[col.key], col.type)}
+                            </td>
+                          ))}
                           <td className="px-4 py-3 text-right">
                             <button onClick={(e) => { e.stopPropagation(); openEdit(lead); }}
                               className="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 mr-1">Edit</button>
@@ -1020,6 +1137,15 @@ export default function LeadsPage() {
             />
           )}
         </div>
+      )}
+
+      {columnEditorOpen && (
+        <ColumnEditor
+          allFields={LEAD_EXTRA_COLUMNS}
+          visibleKeys={extraVisibleKeys}
+          onApply={handleApplyExtraColumns}
+          onClose={() => setColumnEditorOpen(false)}
+        />
       )}
     </div>
   );

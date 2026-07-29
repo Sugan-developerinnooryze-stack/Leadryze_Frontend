@@ -2,11 +2,15 @@ import { CalendarDaysIcon } from '@heroicons/react/24/outline';
 import CrmLayout from '../../shared/CrmLayout';
 import type { ModulePageConfig } from '../../shared/types/crm.types';
 
-const config: ModulePageConfig = {
+export const config: ModulePageConfig = {
   label:         'Meetings',
   labelSingular: 'Meeting',
   apiBase:       '/api/v1/native-crm/meetings',
   statusField:   'meetingStatus',
+  altView:            'calendar',
+  altViewLabel:       'Calendar',
+  calendarDateField:  'startDate',
+  upcomingDateField:  'startDate',
   fields: [
     { key: 'title',         label: 'Meeting Title', type: 'text',     required: true },
     { key: 'startDate',     label: 'Start',         type: 'datetime', tableCol: true },

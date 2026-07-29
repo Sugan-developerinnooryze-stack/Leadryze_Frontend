@@ -34,12 +34,27 @@ export function useFSSettingsUpload() {
 
 const PREF_KEY = ['native-crm', 'fs-settings', 'template-preferences'] as const;
 
+export interface TemplateSections {
+  services: boolean;
+  parts:    boolean;
+  totals:   boolean;
+  notes:    boolean;
+  terms:    boolean;
+}
+
+export interface TemplatePreferenceEntry {
+  variant:  string;
+  sections: TemplateSections;
+}
+
+export type TemplatePreferences = Record<string, TemplatePreferenceEntry>;
+
 export function useTemplatePreferencesQuery() {
   return useQuery({
     queryKey: PREF_KEY,
     queryFn: () =>
       api.get(`${BASE}/template-preferences`).then(
-        (r) => (r.data.data ?? {}) as Record<string, string>
+        (r) => (r.data.data ?? {}) as TemplatePreferences
       ),
   });
 }
@@ -47,7 +62,7 @@ export function useTemplatePreferencesQuery() {
 export function useTemplatePreferencesUpdate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Record<string, string>) =>
+    mutationFn: (data: Record<string, { variant?: string; sections?: Partial<TemplateSections> }>) =>
       api.put(`${BASE}/template-preferences`, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: PREF_KEY }),
   });

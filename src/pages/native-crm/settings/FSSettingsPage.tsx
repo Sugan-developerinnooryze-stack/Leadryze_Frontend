@@ -14,9 +14,15 @@ import { useBranchesQuery, useCreateBranch } from '../../../modules/native-crm/q
 import { Branch, useBranchStore } from '../../../stores/branch.store';
 import PhoneInput from '../../../modules/native-crm/shared/PhoneInput';
 import { COUNTRY_CODE_OPTIONS } from '../../../modules/native-crm/shared/countryCodes';
+import { usePipelineStages, BuiltInPipelineModule } from '../../../modules/native-crm/queries/pipeline-config.queries';
 
 const TABS = ['Company', 'Address', 'Documents', 'Bank Details', 'Branding', 'Templates', 'Workflow', 'Permission'];
 
+// Fallback labels only — used while a tenant's pipeline stages are loading,
+// or if this tenant hasn't customized them, matching each module's seeded
+// default. The real label is resolved live below via usePipelineStages, so
+// a tenant who renames "Won" to something else sees that rename reflected
+// here too instead of a permanently stale hardcoded string.
 const LOCK_MODULES = [
   { module: 'leads',      label: 'Leads',       autoLockOnStatus: 'won',        statusLabel: 'Won' },
   { module: 'deals',      label: 'Deals',       autoLockOnStatus: 'closed_won', statusLabel: 'Closed Won' },
@@ -27,6 +33,20 @@ const LOCK_MODULES = [
   { module: 'customers',  label: 'Customers',   autoLockOnStatus: '',           statusLabel: 'Manual only' },
   { module: 'contacts',   label: 'Contacts',    autoLockOnStatus: '',           statusLabel: 'Manual only' },
 ] as const;
+
+// Maps each lockable module (plural, as used above) to its singular
+// pipeline-config module + the semantic outcome tag that means "reached the
+// auto-lock trigger" — same tags native-crm/pipeline-config already
+// resolves server-side via getOutcomeStageKey. Customers/Contacts have no
+// pipeline (manual lock only), so they're intentionally absent here.
+const LOCK_MODULE_PIPELINE: Partial<Record<string, { module: BuiltInPipelineModule; outcome: string }>> = {
+  leads:      { module: 'lead',      outcome: 'won' },
+  deals:      { module: 'deal',      outcome: 'won' },
+  invoices:   { module: 'invoice',   outcome: 'paid' },
+  contracts:  { module: 'contract',  outcome: 'active' },
+  quotations: { module: 'quotation', outcome: 'approved' },
+  workorders: { module: 'workorder', outcome: 'completed' },
+};
 
 const DOC_TYPES = [
   { key: 'invoice',   label: 'Invoice'       },
@@ -94,7 +114,35 @@ const VARIANTS = [
       </svg>
     ),
   },
+  {
+    value: 'elegant',
+    label: 'Elegant',
+    desc:  'Navy & gold accents, serif headline, formal contract-grade look.',
+    preview: (
+      <svg viewBox="0 0 160 100" className="w-full h-full">
+        <rect width="160" height="100" fill="#ffffff" />
+        <rect x="8" y="8" width="60" height="8" rx="1" fill="#1e3a5f" />
+        <rect x="100" y="8" width="52" height="9" rx="1" fill="#1e3a5f" />
+        <rect x="8" y="26" width="144" height="2" fill="#b8860b" />
+        <rect x="8" y="34" width="40" height="4" rx="1" fill="#94a3b8" />
+        <rect x="8" y="44" width="144" height="8" fill="#1e3a5f" />
+        {[56,62,68,74].map(y => (
+          <rect key={y} x="8" y={y} width="144" height="3" rx="1" fill="#f9f7f2" />
+        ))}
+        <rect x="100" y="82" width="52" height="1.5" fill="#b8860b" />
+        <rect x="100" y="86" width="52" height="7" rx="1" fill="#1e3a5f" />
+      </svg>
+    ),
+  },
 ];
+
+const SECTION_TOGGLES = [
+  { key: 'services', label: 'Services table' },
+  { key: 'parts',    label: 'Parts / Materials' },
+  { key: 'totals',   label: 'Totals' },
+  { key: 'notes',    label: 'Notes' },
+  { key: 'terms',    label: 'Terms & Conditions' },
+] as const;
 
 function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -313,6 +361,21 @@ export default function FSSettingsPage() {
   const [activeTab, setActiveTab] = useState(0);
   const [saved,     setSaved]     = useState(false);
   const { data: settings, isLoading } = useFSSettingsQuery();
+
+  // Live stage labels for the Record Locking tab — called unconditionally
+  // (Rules of Hooks) regardless of which tab is active; cheap since
+  // usePipelineStages dedupes against the same queries other pages already
+  // warm (Pipeline Settings, the module list pages, etc).
+  const { stages: leadStages }      = usePipelineStages('lead');
+  const { stages: dealStages }      = usePipelineStages('deal');
+  const { stages: invoiceStages }   = usePipelineStages('invoice');
+  const { stages: contractStages }  = usePipelineStages('contract');
+  const { stages: quotationStages } = usePipelineStages('quotation');
+  const { stages: workorderStages } = usePipelineStages('workorder');
+  const stagesByPipelineModule: Partial<Record<BuiltInPipelineModule, typeof leadStages>> = {
+    lead: leadStages, deal: dealStages, invoice: invoiceStages,
+    contract: contractStages, quotation: quotationStages, workorder: workorderStages,
+  };
   const updateMutation = useFSSettingsUpdate();
   const [form, setForm] = useState<Record<string, any>>({});
 
@@ -351,9 +414,13 @@ export default function FSSettingsPage() {
   }
 
   const handleSetDefault = async (docType: string, variant: string) => {
-    await prefsMutation.mutateAsync({ [docType]: variant });
+    await prefsMutation.mutateAsync({ [docType]: { variant } });
     setSavedPref(`${docType}-${variant}`);
     setTimeout(() => setSavedPref(null), 2000);
+  };
+
+  const handleToggleSection = async (docType: string, sectionKey: string, value: boolean) => {
+    await prefsMutation.mutateAsync({ [docType]: { sections: { [sectionKey]: value } } });
   };
 
   const merged = { ...settings, ...form };
@@ -778,11 +845,14 @@ export default function FSSettingsPage() {
                 Choose the default PDF layout for each document type. You can still override this per-document when downloading.
               </p>
               {DOC_TYPES.map(({ key, label }) => {
-                const current = templatePrefs?.[key] ?? 'classic';
+                const current  = templatePrefs?.[key]?.variant ?? 'classic';
+                const sections = templatePrefs?.[key]?.sections ?? {
+                  services: true, parts: true, totals: true, notes: true, terms: true,
+                };
                 return (
                   <div key={key}>
                     <h3 className="text-sm font-semibold text-gray-800 mb-3">{label}</h3>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-4 gap-4">
                       {VARIANTS.map(v => {
                         const isActive  = current === v.value;
                         const justSaved = savedPref === `${key}-${v.value}`;
@@ -824,6 +894,19 @@ export default function FSSettingsPage() {
                         );
                       })}
                     </div>
+                    <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+                      {SECTION_TOGGLES.map(({ key: sectionKey, label: sectionLabel }) => (
+                        <label key={sectionKey} className="inline-flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                            checked={sections[sectionKey] ?? true}
+                            onChange={(e) => handleToggleSection(key, sectionKey, e.target.checked)}
+                          />
+                          {sectionLabel}
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 );
               })}
@@ -864,12 +947,21 @@ export default function FSSettingsPage() {
                     <tbody className="divide-y divide-gray-50">
                       {LOCK_MODULES.map(({ module, label, autoLockOnStatus, statusLabel }) => {
                         const rule = getRuleFor(module);
+                        const pipelineInfo = LOCK_MODULE_PIPELINE[module];
+                        const liveStage = pipelineInfo
+                          ? stagesByPipelineModule[pipelineInfo.module]?.find((s) => s.outcome === pipelineInfo.outcome)
+                          : undefined;
+                        // Falls back to the hardcoded default while stages are
+                        // loading, or if this tenant somehow has no stage
+                        // tagged with the outcome yet — never blank.
+                        const liveKey   = liveStage?.key   ?? autoLockOnStatus;
+                        const liveLabel = liveStage?.label ?? statusLabel;
                         return (
                           <tr key={module} className="py-3">
                             <td className="py-3 pr-4 font-medium text-gray-800">{label}</td>
                             <td className="py-3 px-4">
                               <button
-                                onClick={() => setRule(module, { autoLock: !rule.autoLock, autoLockOnStatus: autoLockOnStatus || rule.autoLockOnStatus })}
+                                onClick={() => setRule(module, { autoLock: !rule.autoLock, autoLockOnStatus: liveKey || rule.autoLockOnStatus })}
                                 className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
                                   rule.autoLock ? 'bg-brand-500' : 'bg-gray-200'
                                 }`}
@@ -883,7 +975,7 @@ export default function FSSettingsPage() {
                               {autoLockOnStatus ? (
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
                                   rule.autoLock ? 'bg-brand-50 text-brand-700' : 'bg-gray-100 text-gray-500'
-                                }`}>{statusLabel}</span>
+                                }`}>{liveLabel}</span>
                               ) : (
                                 <span className="text-gray-400">Manual only</span>
                               )}

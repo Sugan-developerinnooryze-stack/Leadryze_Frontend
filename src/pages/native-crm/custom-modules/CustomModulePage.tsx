@@ -1,9 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { PlusIcon, MagnifyingGlassIcon, TableCellsIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, MagnifyingGlassIcon, TableCellsIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import FSDeleteModal from '../../../modules/native-crm/shared/FSDeleteModal';
 import type { FSColumnDef } from '../../../modules/native-crm/shared/types';
+import KanbanBoard from '../../../modules/crm/shared/KanbanBoard';
+import type { CrmRecord } from '../../../modules/crm/shared/types/crm.types';
+import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import {
   useCustomModuleBySlugQuery,
   useCustomRecordsQuery,
@@ -272,6 +275,7 @@ export default function CustomModulePage() {
 
   const [search,    setSearch]    = useState('');
   const [page,      setPage]      = useState(1);
+  const [viewMode,  setViewMode]  = useState<'table' | 'kanban'>('table');
   const [drawer,    setDrawer]    = useState<{ open: boolean; record: CustomRecord | null }>({ open: false, record: null });
   const [delTarget, setDelTarget] = useState<CustomRecord | null>(null);
 
@@ -281,6 +285,14 @@ export default function CustomModulePage() {
     limit: 20,
     search: search || undefined,
   });
+
+  // Kanban is only offered when this module has designated one of its
+  // 'select' fields as the pipeline field (CustomModuleBuilderPage) — that's
+  // the same condition automation rules and PipelineSettingsPage already use
+  // to treat this module as having a stage concept at all. Always called
+  // (hooks rule); the query itself no-ops until pipelineFieldKey is set.
+  const pipelineFieldKey = modDef?.pipelineFieldKey;
+  const { stages: pipelineStages } = usePipelineStages(pipelineFieldKey ? `custom:${slug}` : undefined);
 
   const items = result?.items ?? [];
   const meta  = result?.meta  ?? { total: 0, page: 1, totalPages: 1 };
@@ -338,6 +350,30 @@ export default function CustomModulePage() {
   const flatRecord = (rec: CustomRecord | null) =>
     rec ? { ...rec.data, _id: rec._id } : null;
 
+  // KanbanBoard reads flat properties off each record (r[statusField],
+  // r.priority, r.contactName…) the same way built-in modules' CrmLayout
+  // does — Custom Module records store everything under `.data` (EAV), so
+  // this flattens just enough to satisfy that shape without changing how
+  // records are actually stored/fetched.
+  const kanbanRecords: CrmRecord[] = items.map((r) => ({
+    _id: r._id, tenantId: '', createdAt: r.createdAt, updatedAt: r.updatedAt,
+    recordId: r.recordId, ...r.data,
+  }));
+
+  const kanbanDisplayName = (r: CrmRecord) =>
+    String(r.name ?? r.title ?? r.firstName ?? r.subject ?? r.recordId ?? 'Untitled');
+
+  const handleKanbanOpen = (r: CrmRecord) => {
+    const original = items.find((it) => it._id === r._id);
+    if (original) setDrawer({ open: true, record: original });
+  };
+
+  const handleKanbanStatusChange = (r: CrmRecord, next: string) => {
+    const original = items.find((it) => it._id === r._id);
+    if (!original || !pipelineFieldKey) return;
+    updateMutation.mutate({ id: original._id, data: { ...original.data, [pipelineFieldKey]: next } });
+  };
+
   const delLabel = delTarget
     ? String(delTarget.data?.['name'] ?? delTarget.data?.['title'] ?? delTarget.recordId ?? 'this record')
     : '';
@@ -370,6 +406,25 @@ export default function CustomModulePage() {
           />
         </div>
 
+        {pipelineFieldKey && (
+          <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden shrink-0">
+            <button
+              onClick={() => setViewMode('table')}
+              title="Table view"
+              className={`p-2 ${viewMode === 'table' ? 'bg-brand-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+            >
+              <TableCellsIcon className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('kanban')}
+              title="Kanban board"
+              className={`p-2 border-l border-gray-300 ${viewMode === 'kanban' ? 'bg-brand-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+            >
+              <Squares2X2Icon className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         <button
           onClick={() => setDrawer({ open: true, record: null })}
           className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors shrink-0"
@@ -379,6 +434,20 @@ export default function CustomModulePage() {
         </button>
       </div>
 
+      {pipelineFieldKey && viewMode === 'kanban' ? (
+        <div className="flex-1 overflow-auto">
+          <KanbanBoard
+            records={kanbanRecords}
+            statusField={pipelineFieldKey}
+            statusOptions={[...pipelineStages].sort((a, b) => a.order - b.order).map((s) => s.key)}
+            stageColors={Object.fromEntries(pipelineStages.map((s) => [s.key, s.color]))}
+            iconColor={modDef.color}
+            displayName={kanbanDisplayName}
+            onOpenRecord={handleKanbanOpen}
+            onStatusChange={handleKanbanStatusChange}
+          />
+        </div>
+      ) : (
       <FSTable
         columns={fsColumns}
         data={items}
@@ -393,6 +462,7 @@ export default function CustomModulePage() {
         emptyIcon={TableCellsIcon}
         emptyLabel={`No ${modDef.name.toLowerCase()} yet — create your first one`}
       />
+      )}
 
       {drawer.open && (
         <CustomModuleFormDrawer
@@ -402,6 +472,8 @@ export default function CustomModulePage() {
           onClose={() => setDrawer({ open: false, record: null })}
           onCreate={(data) => createMutation.mutateAsync(data)}
           onUpdate={(id, data) => updateMutation.mutateAsync({ id, data })}
+          moduleSlug={slug}
+          pipelineFieldKey={modDef.pipelineFieldKey}
         />
       )}
 

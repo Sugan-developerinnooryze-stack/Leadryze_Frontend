@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeftIcon, UsersIcon, DocumentTextIcon,
   WrenchScrewdriverIcon, DocumentCheckIcon, CurrencyDollarIcon, BanknotesIcon,
-  KeyIcon,
+  KeyIcon, ClockIcon,
 } from '@heroicons/react/24/outline';
 import CredentialsPanel from '../../../modules/native-crm/shared/CredentialsPanel';
+import ActivityFeedPanel from '../../../modules/native-crm/shared/ActivityFeedPanel';
 import { renderFieldValue } from '../../../modules/native-crm/shared/fieldValueRenderer';
 import { useCustomerQuery } from '../../../modules/native-crm/queries/customers.queries';
 import { useQuotationsListQuery } from '../../../modules/native-crm/queries/quotations.queries';
@@ -24,6 +25,7 @@ const TABS = [
   { id: 'workorders', label: 'Work Orders',icon: WrenchScrewdriverIcon },
   { id: 'invoices',   label: 'Invoices',   icon: CurrencyDollarIcon },
   { id: 'receipts',   label: 'Receipts',   icon: BanknotesIcon },
+  { id: 'activity',   label: 'Activity',   icon: ClockIcon },
   { id: 'credentials', label: 'Credentials', icon: KeyIcon },
 ];
 
@@ -256,6 +258,14 @@ export default function CustomerViewPage() {
               customerId={item.customerId}
               columns={RECEIPT_COLS}
               onRowClick={() => navigate(`/native-crm/receipts`)}
+            />
+          )}
+
+          {activeTab === 'activity' && (
+            <ActivityFeedPanel
+              relatedModule="customer"
+              relatedId={item._id}
+              relatedLabel={`${item.customerId} — ${item.name}`}
             />
           )}
 

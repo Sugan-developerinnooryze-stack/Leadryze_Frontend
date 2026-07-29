@@ -7,9 +7,10 @@ const KEY  = ['native-crm', 'deals'] as const;
 interface DealFilters { page?: number; limit?: number; search?: string; stage?: string; }
 interface Meta        { total: number; page: number; totalPages: number; }
 
-export function useDealsQuery(params?: DealFilters) {
+export function useDealsQuery(params?: DealFilters, enabled = true) {
   return useQuery({
     queryKey: [...KEY, params],
+    enabled,
     queryFn: () =>
       api.get(BASE, { params }).then((r) => ({
         items: (r.data.data ?? []) as any[],

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ClipboardDocumentListIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { useNavigate, useLocation } from 'react-router-dom';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
@@ -17,6 +17,7 @@ import { CompanyFilterBar } from '../../../components/native-crm/CompanyFilterBa
 import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-settings.queries';
 import { buildPrefill } from '../../../modules/native-crm/shared/buildPrefill';
 import { formatDuration } from '../../../modules/native-crm/shared/duration';
+import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
 
 const FIELDS: FSFieldDef[] = [
   { key: 'branchId',      label: 'Company',         type: 'branch-select' },
@@ -79,6 +80,17 @@ export default function WorkordersPage() {
 
   const { data: settings } = useFSSettingsQuery();
 
+  // Tenant-configurable pipeline stages override the static defaults above —
+  // falls back to today's hardcoded list while loading/on error/unconfigured.
+  const { stages: pipelineStages } = usePipelineStages('workorder');
+  const statusOptions = pipelineStages.length > 0
+    ? [...pipelineStages].sort((a, b) => a.order - b.order).map((s) => s.key)
+    : STATUS_OPTIONS;
+  const fields = useMemo(
+    () => FIELDS.map((f) => (f.key === 'status' ? { ...f, options: statusOptions } : f)),
+    [statusOptions],
+  );
+
   useEffect(() => {
     const state = location.state as any;
     if (state?.openDrawer) {
@@ -128,7 +140,7 @@ export default function WorkordersPage() {
           className="text-sm border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-400"
         >
           <option value="">All Status</option>
-          {STATUS_OPTIONS.map((s) => (
+          {statusOptions.map((s) => (
             <option key={s} value={s}>{s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</option>
           ))}
         </select>
@@ -188,7 +200,7 @@ export default function WorkordersPage() {
       {drawer.open && (
         <FSDrawer
           title={drawer.record?._id ? 'Edit Work Order' : 'New Work Order'}
-          fields={FIELDS}
+          fields={fields}
           record={drawer.record}
           onClose={() => setDrawer({ open: false, record: null })}
           onSaved={() => {}}

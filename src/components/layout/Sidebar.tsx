@@ -50,7 +50,8 @@ import {
   StarIcon,
   WrenchScrewdriverIcon,
   AdjustmentsHorizontalIcon,
-  // BellAlertIcon,
+  BellAlertIcon,
+  ArrowsRightLeftIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth.store';
@@ -81,12 +82,23 @@ const FIELD_SERVICE_MODULES = [
   { key: 'assets',     label: 'Assets',     icon: WrenchScrewdriverIcon, color: '#6366f1' },
   { key: 'vehicles',   label: 'Vehicles',   icon: TruckIcon,             color: '#0284c7' },
   // { key: 'branches',           label: 'Branches',         icon: BuildingOffice2Icon,       color: '#6366f1' },
-  { key: 'settings',          label: 'FS Settings',      icon: Cog6ToothIcon,             color: '#64748b' },
- // { key: 'settings/notifications', label: 'Notification Settings', icon: BellAlertIcon,   color: '#0ea5e9' },
  // { key: 'message-history',   label: 'Message History',  icon: EnvelopeIcon,              color: '#10b981' },
    { key: 'native-logs',       label: 'Native Logs',      icon: ClipboardDocumentListIcon, color: '#64748b' },
-  { key: 'custom-fields',     label: 'Custom Fields',    icon: AdjustmentsHorizontalIcon, color: '#7c3aed' },
   { key: 'template-designer', label: 'PDF Designer',     icon: DocumentTextIcon,          color: '#db2777' },
+] as const;
+
+// Everything a tenant admin configures, grouped under one "Configuration"
+// sidebar section instead of scattered links — the overview entry links to
+// ConfigurationHubPage, the rest deep-link straight to each area.
+const CONFIGURATION_ITEMS = [
+  { key: 'configuration',              label: 'Configuration Hub', icon: Cog6ToothIcon,             color: '#475569' },
+  { key: 'settings/pipelines',         label: 'Pipeline & Stages', icon: Squares2X2Icon,             color: '#8b5cf6' },
+  { key: 'custom-fields',              label: 'Custom Fields',     icon: AdjustmentsHorizontalIcon,  color: '#7c3aed' },
+  { key: 'custom-modules',             label: 'Custom Modules',    icon: TableCellsIcon,             color: '#0d9488' },
+  { key: 'settings',                   label: 'FS Settings',       icon: WrenchScrewdriverIcon,      color: '#64748b' },
+  { key: 'settings/notifications',     label: 'Notifications',     icon: BellAlertIcon,              color: '#0ea5e9' },
+  { key: 'settings/automations',       label: 'Automations',       icon: BoltIcon,                   color: '#f59e0b' },
+  { key: 'settings/import-export',     label: 'Import & Export',   icon: ArrowsRightLeftIcon,        color: '#16a34a' },
 ] as const;
 
 type HeroIcon = FC<SVGProps<SVGSVGElement> & { className?: string }>;
@@ -232,6 +244,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const [myCrmOpen,        setMyCrmOpen]        = useState(true);
   const [nativeCrmOpen,    setNativeCrmOpen]    = useState(true);
   const [fieldServiceOpen, setFieldServiceOpen] = useState(true);
+  const [configOpen,       setConfigOpen]       = useState(true);
   const [nativeCounts,     setNativeCounts]     = useState<Record<string, number>>({});
   const [fsCounts,         setFsCounts]         = useState<Record<string, number>>({});
   const [customModules,    setCustomModules]    = useState<{ _id: string; slug: string; name: string; icon: string; color: string; showInSidebar: boolean }[]>([]);
@@ -535,6 +548,46 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                     {count > 0 && (
                       <span className="text-xs text-gray-400 tabular-nums">{count}</span>
                     )}
+                  </NavLink>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── Configuration section ────────────────────────────────────── */}
+        <div className="pt-3">
+          <button
+            onClick={() => setConfigOpen((o) => !o)}
+            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-600 transition-colors"
+          >
+            <Cog6ToothIcon className="h-4 w-4 shrink-0" />
+            <span className="flex-1 text-left">Configuration</span>
+            {configOpen
+              ? <ChevronDownIcon  className="h-3 w-3" />
+              : <ChevronRightIcon className="h-3 w-3" />}
+          </button>
+
+          {configOpen && (
+            <div className="mt-1 space-y-0.5">
+              {CONFIGURATION_ITEMS.map(({ key, label, icon: ModIcon, color }) => {
+                const path     = `/native-crm/${key}`;
+                const isActive = location.pathname === path;
+                return (
+                  <NavLink
+                    key={key}
+                    to={path}
+                    className={`group flex items-center gap-2.5 pl-5 pr-3 py-2 rounded-lg text-sm transition-colors ${
+                      isActive
+                        ? 'bg-brand-50 text-brand-700 font-medium'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    <ModIcon
+                      className="h-4 w-4 shrink-0 transition-colors"
+                      style={{ color: isActive ? color : undefined }}
+                    />
+                    <span className="flex-1 truncate">{label}</span>
                   </NavLink>
                 );
               })}

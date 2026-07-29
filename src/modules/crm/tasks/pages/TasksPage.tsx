@@ -2,11 +2,13 @@ import { ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
 import CrmLayout from '../../shared/CrmLayout';
 import type { ModulePageConfig } from '../../shared/types/crm.types';
 
-const config: ModulePageConfig = {
+export const config: ModulePageConfig = {
   label:         'Tasks',
   labelSingular: 'Task',
   apiBase:       '/api/v1/native-crm/tasks',
   statusField:   'taskStatus',
+  pipelineModule: 'task',
+  upcomingDateField: 'dueDate',
   fields: [
     { key: 'title',      label: 'Task Title',  type: 'text',   required: true },
     { key: 'dueDate',    label: 'Due Date',    type: 'date',   required: true, tableCol: true },

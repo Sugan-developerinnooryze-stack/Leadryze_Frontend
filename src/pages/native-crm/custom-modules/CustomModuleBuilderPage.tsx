@@ -731,6 +731,10 @@ export default function CustomModuleBuilderPage() {
   const [color,         setColor]         = useState('#6366f1');
   const [showInSidebar, setShowInSidebar] = useState(true);
   const [menuOrder,     setMenuOrder]     = useState(0);
+  // Which 'select' field (if any) this module treats as its pipeline — its
+  // options then come from the tenant's own configurable stages instead of
+  // the field's static list, and automation rules can trigger off it.
+  const [pipelineFieldKey, setPipelineFieldKey] = useState('');
 
   // Fields
   const [fields, setFields] = useState<BuilderField[]>([blank()]);
@@ -750,7 +754,7 @@ export default function CustomModuleBuilderPage() {
   useEffect(() => {
     if (selectedId === 'new' || selectedId === null) {
       setName(''); setSingularName(''); setIcon('📋'); setColor('#6366f1');
-      setShowInSidebar(true); setMenuOrder(0);
+      setShowInSidebar(true); setMenuOrder(0); setPipelineFieldKey('');
       setFields([blank()]); setActiveField(null); setSaveError('');
       return;
     }
@@ -759,6 +763,7 @@ export default function CustomModuleBuilderPage() {
     setName(mod.name); setSingularName(mod.singularName);
     setIcon(mod.icon ?? '📋'); setColor(mod.color ?? '#6366f1');
     setShowInSidebar(mod.showInSidebar); setMenuOrder(mod.menuOrder ?? 0);
+    setPipelineFieldKey(mod.pipelineFieldKey ?? '');
     setFields(
       mod.fields.length > 0
         ? mod.fields.map((f) => ({ ...f, _id: mkId() }))
@@ -800,7 +805,10 @@ export default function CustomModuleBuilderPage() {
 
     setSaving(true); setSaveError('');
     try {
-      const dto = { name, singularName: singularName || name, icon, color, showInSidebar, menuOrder, fields: builtFields };
+      const dto = {
+        name, singularName: singularName || name, icon, color, showInSidebar, menuOrder,
+        fields: builtFields, pipelineFieldKey: pipelineFieldKey || undefined,
+      };
       if (selectedId === 'new' || selectedId === null) {
         await createMutation.mutateAsync(dto);
         setSelectedId(null);
@@ -987,6 +995,22 @@ export default function CustomModuleBuilderPage() {
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Menu Order</label>
                     <input type="number" className={inp} value={menuOrder} onChange={(e) => setMenuOrder(parseInt(e.target.value) || 0)} min={0} />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Pipeline field (optional)</label>
+                    <select
+                      className={inp}
+                      value={pipelineFieldKey}
+                      onChange={(e) => setPipelineFieldKey(e.target.value)}
+                    >
+                      <option value="">None — no pipeline for this module</option>
+                      {fields.filter((f) => f.fieldType === 'select' && f.label.trim()).map((f) => (
+                        <option key={f._id} value={f.key || labelToKey(f.label)}>{f.label}</option>
+                      ))}
+                    </select>
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      Turns this field into a tenant-configurable pipeline — its options come from Configuration → Pipelines & Stages instead of the static list below, and Automations can trigger off it.
+                    </p>
                   </div>
                   <div className="flex items-center col-span-2">
                     <label className="flex items-center gap-2 cursor-pointer">

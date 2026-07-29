@@ -26,10 +26,16 @@ export interface ModuleConfig {
   listColumns:   string[];
 }
 
+// 'deals' is intentionally excluded from this sidebar list — Native CRM's
+// generic Deal table and Field Service's dedicated Deals page (with a real
+// Kanban board + its own /stage endpoint) both read/write the exact same
+// backend collection (/api/v1/native-crm/deals). Keeping only the Field
+// Service entry avoids showing the same data as two different, confusing
+// nav items. The route (/crm/deals) and NativeModule/MODULE_CONFIGS entry
+// still exist — only the sidebar link was removed.
 export const NATIVE_MODULES: { key: NativeModule; label: string; icon: ModuleConfig['icon']; color: string }[] = [
   { key: 'contacts',  label: 'Contacts',  icon: UserGroupIcon,              color: '#6366f1' },
   { key: 'companies', label: 'Companies', icon: BuildingOffice2Icon,        color: '#3b82f6' },
-  { key: 'deals',     label: 'Deals',     icon: BriefcaseIcon,              color: '#10b981' },
   { key: 'tasks',     label: 'Tasks',     icon: ClipboardDocumentListIcon,  color: '#f97316' },
   { key: 'tickets',   label: 'Tickets',   icon: LifebuoyIcon,               color: '#ef4444' },
   { key: 'calls',     label: 'Calls',     icon: PhoneIcon,                  color: '#8b5cf6' },

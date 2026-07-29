@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PrinterIcon, XMarkIcon, ArrowDownTrayIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { useInvoiceQuery, useInvoiceUpdate } from '../../../modules/native-crm/queries/invoices.queries';
@@ -6,6 +6,8 @@ import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-setti
 import { useCustomersListQuery } from '../../../modules/native-crm/queries/customers.queries';
 import ShareMenuButton from '../../../modules/native-crm/shared/ShareMenuButton';
 import FSShareModal from '../../../modules/native-crm/shared/FSShareModal';
+import TemplateDocViewer, { TemplateDocViewerHandle } from '../../../modules/native-crm/shared/TemplateDocViewer';
+import { useCustomTemplatesQuery } from '../../../modules/native-crm/queries/custom-templates.queries';
 import { canViewPII } from '../../../modules/native-crm/shared/piiAccess';
 import { useAuthStore } from '../../../stores/auth.store';
 import api from '../../../services/api';
@@ -26,6 +28,7 @@ const VARIANTS = [
   { value: 'classic', label: 'Classic' },
   { value: 'modern',  label: 'Modern'  },
   { value: 'minimal', label: 'Minimal' },
+  { value: 'elegant', label: 'Elegant' },
 ];
 const CUR_SYMBOL: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
 
@@ -33,6 +36,9 @@ export default function InvoicePrintPage() {
   const { id }     = useParams<{ id: string }>();
   const navigate   = useNavigate();
   const [variant, setVariant]         = useState('classic');
+  const [tplId, setTplId]             = useState('');   // designer template ('' = legacy variants)
+  const tplPicked                     = useRef(false);  // user explicitly chose → stop auto-defaulting
+  const viewerRef                     = useRef<TemplateDocViewerHandle>(null);
   const [downloading, setDownloading] = useState(false);
   const [sharing, setSharing]         = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
@@ -44,6 +50,15 @@ export default function InvoicePrintPage() {
 
   const { data: item, isLoading } = useInvoiceQuery(id ?? '');
   const { data: settings }        = useFSSettingsQuery();
+  const { data: designerTemplates = [] } = useCustomTemplatesQuery('invoice');
+
+  // Default to the tenant's default designer template (single source of truth
+  // with the emailed/downloaded PDF) unless the user picks something else.
+  useEffect(() => {
+    if (tplPicked.current || tplId) return;
+    const def = designerTemplates.find((t: any) => t.isDefault);
+    if (def) setTplId(def._id);
+  }, [designerTemplates, tplId]);
   const { data: custList }        = useCustomersListQuery({ page: 1, limit: 500 });
   const { data: svcData }         = useServicesListQuery({ limit: 500 });
   const { data: prtData }         = usePartsListQuery({ limit: 500 });
@@ -127,7 +142,8 @@ export default function InvoicePrintPage() {
     if (!id) return;
     setDownloading(true);
     try {
-      const res = await api.get(`/api/v1/native-crm/pdf/invoices/${id}?template=${variant}`, { responseType: 'blob' });
+      const qs  = tplId ? `templateId=${tplId}` : `template=${variant}`;
+      const res = await api.get(`/api/v1/native-crm/pdf/invoices/${id}?${qs}`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       const a   = document.createElement('a');
       a.href = url; a.download = `invoice-${item?.invoiceId ?? id}.pdf`;
@@ -156,24 +172,61 @@ export default function InvoicePrintPage() {
 
   const thCls = variant === 'modern'  ? 'bg-brand-600 text-white'
               : variant === 'minimal' ? 'bg-transparent text-gray-500 border-b-2 border-gray-300 border-l-0 border-r-0 border-t-0'
+              : variant === 'elegant' ? 'bg-[#1e3a5f] text-[#f5f0e6]'
               : 'bg-gray-50 text-gray-600';
   const tdCls = variant === 'minimal' ? 'border-b border-gray-100 px-3 py-2' : 'border border-gray-200 px-3 py-2';
-  const a4Cls = variant === 'modern'  ? 'border-t-4 border-brand-600' : '';
+  const a4Cls = variant === 'elegant' ? 'border-t-4 border-[#b8860b]' : '';
+
+  // Structural per-variant identity — mirrors the real backend PDF styles
+  // (Classic/Modern/Minimal/Elegant) so the on-screen/in-app-print view isn't
+  // just a couple of recolored table cells: Modern gets a full-bleed dark
+  // header band, Minimal/Elegant switch to a serif display face, Elegant gets
+  // a navy/gold accent identical to its PDF counterpart.
+  const isModern     = variant === 'modern';
+  const isMinimal    = variant === 'minimal';
+  const isElegant    = variant === 'elegant';
+  const pageFontCls  = isMinimal || isElegant ? 'font-serif' : 'font-sans';
+  const headerWrapCls  = isModern
+    ? 'px-[15mm] pt-10 pb-8 mb-8 bg-[#0f172a] flex justify-between items-center'
+    : 'flex justify-between items-start mb-8';
+  const infoRowCls = isModern ? 'bg-slate-50 border-l-4 border-[#0f172a] rounded-lg p-3.5 mb-6' : 'mb-6';
+  const companyNameCls = isModern ? 'text-xl font-bold text-white' : isElegant ? 'text-xl font-bold text-[#1e3a5f]' : 'text-xl font-bold text-gray-900';
+  const companyMetaCls = isModern ? 'text-xs text-slate-300 mt-1 space-y-0.5' : 'text-xs text-gray-500 mt-1 space-y-0.5';
+  const docTitleCls    = isModern ? 'text-2xl font-bold text-white tracking-tight'
+                       : isElegant ? 'text-2xl font-bold text-[#1e3a5f] tracking-tight'
+                       : isMinimal ? 'text-2xl font-bold text-gray-900 tracking-tight uppercase'
+                       : 'text-2xl font-bold text-gray-900 tracking-tight';
+  const docIdCls       = isModern ? 'text-slate-400 text-xs mt-1' : 'text-gray-400 text-xs mt-1';
+  const docMetaCls     = isModern ? 'text-xs text-slate-200 space-y-0.5 mt-2' : 'text-xs text-gray-600 space-y-0.5 mt-2';
+  const metaLblCls     = isModern ? 'text-slate-400' : 'text-gray-400';
+  const hrCls          = isMinimal ? 'border-gray-900 border-t-2 mb-6' : isElegant ? 'border-[#b8860b] border-t-2 mb-6' : 'border-gray-200 mb-6';
 
   return (
     <div className="bg-gray-100 min-h-screen">
       {/* Toolbar */}
       <div className="print:hidden bg-white border-b border-gray-200 shadow-sm">
         <div className="flex items-center gap-2 px-4 py-2 flex-wrap justify-end">
-          <select value={variant} onChange={e => setVariant(e.target.value)}
+          <select
+            value={tplId ? `tpl:${tplId}` : variant}
+            onChange={e => {
+              tplPicked.current = true;
+              const v = e.target.value;
+              if (v.startsWith('tpl:')) { setTplId(v.slice(4)); }
+              else { setTplId(''); setVariant(v); }
+            }}
             className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700">
-            {VARIANTS.map(v => <option key={v.value} value={v.value}>{v.label} Template</option>)}
+            {designerTemplates.map((t: any) => (
+              <option key={t._id} value={`tpl:${t._id}`}>{t.name}{t.isDefault ? ' ★' : ''}</option>
+            ))}
+            {VARIANTS.map(v => <option key={v.value} value={v.value}>{v.label} Template{designerTemplates.length ? ' (legacy)' : ''}</option>)}
           </select>
           {!editing ? (
+            !tplId && (
             <button onClick={enterEdit}
               className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50">
               <PencilIcon className="h-4 w-4" />Edit
             </button>
+            )
           ) : (
             <>
               <button onClick={handleSave} disabled={updateMutation.isPending}
@@ -198,7 +251,7 @@ export default function InvoicePrintPage() {
             className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-60">
             <ArrowDownTrayIcon className="h-4 w-4" />{downloading ? 'Generating…' : 'Download PDF'}
           </button>
-          <button onClick={() => window.print()}
+          <button onClick={() => (tplId ? viewerRef.current?.print() : window.print())}
             className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
             <PrinterIcon className="h-4 w-4" />Print
           </button>
@@ -209,15 +262,18 @@ export default function InvoicePrintPage() {
         </div>
       </div>
 
-      {/* A4 Document */}
-      <div className={`w-[210mm] min-h-[297mm] mx-auto my-8 print:my-0 bg-white shadow-xl print:shadow-none p-[15mm] font-sans text-sm text-gray-800 ${a4Cls}${editing ? ' outline outline-2 outline-brand-400 outline-offset-4' : ''}`}>
+      {/* Document body — designer template (single source of truth) or legacy JSX */}
+      {tplId && id ? (
+        <TemplateDocViewer ref={viewerRef} module="invoices" docId={id} templateId={tplId} />
+      ) : (
+      <div className={`w-[210mm] min-h-[297mm] mx-auto my-8 print:my-0 bg-white shadow-xl print:shadow-none ${isModern ? '' : 'p-[15mm]'} ${pageFontCls} text-sm text-gray-800 ${a4Cls}${editing ? ' outline outline-2 outline-brand-400 outline-offset-4' : ''}`}>
 
         {/* Company Header */}
-        <div className="flex justify-between items-start mb-8">
+        <div className={headerWrapCls}>
           <div>
             {settings?.companyLogo && <img src={settings.companyLogo} alt="Logo" className="h-14 mb-2 object-contain" />}
-            {settings?.companyName && <div className="text-xl font-bold text-gray-900">{settings.companyName}</div>}
-            <div className="text-xs text-gray-500 mt-1 space-y-0.5">
+            {settings?.companyName && <div className={companyNameCls}>{settings.companyName}</div>}
+            <div className={companyMetaCls}>
               {companyAddr                 && <div>{companyAddr}</div>}
               {settings?.gstin             && <div>GSTIN: {settings.gstin}</div>}
               {settings?.pan               && <div>PAN: {settings.pan}</div>}
@@ -230,12 +286,12 @@ export default function InvoicePrintPage() {
             </div>
           </div>
           <div className="text-right">
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">TAX INVOICE</h1>
-            <p className="text-gray-400 text-xs mt-1">{item.invoiceId}</p>
-            <div className="text-xs text-gray-600 space-y-0.5 mt-2">
-              <div><span className="text-gray-400">Date:</span> {fmtD(item.createdAt)}</div>
-              {item.dueDate     && <div><span className="text-gray-400">Due:</span> {fmtD(item.dueDate)}</div>}
-              {item.workOrderId && <div><span className="text-gray-400">Work Order:</span> {item.workOrderId}</div>}
+            <h1 className={docTitleCls}>TAX INVOICE</h1>
+            <p className={docIdCls}>{item.invoiceId}</p>
+            <div className={docMetaCls}>
+              <div><span className={metaLblCls}>Date:</span> {fmtD(item.createdAt)}</div>
+              {item.dueDate     && <div><span className={metaLblCls}>Due:</span> {fmtD(item.dueDate)}</div>}
+              {item.workOrderId && <div><span className={metaLblCls}>Work Order:</span> {item.workOrderId}</div>}
               <div className="flex justify-end gap-1.5 mt-1">
                 <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${
                   item.status==='paid'?'bg-green-100 text-green-700':item.status==='overdue'?'bg-red-100 text-red-700':item.status==='sent'?'bg-blue-100 text-blue-700':'bg-gray-100 text-gray-500'
@@ -245,11 +301,12 @@ export default function InvoicePrintPage() {
             </div>
           </div>
         </div>
+        <div className={isModern ? 'px-[15mm]' : ''}>
 
-        <hr className="border-gray-200 mb-6" />
+        {!isModern && <hr className={hrCls} />}
 
         {/* Bill To */}
-        <div className="mb-6">
+        <div className={infoRowCls}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Bill To</p>
           <p className="font-semibold text-gray-900 text-sm">{customer?.name ?? item.customerId}</p>
           <div className="text-xs text-gray-500 mt-1 space-y-0.5">
@@ -543,9 +600,11 @@ export default function InvoicePrintPage() {
             <div className="border-t border-gray-400 w-44 pt-1.5">Customer Acknowledgement</div>
           </div>
         </div>
+        </div>
       </div>
+      )}
 
-      <style>{`@media print { body { margin: 0; background: white; } @page { size: A4; margin: 0; } }`}</style>
+      <style>{`@media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; } body { margin: 0; background: white; } @page { size: A4; margin: 0; } }`}</style>
 
       {shareModalTab && (
         <FSShareModal
@@ -554,6 +613,7 @@ export default function InvoicePrintPage() {
           docLabel={item.invoiceId}
           customer={customer}
           initialTab={shareModalTab}
+          templateId={tplId || undefined}
           onClose={() => setShareModalTab(null)}
         />
       )}

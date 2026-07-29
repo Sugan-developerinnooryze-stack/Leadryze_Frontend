@@ -15,6 +15,7 @@ import { renderFieldValue } from '../../../modules/native-crm/shared/fieldValueR
 import ShareMenuButton from '../../../modules/native-crm/shared/ShareMenuButton';
 import FSShareModal from '../../../modules/native-crm/shared/FSShareModal';
 import { canViewPII } from '../../../modules/native-crm/shared/piiAccess';
+import ActivityFeedPanel from '../../../modules/native-crm/shared/ActivityFeedPanel';
 import { useAuthStore } from '../../../stores/auth.store';
 import api from '../../../services/api';
 
@@ -421,6 +422,12 @@ export default function WorkorderViewPage() {
             ))}
           </Card>
         )}
+
+        <ActivityFeedPanel
+          relatedModule="workorder"
+          relatedId={item._id}
+          relatedLabel={item.workOrderId}
+        />
       </div>
 
       {shareModalTab && (

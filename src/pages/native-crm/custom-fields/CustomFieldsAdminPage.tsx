@@ -11,6 +11,7 @@ import {
 import { useCustomFormTemplatesQuery } from '../../../modules/native-crm/queries/custom-form-templates.queries';
 
 const FS_MODULES = [
+  'leads', 'deals', 'tasks', 'tickets',
   'customers', 'sites', 'workorders', 'quotations', 'contracts', 'invoices',
   'receipts', 'expenses', 'activities', 'products', 'assets', 'vehicles',
 ];

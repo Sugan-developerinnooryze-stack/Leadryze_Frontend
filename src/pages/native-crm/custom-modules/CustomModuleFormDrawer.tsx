@@ -24,6 +24,7 @@ import { useVehiclesListQuery   } from '../../../modules/native-crm/queries/vehi
 import { useLeadsQuery          } from '../../../modules/native-crm/queries/leads.queries';
 import { useDealsQuery          } from '../../../modules/native-crm/queries/deals.queries';
 import { useBranchesQuery       } from '../../../modules/native-crm/queries/branch.queries';
+import { usePipelineStages      } from '../../../modules/native-crm/queries/pipeline-config.queries';
 
 /* ── Types ────────────────────────────────────────────────────────────────── */
 
@@ -34,6 +35,11 @@ interface CustomModuleFormDrawerProps {
   onClose:  () => void;
   onCreate: (data: Record<string, unknown>) => Promise<any>;
   onUpdate: (id: string, data: Record<string, unknown>) => Promise<any>;
+  /** Module slug + which field (if any) is its designated pipeline field —
+   * when set, that field's options come from the tenant's own configurable
+   * stages instead of its static list (see usePipelineStages below). */
+  moduleSlug?:       string;
+  pipelineFieldKey?: string;
 }
 
 /* ── Relationship metadata ────────────────────────────────────────────────── */
@@ -335,12 +341,17 @@ function CustomModuleRelationSelect({
 /* ── Main Component ───────────────────────────────────────────────────────── */
 
 export default function CustomModuleFormDrawer({
-  title, fields, record, onClose, onCreate, onUpdate,
+  title, fields, record, onClose, onCreate, onUpdate, moduleSlug, pipelineFieldKey,
 }: CustomModuleFormDrawerProps) {
   const [form,    setForm]    = useState<Record<string, unknown>>({});
   const [errors,  setErrors]  = useState<Record<string, string>>({});
   const [saving,  setSaving]  = useState(false);
   const [visible, setVisible] = useState(false);
+
+  const { stages: pipelineStages } = usePipelineStages(
+    pipelineFieldKey && moduleSlug ? `custom:${moduleSlug}` : undefined,
+  );
+  const pipelineOptions = [...pipelineStages].sort((a, b) => a.order - b.order).map((s) => s.key);
   useEffect(() => {
     const t = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(t);
@@ -507,13 +518,16 @@ export default function CustomModuleFormDrawer({
           </label>
         );
 
-      case 'select':
+      case 'select': {
+        const isPipelineField = f.key === pipelineFieldKey && pipelineOptions.length > 0;
+        const opts = isPipelineField ? pipelineOptions : (f.options ?? []);
         return wrap(
           <select className={inp} value={val as string ?? ''} onChange={(e) => set(f.key, e.target.value)}>
             <option value="">Select…</option>
-            {(f.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
+            {opts.map((o) => <option key={o} value={o}>{o}</option>)}
           </select>
         );
+      }
 
       case 'multiselect': {
         const selected = Array.isArray(val) ? val as string[] : [];
