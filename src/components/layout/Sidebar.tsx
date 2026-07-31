@@ -50,8 +50,8 @@ import {
   StarIcon,
   WrenchScrewdriverIcon,
   AdjustmentsHorizontalIcon,
-  BellAlertIcon,
-  ArrowsRightLeftIcon,
+ // BellAlertIcon,
+  //ArrowsRightLeftIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth.store';
