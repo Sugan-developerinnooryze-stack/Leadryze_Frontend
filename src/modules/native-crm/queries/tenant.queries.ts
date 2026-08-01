@@ -10,6 +10,8 @@ export interface TenantWidgetConfig {
   websiteUrl?: string;
   lastCrawledAt?: string;
   crawlPageCount?: number;
+  logoUrl?: string;
+  template?: 'modern' | 'minimal' | 'chips' | 'dark';
 }
 
 export interface CrawlStatus {
@@ -24,6 +26,7 @@ export interface Tenant {
   _id: string;
   name: string;
   widget?: TenantWidgetConfig;
+  branding?: { primaryColor?: string; companyName?: string; logoUrl?: string };
 }
 
 const BASE = '/api/v1/tenants';
@@ -37,13 +40,13 @@ export function useTenantQuery(id: string) {
   });
 }
 
-/** Never sends `widgetKey` — the backend ignores it anyway (server-generated
- * only, via regenerateWidgetKey below), but this hook simply never offers a
- * field for it in the first place. */
+/** Never sends `widgetKey`/`logoUrl` — the backend ignores both anyway
+ * (server-generated/upload-only respectively), but this hook simply never
+ * offers a field for either in the first place. */
 export function useUpdateTenantWidget(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (widget: Partial<Omit<TenantWidgetConfig, 'widgetKey'>>) =>
+    mutationFn: (widget: Partial<Omit<TenantWidgetConfig, 'widgetKey' | 'logoUrl'>>) =>
       api.put(`${BASE}/${id}`, { widget }).then((r) => r.data.data as Tenant),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY(id) }),
   });
@@ -54,6 +57,28 @@ export function useRegenerateWidgetKey(id: string) {
   return useMutation({
     mutationFn: () =>
       api.post(`${BASE}/${id}/widget/regenerate-key`).then((r) => r.data.data as { widgetKey: string }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY(id) }),
+  });
+}
+
+export function useUploadWidgetLogo(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      return api.post(`${BASE}/${id}/widget/logo`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }).then((r) => r.data.data as { logoUrl: string });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY(id) }),
+  });
+}
+
+export function useRemoveWidgetLogo(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.delete(`${BASE}/${id}/widget/logo`),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY(id) }),
   });
 }

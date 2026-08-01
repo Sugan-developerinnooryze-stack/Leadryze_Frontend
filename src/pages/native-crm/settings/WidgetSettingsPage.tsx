@@ -3,14 +3,79 @@ import * as XLSX from 'xlsx';
 import {
   ChatBubbleLeftRightIcon, ArrowPathIcon, ClipboardDocumentIcon, CheckIcon,
   LockClosedIcon, XMarkIcon, PlusIcon, GlobeAltIcon, DocumentArrowUpIcon,
+  PhotoIcon, TrashIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../../stores/auth.store';
 import { useTeamsListQuery } from '../../../modules/native-crm/queries/teams.queries';
 import {
   useTenantQuery, useUpdateTenantWidget, useRegenerateWidgetKey,
-  useTriggerWebsiteCrawl, useCrawlStatus,
+  useTriggerWebsiteCrawl, useCrawlStatus, useUploadWidgetLogo, useRemoveWidgetLogo,
+  type TenantWidgetConfig,
 } from '../../../modules/native-crm/queries/tenant.queries';
 import { useCatalogSources, useImportCatalog } from '../../../modules/native-crm/queries/catalog.queries';
+
+type Template = NonNullable<TenantWidgetConfig['template']>;
+
+const TEMPLATES: Array<{ id: Template; name: string; description: string }> = [
+  { id: 'modern',  name: 'Modern',           description: 'Gradient header, avatar, soft rounded bubbles — friendly, general-purpose.' },
+  { id: 'minimal', name: 'Minimal Flat',     description: 'Flat header, sharp corners, thin borders — understated and professional.' },
+  { id: 'chips',   name: 'Compact Chips',    description: 'Icon avatar with quick-reply suggestion buttons — guided, less typing upfront.' },
+  { id: 'dark',    name: 'Dark Professional', description: 'Dark chrome header, light readable message area — premium, enterprise feel.' },
+];
+
+/** A tiny, purely illustrative mockup of each template's header + message
+ * shape — not a live render of the real widget, just enough visual signal
+ * to tell the four apart at a glance when picking. */
+function TemplatePreview({ id, color }: { id: Template; color: string }) {
+  const dark = shadeColor(color, -0.18);
+  return (
+    <div className="rounded-lg overflow-hidden border border-gray-200 bg-gray-50" style={{ width: '100%', height: 64 }}>
+      <div
+        className="flex items-center gap-1.5 px-2"
+        style={{
+          height: 26,
+          background: id === 'dark' ? '#1a1f2e' : id === 'modern' ? `linear-gradient(135deg, ${color}, ${dark})` : color,
+        }}
+      >
+        {id !== 'minimal' && (
+          <span
+            className="rounded-full shrink-0"
+            style={{ width: 10, height: 10, background: id === 'chips' ? '#fff' : 'rgba(255,255,255,0.35)' }}
+          />
+        )}
+        <span className="h-1 rounded-full bg-white/70" style={{ width: 34 }} />
+      </div>
+      <div className="p-2 flex flex-col gap-1">
+        <span
+          className="h-2.5 bg-white border border-gray-200 self-start"
+          style={{ width: 46, borderRadius: id === 'minimal' ? 4 : id === 'chips' ? 6 : '2px 8px 8px 8px' }}
+        />
+        {id === 'chips' ? (
+          <div className="flex gap-1">
+            <span className="h-2 rounded-full border" style={{ width: 22, borderColor: color }} />
+            <span className="h-2 rounded-full border" style={{ width: 18, borderColor: color }} />
+          </div>
+        ) : (
+          <span
+            className="h-2.5 self-end"
+            style={{ width: 30, background: color, borderRadius: id === 'minimal' ? 4 : '8px 2px 8px 8px' }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function shadeColor(hex: string, amount: number): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec((hex || '#2563eb').trim());
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const clamp = (v: number) => Math.round(Math.max(0, Math.min(255, v)));
+  const r = clamp(((n >> 16) & 0xff) + 255 * amount);
+  const g = clamp(((n >> 8) & 0xff) + 255 * amount);
+  const b = clamp((n & 0xff) + 255 * amount);
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
 
 const API_ORIGIN: string = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
 // Defaults to the backend's own static-serve path (today's exact local-dev
@@ -54,9 +119,12 @@ export default function WidgetSettingsPage() {
   const updateMutation = useUpdateTenantWidget(tenantId);
   const regenMutation  = useRegenerateWidgetKey(tenantId);
   const crawlMutation  = useTriggerWebsiteCrawl();
+  const uploadLogoMutation = useUploadWidgetLogo(tenantId);
+  const removeLogoMutation = useRemoveWidgetLogo(tenantId);
   const { data: catalogSources } = useCatalogSources(tenantId);
   const importMutation = useImportCatalog(tenantId);
   const catalogFileInputRef = useRef<HTMLInputElement>(null);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
 
   const [enabled, setEnabled]           = useState(false);
   const [domains, setDomains]           = useState<string[]>([]);
@@ -64,10 +132,12 @@ export default function WidgetSettingsPage() {
   const [greeting, setGreeting]         = useState('');
   const [teamId, setTeamId]             = useState('');
   const [websiteUrl, setWebsiteUrl]     = useState('');
+  const [template, setTemplate]         = useState<Template>('modern');
   const [message, setMessage]           = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [keyMessage, setKeyMessage]     = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [crawlMessage, setCrawlMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [catalogMessage, setCatalogMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [logoMessage, setLogoMessage]   = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [confirmingRegen, setConfirmingRegen] = useState(false);
   const [isCrawlPolling, setIsCrawlPolling] = useState(false);
 
@@ -80,6 +150,7 @@ export default function WidgetSettingsPage() {
       setGreeting(tenant.widget.greeting ?? '');
       setTeamId(tenant.widget.defaultTeamId ?? '');
       setWebsiteUrl(tenant.widget.websiteUrl ?? '');
+      setTemplate(tenant.widget.template ?? 'modern');
     }
   }, [tenant]);
 
@@ -140,7 +211,7 @@ export default function WidgetSettingsPage() {
     setMessage(null);
     try {
       await updateMutation.mutateAsync({
-        enabled, allowedDomains: domains, greeting, defaultTeamId: teamId || null,
+        enabled, allowedDomains: domains, greeting, defaultTeamId: teamId || null, template,
       });
       setMessage({ type: 'ok', text: 'Widget settings saved.' });
     } catch (err: any) {
@@ -156,6 +227,29 @@ export default function WidgetSettingsPage() {
       setKeyMessage({ type: 'ok', text: 'New widget key generated — update your embed snippet on your website.' });
     } catch {
       setKeyMessage({ type: 'err', text: 'Could not regenerate the widget key.' });
+    }
+  };
+
+  const handleLogoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file later
+    if (!file) return;
+    setLogoMessage(null);
+    try {
+      await uploadLogoMutation.mutateAsync(file);
+      setLogoMessage({ type: 'ok', text: 'Logo uploaded.' });
+    } catch (err: any) {
+      setLogoMessage({ type: 'err', text: err?.response?.data?.message ?? 'Upload failed — try a smaller image (max 5 MB).' });
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    setLogoMessage(null);
+    try {
+      await removeLogoMutation.mutateAsync();
+      setLogoMessage({ type: 'ok', text: 'Logo removed.' });
+    } catch {
+      setLogoMessage({ type: 'err', text: 'Could not remove the logo.' });
     }
   };
 
@@ -310,6 +404,84 @@ export default function WidgetSettingsPage() {
                 >
                   {updateMutation.isPending ? 'Saving…' : 'Save Settings'}
                 </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+              <h3 className="text-sm font-semibold text-gray-700">Appearance</h3>
+              <p className="text-xs text-gray-500 mt-0.5">Every client's own website looks different — pick a logo and layout that fit theirs.</p>
+            </div>
+            <div className="px-6 py-5 space-y-6">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Logo / Icon</label>
+                <div className="flex items-center gap-3">
+                  <div className="h-14 w-14 rounded-full border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+                    {tenant.widget?.logoUrl ? (
+                      <img src={tenant.widget.logoUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <PhotoIcon className="h-6 w-6 text-gray-300" />
+                    )}
+                  </div>
+                  <input
+                    ref={logoFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoFile}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => logoFileInputRef.current?.click()}
+                    disabled={uploadLogoMutation.isPending}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                  >
+                    <PhotoIcon className="h-4 w-4" />
+                    {uploadLogoMutation.isPending ? 'Uploading…' : tenant.widget?.logoUrl ? 'Replace' : 'Upload'}
+                  </button>
+                  {tenant.widget?.logoUrl && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveLogo}
+                      disabled={removeLogoMutation.isPending}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-200 text-sm font-medium text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors"
+                    >
+                      <TrashIcon className="h-4 w-4" /> Remove
+                    </button>
+                  )}
+                </div>
+                <p className="mt-1.5 text-[11px] text-gray-400">Shown as the chat avatar. Falls back to your account logo, then to a plain initial, if none is set here.</p>
+                {logoMessage && (
+                  <div className={`mt-2 text-sm px-4 py-2.5 rounded-lg border ${
+                    logoMessage.type === 'ok'
+                      ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                      : 'bg-red-50 border-red-100 text-red-600'
+                  }`}>
+                    {logoMessage.text}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Template</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {TEMPLATES.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setTemplate(t.id)}
+                      className={`text-left rounded-xl border-2 p-2.5 transition-colors ${
+                        template === t.id ? 'border-brand-500 bg-brand-50/40' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <TemplatePreview id={t.id} color={tenant.branding?.primaryColor || '#2563eb'} />
+                      <p className="mt-2 text-xs font-semibold text-gray-700">{t.name}</p>
+                      <p className="text-[11px] text-gray-500 leading-snug mt-0.5">{t.description}</p>
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-[11px] text-gray-400">Applies immediately once you click Save Settings above.</p>
               </div>
             </div>
           </div>
