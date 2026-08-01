@@ -25,6 +25,9 @@ export const authService = {
   adminSetFeatureFlags: (id: string, flags: Record<string, boolean>) =>
                           api.put(`/api/v1/admin/tenants/${id}/features`, { flags }),
   adminGetKeyStats:       () => api.get('/api/v1/admin/system/key-stats'),
+  adminGetAiUsage:        () => api.get('/api/v1/admin/ai-usage'),
+  adminGetConversations:  (params?: Record<string, string>) => api.get('/api/v1/admin/conversations', { params }),
+  adminGetConversationDetail: (sessionId: string) => api.get(`/api/v1/admin/conversations/${sessionId}`),
   adminGetSecurityEvents:  (params?: Record<string, string>) =>
                              api.get('/api/v1/admin/security-events', { params }),
   adminGetSecurityStats:   () => api.get('/api/v1/admin/security-stats'),

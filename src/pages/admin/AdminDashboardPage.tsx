@@ -458,6 +458,11 @@ interface ApiKeyHealth {
   rateLimit: string; purpose: string; model: string;
 }
 interface KeyStats { today: number; week: number; month: number; model: string; escalations: number; label?: string; }
+interface TenantAiUsage {
+  tenantId: string; tenantName: string; plan: string;
+  monthlyTokenLimit: number; tokensUsedThisMonth: number; percentUsed: number;
+  estimatedCostUsd: number; requestCount: number; moderationFallbackCount: number;
+}
 
 const ROLE_BADGE: Record<string, string> = {
   primary:  'bg-brand-900/60 text-brand-300 border-brand-700/60',
@@ -589,6 +594,8 @@ function HealthPanel() {
   const [statsLoad, setStatsLoad] = useState(true);
   const [lastFetch, setLastFetch] = useState<Date | null>(null);
   const [aiOffline, setAiOffline] = useState(false);
+  const [aiUsage,     setAiUsage]     = useState<TenantAiUsage[]>([]);
+  const [aiUsageLoad, setAiUsageLoad] = useState(true);
 
   const loadHealth = useCallback(async () => {
     setLoading(true);
@@ -611,7 +618,16 @@ function HealthPanel() {
     finally { setStatsLoad(false); }
   }, []);
 
-  const refresh = useCallback(() => { loadHealth(); loadStats(); }, [loadHealth, loadStats]);
+  const loadAiUsage = useCallback(async () => {
+    setAiUsageLoad(true);
+    try {
+      const res = await authService.adminGetAiUsage();
+      setAiUsage(res.data.data.tenants ?? []);
+    } catch { /* stats optional */ }
+    finally { setAiUsageLoad(false); }
+  }, []);
+
+  const refresh = useCallback(() => { loadHealth(); loadStats(); loadAiUsage(); }, [loadHealth, loadStats, loadAiUsage]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -709,6 +725,75 @@ function HealthPanel() {
                 : apiKeys.map((k) => (
                     <KeyRow key={k.key} k={k} stats={keyStats[k.provider]} loading={statsLoad} />
                   ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* AI token usage & quotas, per tenant */}
+      <div>
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">AI Token Usage & Quotas (this month)</h3>
+          <p className="text-xs text-gray-600 flex items-center gap-1" title="Only conversations through a tenant's public website widget count toward their quota. At 100%, the AI stops replying with generated answers — but the widget stays up and still collects the visitor's name/email as a lead.">
+            <InformationCircleIcon className="h-3.5 w-3.5" />
+            Covers the public chat widget only · at 100%, AI replies pause but leads keep coming in
+          </p>
+        </div>
+        <div className="rounded-xl border border-gray-700/60 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-800/60 border-b border-gray-700/60">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Tenant</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Plan</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Tokens Used / Limit</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase" title="Green = plenty left · Yellow = 80%+ · Orange = 90%+ · Red = 95%+ or fully used">Quota Remaining</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Est. Cost</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Conversations</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase" title="How many times OpenAI's safety check was temporarily unreachable and a backup check ran instead — the chat still worked, this just flags when the primary safety provider was down">Safety Check Issues</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800/60">
+              {aiUsageLoad && aiUsage.length === 0
+                ? [0, 1, 2].map((i) => (
+                    <tr key={i} className="bg-gray-900/40">
+                      <td colSpan={7} className="px-4 py-3">
+                        <div className="h-4 bg-gray-800 rounded animate-pulse w-3/4" />
+                      </td>
+                    </tr>
+                  ))
+                : aiUsage.length === 0
+                ? (
+                  <tr><td colSpan={7} className="px-4 py-6 text-center text-xs text-gray-600">No AI usage recorded yet this month</td></tr>
+                ) : aiUsage.map((t) => {
+                  const pct = Math.round(t.percentUsed * 100);
+                  const barColor = pct >= 100 ? 'bg-red-500' : pct >= 95 ? 'bg-red-400' : pct >= 90 ? 'bg-orange-400' : pct >= 80 ? 'bg-yellow-400' : 'bg-green-500';
+                  const textColor = pct >= 95 ? 'text-red-400' : pct >= 80 ? 'text-yellow-400' : 'text-gray-300';
+                  return (
+                    <tr key={t.tenantId} className="hover:bg-gray-800/30">
+                      <td className="px-4 py-3 text-white font-medium">{t.tenantName}</td>
+                      <td className="px-4 py-3 text-gray-400 capitalize">{t.plan}</td>
+                      <td className="px-4 py-3 text-gray-300 tabular-nums">
+                        {t.tokensUsedThisMonth.toLocaleString()} / {t.monthlyTokenLimit.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 h-1.5 rounded-full bg-gray-800 overflow-hidden">
+                            <div className={`h-full ${barColor}`} style={{ width: `${Math.min(100, pct)}%` }} />
+                          </div>
+                          <span className={`text-xs font-semibold tabular-nums ${textColor}`}>{pct}%{pct >= 100 ? ' — AI paused' : ''}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-300 tabular-nums">${t.estimatedCostUsd.toFixed(4)}</td>
+                      <td className="px-4 py-3 text-gray-400 tabular-nums">{t.requestCount.toLocaleString()}</td>
+                      <td className="px-4 py-3 tabular-nums">
+                        {t.moderationFallbackCount > 0
+                          ? <span className="text-amber-400">{t.moderationFallbackCount}</span>
+                          : <span className="text-gray-600">0</span>}
+                      </td>
+                    </tr>
+                  );
+                })
               }
             </tbody>
           </table>
@@ -1379,6 +1464,198 @@ function ClientCard({ c, onClick, onToggle, onControls }: { c: Client; onClick: 
   );
 }
 
+/* ── AI Conversation Inspector ──────────────────────────────
+   Reuses ChatSession (full transcript) + AIAction (per-turn technical
+   trace: source/confidence/tokens/cost/tool calls) — both already
+   populated by the AI service from earlier work; this is a pure read/UI
+   layer, no new tracking. ── */
+interface ConversationListItem {
+  sessionId: string; tenantId: string; tenantName: string;
+  visitorName?: string; visitorEmail?: string; visitorPhone?: string;
+  channel: string; escalated: boolean; messageCount: number; lastActivityAt: string;
+}
+interface ConversationMessageTrace {
+  actionType?: string; summary?: string;
+  responseSource?: string; responseConfidence?: number;
+  promptTokens?: number; completionTokens?: number; totalTokens?: number; estimatedCostUsd?: number;
+  stageTimingsMs?: { guardrails: number; rag: number; llm: number };
+  toolCalls?: Array<{ name: string; ok: boolean; ms: number }>;
+}
+interface ConversationMessage {
+  role: 'user' | 'assistant'; content: string; timestamp: string; trace: ConversationMessageTrace | null;
+}
+interface ConversationDetail {
+  sessionId: string; tenantId: string; tenantName: string;
+  visitorName?: string; visitorEmail?: string; visitorPhone?: string;
+  channel: string; escalated: boolean; messages: ConversationMessage[];
+}
+
+function ConversationsPanel() {
+  const [items, setItems] = useState<ConversationListItem[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [escalatedFilter, setEscalatedFilter] = useState<'' | 'true' | 'false'>('');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<ConversationDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { page: String(page), limit: '20' };
+      if (escalatedFilter) params.escalated = escalatedFilter;
+      const res = await authService.adminGetConversations(params);
+      setItems(res.data.data.items ?? []);
+      setTotalPages(res.data.data.totalPages ?? 1);
+    } catch { toast.error('Failed to load conversations'); }
+    finally { setLoading(false); }
+  }, [page, escalatedFilter]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const openDetail = async (sessionId: string) => {
+    setSelectedId(sessionId);
+    setDetailLoading(true);
+    try {
+      const res = await authService.adminGetConversationDetail(sessionId);
+      setDetail(res.data.data);
+    } catch { toast.error('Failed to load conversation detail'); }
+    finally { setDetailLoading(false); }
+  };
+
+  const sourceBadge = (source?: string) => {
+    if (source === 'product_catalog') return 'bg-purple-900/40 text-purple-300 border-purple-700/40';
+    if (source === 'website_rag') return 'bg-blue-900/40 text-blue-300 border-blue-700/40';
+    return 'bg-gray-800 text-gray-400 border-gray-700';
+  };
+
+  return (
+    <div className="space-y-6 max-w-6xl">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-lg font-bold text-white">AI Conversation Inspector</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Every widget conversation, with the technical trace behind each reply — why the AI answered the way it did.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            value={escalatedFilter}
+            onChange={(e) => { setPage(1); setEscalatedFilter(e.target.value as '' | 'true' | 'false'); }}
+            className="text-xs bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-300"
+          >
+            <option value="">All conversations</option>
+            <option value="true">Escalated only</option>
+            <option value="false">Not escalated</option>
+          </select>
+          <button onClick={load} disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:bg-gray-700 disabled:opacity-50 transition-colors">
+            <ArrowPathIcon className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-gray-700/60 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-800/60 border-b border-gray-700/60">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Tenant</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Visitor</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Channel</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Messages</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Escalated</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Last Activity</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-800/60">
+            {loading && items.length === 0
+              ? [0, 1, 2].map((i) => (
+                  <tr key={i} className="bg-gray-900/40"><td colSpan={6} className="px-4 py-3"><div className="h-4 bg-gray-800 rounded animate-pulse w-3/4" /></td></tr>
+                ))
+              : items.length === 0
+              ? <tr><td colSpan={6} className="px-4 py-6 text-center text-xs text-gray-600">No conversations found</td></tr>
+              : items.map((c) => (
+                  <tr key={c.sessionId} onClick={() => openDetail(c.sessionId)} className="hover:bg-gray-800/30 cursor-pointer">
+                    <td className="px-4 py-3 text-white font-medium">{c.tenantName}</td>
+                    <td className="px-4 py-3 text-gray-300">{c.visitorName || c.visitorEmail || '—'}</td>
+                    <td className="px-4 py-3 text-gray-400 capitalize">{c.channel}</td>
+                    <td className="px-4 py-3 text-gray-400 tabular-nums">{c.messageCount}</td>
+                    <td className="px-4 py-3">
+                      {c.escalated
+                        ? <span className="text-xs px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-300 border border-amber-700/40">Escalated</span>
+                        : <span className="text-xs text-gray-600">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">{new Date(c.lastActivityAt).toLocaleString()}</td>
+                  </tr>
+                ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3">
+          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
+            className="px-3 py-1.5 rounded-lg border border-gray-700 text-xs text-gray-400 hover:bg-gray-800 disabled:opacity-40">Previous</button>
+          <span className="text-xs text-gray-500">Page {page} of {totalPages}</span>
+          <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
+            className="px-3 py-1.5 rounded-lg border border-gray-700 text-xs text-gray-400 hover:bg-gray-800 disabled:opacity-40">Next</button>
+        </div>
+      )}
+
+      {/* Detail drawer */}
+      {selectedId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setSelectedId(null)}>
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between z-10">
+              <div>
+                <h3 className="text-sm font-semibold text-white">{detail?.tenantName ?? '...'} — {detail?.visitorName || detail?.visitorEmail || 'Anonymous visitor'}</h3>
+                <p className="text-xs text-gray-500">{detail?.channel} · {selectedId}</p>
+              </div>
+              <button onClick={() => setSelectedId(null)} className="text-gray-500 hover:text-white"><XMarkIcon className="h-5 w-5" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              {detailLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="flex gap-2">{[0,1,2].map((i) => <span key={i} className="h-2.5 w-2.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}</div>
+                </div>
+              ) : (detail?.messages ?? []).map((m, i) => (
+                <div key={i} className={`rounded-xl p-4 ${m.role === 'user' ? 'bg-gray-800/60 ml-8' : 'bg-brand-900/20 border border-brand-800/30 mr-8'}`}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">{m.role === 'user' ? 'Visitor' : 'AI'}</span>
+                    <span className="text-[11px] text-gray-600">{new Date(m.timestamp).toLocaleTimeString()}</span>
+                  </div>
+                  <p className="text-sm text-gray-200 whitespace-pre-wrap">{m.content}</p>
+                  {m.trace && (m.trace.responseSource || m.trace.toolCalls?.length || m.trace.totalTokens != null) && (
+                    <div className="mt-3 pt-3 border-t border-gray-800/60 flex flex-wrap items-center gap-2 text-[11px]">
+                      {m.trace.responseSource && (
+                        <span className={`px-2 py-0.5 rounded-full border ${sourceBadge(m.trace.responseSource)}`}>
+                          {m.trace.responseSource} {m.trace.responseConfidence != null ? `· ${Math.round(m.trace.responseConfidence * 100)}%` : ''}
+                        </span>
+                      )}
+                      {m.trace.toolCalls?.map((t, ti) => (
+                        <span key={ti} className={`px-2 py-0.5 rounded-full border ${t.ok ? 'bg-emerald-900/30 text-emerald-300 border-emerald-800/40' : 'bg-red-900/30 text-red-300 border-red-800/40'}`}>
+                          {t.name} ({t.ms}ms)
+                        </span>
+                      ))}
+                      {m.trace.totalTokens != null && (
+                        <span className="text-gray-500 tabular-nums">{m.trace.totalTokens} tokens · ${(m.trace.estimatedCostUsd ?? 0).toFixed(5)}</span>
+                      )}
+                      {m.trace.stageTimingsMs && (
+                        <span className="text-gray-600 tabular-nums">guardrails {m.trace.stageTimingsMs.guardrails}ms · rag {m.trace.stageTimingsMs.rag}ms · llm {m.trace.stageTimingsMs.llm}ms</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Main Page ───────────────────────────────────────────── */
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
@@ -1390,7 +1667,7 @@ export default function AdminDashboardPage() {
     emailVerified: boolean; createdAt: string;
     tenantId?: { name: string; slug: string; plan: string; isActive: boolean };
   }>>([]);
-  const [tab, setTab]             = useState<'overview' | 'clients' | 'users' | 'logs' | 'health' | 'system' | 'security'>('overview');
+  const [tab, setTab]             = useState<'overview' | 'clients' | 'users' | 'logs' | 'health' | 'system' | 'security' | 'conversations'>('overview');
   const [adminLogs, setAdminLogs] = useState<AdminLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logService, setLogService] = useState<'all' | 'ai' | 'backend'>('all');
@@ -1454,6 +1731,7 @@ export default function AdminDashboardPage() {
     { id: 'clients'   as const, label: `Clients (${clients.length})`,icon: BuildingOffice2Icon         },
     { id: 'users'     as const, label: `Users (${allUsers.length})`, icon: UsersIcon                   },
     { id: 'logs'      as const, label: 'Logs',                       icon: ClipboardDocumentCheckIcon  },
+    { id: 'conversations' as const, label: 'Conversations',          icon: ChatBubbleLeftRightIcon     },
     { id: 'health'    as const, label: 'Health',                     icon: HeartIcon                   },
     { id: 'system'    as const, label: 'System',                     icon: KeyIcon                     },
     { id: 'security'  as const, label: 'Security',                   icon: ShieldCheckIcon             },
@@ -1829,6 +2107,11 @@ export default function AdminDashboardPage() {
               </table>
             </div>
           </div>
+        ) : tab === 'conversations' ? (
+
+          /* ── AI CONVERSATIONS ── */
+          <ConversationsPanel />
+
         ) : tab === 'health' ? (
 
           /* ── HEALTH ── */

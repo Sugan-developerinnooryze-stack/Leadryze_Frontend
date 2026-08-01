@@ -185,7 +185,12 @@ function BotTrainingPanel() {
 }
 
 /* ── Chat History Panel ───────────────────────────────────────────────── */
-interface ChatMessage { role: 'user' | 'assistant'; content: string; timestamp: string; }
+interface ChatMessageTrace {
+  responseSource?: string; responseConfidence?: number;
+  totalTokens?: number; estimatedCostUsd?: number;
+  toolCalls?: Array<{ name: string; ok: boolean; ms: number }>;
+}
+interface ChatMessage { role: 'user' | 'assistant'; content: string; timestamp: string; trace?: ChatMessageTrace | null; }
 interface ChatSessionRow {
   _id: string; sessionId: string; visitorName?: string; visitorEmail?: string;
   channel: string; escalated: boolean; messages: ChatMessage[]; createdAt: string; updatedAt: string;
@@ -197,6 +202,13 @@ function ChatHistoryPanel() {
   const [expanded, setExpanded]   = useState<string | null>(null);
   const [page, setPage]           = useState(1);
   const [total, setTotal]         = useState(0);
+  // The list response only carries message counts cheaply — the real,
+  // trace-enriched transcript (source/confidence/tokens/cost/tool calls per
+  // reply) is fetched on demand per session, same list-then-detail split
+  // the Super Admin Conversation Inspector uses, and cached so re-expanding
+  // the same row doesn't refetch.
+  const [detailCache, setDetailCache] = useState<Record<string, ChatMessage[]>>({});
+  const [detailLoading, setDetailLoading] = useState<string | null>(null);
   const perPage = 20;
 
   const load = useCallback(async (p = 1) => {
@@ -211,7 +223,24 @@ function ChatHistoryPanel() {
 
   useEffect(() => { load(page); }, [load, page]);
 
-  const toggle = (id: string) => setExpanded((e) => (e === id ? null : id));
+  const toggle = async (s: ChatSessionRow) => {
+    if (expanded === s._id) { setExpanded(null); return; }
+    setExpanded(s._id);
+    if (!detailCache[s.sessionId]) {
+      setDetailLoading(s.sessionId);
+      try {
+        const res = await api.get(`/api/v1/bot/chat-history/${s.sessionId}`);
+        setDetailCache((prev) => ({ ...prev, [s.sessionId]: res.data.data.messages ?? [] }));
+      } catch { toast.error('Failed to load conversation detail'); }
+      finally { setDetailLoading(null); }
+    }
+  };
+
+  const sourceLabel = (source?: string) => {
+    if (source === 'product_catalog') return 'Product catalog';
+    if (source === 'website_rag') return 'Website content';
+    return null;
+  };
 
   const relTime = (ts: string) => {
     const diff = Date.now() - new Date(ts).getTime();
@@ -244,7 +273,7 @@ function ChatHistoryPanel() {
           <div className="space-y-2">
             {sessions.map((s) => (
               <div key={s._id} className="card border border-gray-200">
-                <button className="w-full flex items-center gap-3 text-left" onClick={() => toggle(s._id)}>
+                <button className="w-full flex items-center gap-3 text-left" onClick={() => toggle(s)}>
                   <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${s.escalated ? 'bg-red-100 text-red-600' : 'bg-brand-100 text-brand-700'}`}>
                     {s.visitorName?.[0]?.toUpperCase() || '?'}
                   </div>
@@ -265,11 +294,33 @@ function ChatHistoryPanel() {
 
                 {expanded === s._id && (
                   <div className="mt-3 pt-3 border-t border-gray-100 space-y-2 max-h-80 overflow-y-auto">
-                    {s.messages.map((m, i) => (
-                      <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    {detailLoading === s.sessionId ? (
+                      <div className="flex justify-center py-4">
+                        <div className="flex gap-1.5">{[0,1,2].map((i) => <span key={i} className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}</div>
+                      </div>
+                    ) : (detailCache[s.sessionId] ?? s.messages).map((m, i) => (
+                      <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
                         <div className={`max-w-[80%] px-3 py-2 rounded-lg text-xs ${m.role === 'user' ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-700'}`}>
                           {m.content}
                         </div>
+                        {m.trace && (m.trace.responseSource || m.trace.toolCalls?.length || m.trace.totalTokens != null) && (
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1 max-w-[80%] text-[10px] text-gray-400">
+                            {sourceLabel(m.trace.responseSource) && (
+                              <span className="px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-100">
+                                Answered from: {sourceLabel(m.trace.responseSource)}
+                                {m.trace.responseConfidence != null ? ` (${Math.round(m.trace.responseConfidence * 100)}% confident)` : ''}
+                              </span>
+                            )}
+                            {m.trace.toolCalls?.map((t, ti) => (
+                              <span key={ti} className={`px-1.5 py-0.5 rounded-full border ${t.ok ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                                {t.name}
+                              </span>
+                            ))}
+                            {m.trace.totalTokens != null && (
+                              <span>{m.trace.totalTokens} tokens · ${(m.trace.estimatedCostUsd ?? 0).toFixed(5)}</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

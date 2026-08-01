@@ -60,6 +60,7 @@ const PipelineSettingsPage     = lazy(() => import('./pages/native-crm/settings/
 const ConfigurationHubPage     = lazy(() => import('./pages/native-crm/settings/ConfigurationHubPage'));
 const AutomationRulesPage      = lazy(() => import('./pages/native-crm/settings/AutomationRulesPage'));
 const ImportExportPage         = lazy(() => import('./pages/native-crm/settings/ImportExportPage'));
+const WidgetSettingsPage       = lazy(() => import('./pages/native-crm/settings/WidgetSettingsPage'));
 const MessageHistoryPage       = lazy(() => import('./pages/native-crm/MessageHistoryPage'));
 const NativeLogsPage          = lazy(() => import('./pages/native-crm/native-logs/NativeLogsPage'));
 const BranchesPage            = lazy(() => import('./pages/native-crm/branches/BranchesPage'));
@@ -187,6 +188,7 @@ export default function App() {
           <Route path="native-crm/settings"             element={S(FSSettingsPage)} />
           <Route path="native-crm/settings/notifications" element={S(NotificationSettingsPage)} />
           <Route path="native-crm/settings/pipelines"      element={S(PipelineSettingsPage)} />
+          <Route path="native-crm/settings/widget"         element={S(WidgetSettingsPage)} />
           <Route path="native-crm/message-history"        element={S(MessageHistoryPage)} />
           <Route path="native-crm/native-logs"         element={S(NativeLogsPage)} />
           <Route path="native-crm/branches"            element={S(BranchesPage)} />
