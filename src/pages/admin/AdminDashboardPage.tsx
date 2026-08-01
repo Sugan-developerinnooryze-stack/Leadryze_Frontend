@@ -1526,6 +1526,7 @@ function ConversationsPanel() {
 
   const sourceBadge = (source?: string) => {
     if (source === 'product_catalog') return 'bg-purple-900/40 text-purple-300 border-purple-700/40';
+    if (source === 'booking') return 'bg-teal-900/40 text-teal-300 border-teal-700/40';
     if (source === 'website_rag') return 'bg-blue-900/40 text-blue-300 border-blue-700/40';
     return 'bg-gray-800 text-gray-400 border-gray-700';
   };

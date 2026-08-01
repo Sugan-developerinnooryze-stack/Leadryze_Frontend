@@ -238,6 +238,7 @@ function ChatHistoryPanel() {
 
   const sourceLabel = (source?: string) => {
     if (source === 'product_catalog') return 'Product catalog';
+    if (source === 'booking') return 'Booking assistant';
     if (source === 'website_rag') return 'Website content';
     return null;
   };
