@@ -23,42 +23,59 @@ const TEMPLATES: Array<{ id: Template; name: string; description: string }> = [
   { id: 'dark',    name: 'Dark Professional', description: 'Dark chrome header, light readable message area — premium, enterprise feel.' },
 ];
 
-/** A tiny, purely illustrative mockup of each template's header + message
- * shape — not a live render of the real widget, just enough visual signal
- * to tell the four apart at a glance when picking. */
+/** A tiny, purely illustrative mockup of each template's actual structure —
+ * not a live render of the real widget, but distinct enough (status bar for
+ * Modern, no avatar for Minimal, horizontal pills for Chips, a vertical
+ * stacked action menu for Dark) that the four are tellable apart at a
+ * glance, matching how the real templates now differ structurally too. */
 function TemplatePreview({ id, color }: { id: Template; color: string }) {
   const dark = shadeColor(color, -0.18);
   return (
-    <div className="rounded-lg overflow-hidden border border-gray-200 bg-gray-50" style={{ width: '100%', height: 64 }}>
+    <div className="rounded-lg overflow-hidden border border-gray-200 bg-gray-50" style={{ width: '100%', height: 72 }}>
       <div
         className="flex items-center gap-1.5 px-2"
         style={{
-          height: 26,
+          height: 22,
           background: id === 'dark' ? '#1a1f2e' : id === 'modern' ? `linear-gradient(135deg, ${color}, ${dark})` : color,
         }}
       >
         {id !== 'minimal' && (
           <span
-            className="rounded-full shrink-0"
-            style={{ width: 10, height: 10, background: id === 'chips' ? '#fff' : 'rgba(255,255,255,0.35)' }}
-          />
+            className="rounded-full shrink-0 flex items-center justify-center text-[6px] font-bold"
+            style={{ width: 11, height: 11, background: id === 'chips' ? '#fff' : 'rgba(255,255,255,0.35)', color }}
+          >
+            {id === 'chips' ? 'L' : ''}
+          </span>
         )}
-        <span className="h-1 rounded-full bg-white/70" style={{ width: 34 }} />
+        <span className="h-1 rounded-full bg-white/70" style={{ width: 30 }} />
       </div>
-      <div className="p-2 flex flex-col gap-1">
+      {id === 'modern' && (
+        <div className="flex items-center gap-1 px-2" style={{ height: 10, background: `linear-gradient(135deg, ${color}, ${dark})` }}>
+          <span className="rounded-full shrink-0" style={{ width: 4, height: 4, background: '#4ade80' }} />
+          <span className="h-[3px] rounded-full bg-white/60" style={{ width: 20 }} />
+        </div>
+      )}
+      <div className="p-1.5 flex flex-col gap-1">
         <span
-          className="h-2.5 bg-white border border-gray-200 self-start"
-          style={{ width: 46, borderRadius: id === 'minimal' ? 4 : id === 'chips' ? 6 : '2px 8px 8px 8px' }}
+          className="h-2 bg-white border border-gray-200 self-start"
+          style={{ width: 42, borderRadius: id === 'minimal' ? 3 : '2px 7px 7px 7px' }}
         />
-        {id === 'chips' ? (
+        {id === 'chips' && (
           <div className="flex gap-1">
-            <span className="h-2 rounded-full border" style={{ width: 22, borderColor: color }} />
-            <span className="h-2 rounded-full border" style={{ width: 18, borderColor: color }} />
+            <span className="h-2 rounded-full border" style={{ width: 20, borderColor: color }} />
+            <span className="h-2 rounded-full border" style={{ width: 16, borderColor: color }} />
           </div>
-        ) : (
+        )}
+        {id === 'dark' && (
+          <div className="flex flex-col gap-[3px]">
+            <span className="h-[7px] rounded border border-gray-200 bg-white" />
+            <span className="h-[7px] rounded border border-gray-200 bg-white" />
+          </div>
+        )}
+        {(id === 'modern' || id === 'minimal') && (
           <span
-            className="h-2.5 self-end"
-            style={{ width: 30, background: color, borderRadius: id === 'minimal' ? 4 : '8px 2px 8px 8px' }}
+            className="h-2 self-end"
+            style={{ width: 26, background: color, borderRadius: id === 'minimal' ? 3 : '7px 2px 7px 7px' }}
           />
         )}
       </div>
