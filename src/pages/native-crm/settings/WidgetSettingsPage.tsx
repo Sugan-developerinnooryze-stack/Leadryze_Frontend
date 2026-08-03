@@ -6,15 +6,48 @@ import {
   PhotoIcon, TrashIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../../stores/auth.store';
-import { useTeamsListQuery } from '../../../modules/native-crm/queries/teams.queries';
+import { useTeamsListQuery, useTeamUpdate } from '../../../modules/native-crm/queries/teams.queries';
 import {
   useTenantQuery, useUpdateTenantWidget, useRegenerateWidgetKey,
   useTriggerWebsiteCrawl, useCrawlStatus, useUploadWidgetLogo, useRemoveWidgetLogo,
-  type TenantWidgetConfig,
+  useUpdateTenantAIConfig,
+  type TenantWidgetConfig, type ToolModelPreset,
 } from '../../../modules/native-crm/queries/tenant.queries';
 import { useCatalogSources, useImportCatalog } from '../../../modules/native-crm/queries/catalog.queries';
 
 type Template = NonNullable<TenantWidgetConfig['template']>;
+
+const WEEKDAYS: Array<{ day: 0 | 1 | 2 | 3 | 4 | 5 | 6; label: string }> = [
+  { day: 1, label: 'Monday' },
+  { day: 2, label: 'Tuesday' },
+  { day: 3, label: 'Wednesday' },
+  { day: 4, label: 'Thursday' },
+  { day: 5, label: 'Friday' },
+  { day: 6, label: 'Saturday' },
+  { day: 0, label: 'Sunday' },
+];
+
+interface DayHours { open: boolean; start: string; end: string; }
+type WeekHours = Record<number, DayHours>;
+
+const DEFAULT_DAY: DayHours = { open: false, start: '09:00', end: '17:00' };
+
+function defaultWeekHours(): WeekHours {
+  const week: WeekHours = {};
+  for (const { day } of WEEKDAYS) week[day] = { ...DEFAULT_DAY };
+  // Mirrors the backend schema's own default (Mon-Fri 9-5) for a tenant
+  // that's never configured this yet.
+  [1, 2, 3, 4, 5].forEach((d) => { week[d] = { open: true, start: '09:00', end: '17:00' }; });
+  return week;
+}
+
+const TOOL_MODEL_OPTIONS: Array<{ id: ToolModelPreset | ''; name: string; description: string }> = [
+  { id: '',           name: 'Default (recommended)', description: "Uses this account's global model — fast and cost-efficient for most tenants." },
+  { id: 'groq',        name: 'Groq',       description: 'Fastest, lowest cost — good default for high-volume conversations.' },
+  { id: 'anthropic',   name: 'Claude',     description: 'Slower and more expensive, generally more reliable at multi-step tool use.' },
+  { id: 'openai',      name: 'GPT-4o mini', description: 'A middle ground between Groq and Claude on speed, cost, and reliability.' },
+  { id: 'google',      name: 'Gemini',     description: "Google's model — a real alternative if you'd rather not depend on Groq or OpenAI." },
+];
 
 const TEMPLATES: Array<{ id: Template; name: string; description: string }> = [
   { id: 'modern',  name: 'Modern',           description: 'Gradient header, avatar, soft rounded bubbles — friendly, general-purpose.' },
@@ -133,7 +166,9 @@ export default function WidgetSettingsPage() {
 
   const { data: tenant, isLoading, error } = useTenantQuery(isAdmin ? tenantId : '');
   const { data: teamsData } = useTeamsListQuery({ limit: 100 });
+  const teamUpdateMutation = useTeamUpdate();
   const updateMutation = useUpdateTenantWidget(tenantId);
+  const aiConfigMutation = useUpdateTenantAIConfig(tenantId);
   const regenMutation  = useRegenerateWidgetKey(tenantId);
   const crawlMutation  = useTriggerWebsiteCrawl();
   const uploadLogoMutation = useUploadWidgetLogo(tenantId);
@@ -150,6 +185,17 @@ export default function WidgetSettingsPage() {
   const [teamId, setTeamId]             = useState('');
   const [websiteUrl, setWebsiteUrl]     = useState('');
   const [template, setTemplate]         = useState<Template>('modern');
+  const [toolModelPreset, setToolModelPreset] = useState<ToolModelPreset | ''>('');
+  const [toolModelMessage, setToolModelMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [bookingEnabled, setBookingEnabled]   = useState(false);
+  const [bookingTimezone, setBookingTimezone] = useState('UTC');
+  const [bookingSlotMinutes, setBookingSlotMinutes]     = useState(30);
+  const [bookingLeadTimeHours, setBookingLeadTimeHours] = useState(2);
+  const [bookingHorizonDays, setBookingHorizonDays]     = useState(14);
+  const [bookingHours, setBookingHours] = useState<WeekHours>(defaultWeekHours());
+  const [bookingMessage, setBookingMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [departmentsMessage, setDepartmentsMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [togglingTeamId, setTogglingTeamId] = useState<string | null>(null);
   const [message, setMessage]           = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [keyMessage, setKeyMessage]     = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [crawlMessage, setCrawlMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -168,7 +214,23 @@ export default function WidgetSettingsPage() {
       setTeamId(tenant.widget.defaultTeamId ?? '');
       setWebsiteUrl(tenant.widget.websiteUrl ?? '');
       setTemplate(tenant.widget.template ?? 'modern');
+
+      const booking = tenant.widget.booking;
+      setBookingEnabled(booking?.enabled ?? false);
+      setBookingTimezone(booking?.timezone ?? 'UTC');
+      setBookingSlotMinutes(booking?.slotMinutes ?? 30);
+      setBookingLeadTimeHours(booking?.leadTimeHours ?? 2);
+      setBookingHorizonDays(booking?.horizonDays ?? 14);
+      if (booking?.hours) {
+        const week = defaultWeekHours();
+        for (const { day } of WEEKDAYS) week[day] = { ...DEFAULT_DAY, open: false };
+        for (const h of booking.hours) week[h.day] = { open: true, start: h.start, end: h.end };
+        setBookingHours(week);
+      } else {
+        setBookingHours(defaultWeekHours());
+      }
     }
+    setToolModelPreset(tenant?.aiConfig?.toolModelPreset ?? '');
   }, [tenant]);
 
   useEffect(() => {
@@ -233,6 +295,50 @@ export default function WidgetSettingsPage() {
       setMessage({ type: 'ok', text: 'Widget settings saved.' });
     } catch (err: any) {
       setMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
+    }
+  };
+
+  const handleToolModelSave = async () => {
+    setToolModelMessage(null);
+    try {
+      await aiConfigMutation.mutateAsync({ toolModelPreset: toolModelPreset || null });
+      setToolModelMessage({ type: 'ok', text: 'Tool model saved.' });
+    } catch (err: any) {
+      setToolModelMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
+    }
+  };
+
+  const handleBookingSave = async () => {
+    setBookingMessage(null);
+    try {
+      const hours = WEEKDAYS
+        .filter(({ day }) => bookingHours[day]?.open)
+        .map(({ day }) => ({ day, start: bookingHours[day].start, end: bookingHours[day].end }));
+      await updateMutation.mutateAsync({
+        booking: {
+          enabled: bookingEnabled,
+          timezone: bookingTimezone.trim() || 'UTC',
+          slotMinutes: bookingSlotMinutes,
+          leadTimeHours: bookingLeadTimeHours,
+          horizonDays: bookingHorizonDays,
+          hours,
+        },
+      });
+      setBookingMessage({ type: 'ok', text: 'Booking hours saved.' });
+    } catch (err: any) {
+      setBookingMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
+    }
+  };
+
+  const handleToggleDepartment = async (teamId: string, showInWidget: boolean) => {
+    setDepartmentsMessage(null);
+    setTogglingTeamId(teamId);
+    try {
+      await teamUpdateMutation.mutateAsync({ id: teamId, data: { showInWidget } });
+    } catch {
+      setDepartmentsMessage({ type: 'err', text: 'Could not update that department — try again.' });
+    } finally {
+      setTogglingTeamId(null);
     }
   };
 
@@ -422,6 +528,193 @@ export default function WidgetSettingsPage() {
                   {updateMutation.isPending ? 'Saving…' : 'Save Settings'}
                 </button>
               </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700">Booking Hours</h3>
+                <p className="text-xs text-gray-500 mt-0.5">When visitors can actually book a real appointment through the widget.</p>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                <span className="text-xs text-gray-500">{bookingEnabled ? 'Enabled' : 'Disabled'}</span>
+                <input
+                  type="checkbox"
+                  checked={bookingEnabled}
+                  onChange={(e) => setBookingEnabled(e.target.checked)}
+                  className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                />
+              </label>
+            </div>
+            <div className="px-6 py-5 space-y-5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Timezone</label>
+                  <input value={bookingTimezone} onChange={(e) => setBookingTimezone(e.target.value)} className={input} placeholder="e.g. Asia/Kolkata" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Slot Length (min)</label>
+                  <input
+                    type="number" min={5} step={5}
+                    value={bookingSlotMinutes}
+                    onChange={(e) => setBookingSlotMinutes(Math.max(5, Number(e.target.value) || 0))}
+                    className={input}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Lead Time (hrs)</label>
+                  <input
+                    type="number" min={0}
+                    value={bookingLeadTimeHours}
+                    onChange={(e) => setBookingLeadTimeHours(Math.max(0, Number(e.target.value) || 0))}
+                    className={input}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Book Ahead (days)</label>
+                  <input
+                    type="number" min={1}
+                    value={bookingHorizonDays}
+                    onChange={(e) => setBookingHorizonDays(Math.max(1, Number(e.target.value) || 0))}
+                    className={input}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Business Hours</label>
+                <div className="space-y-1.5">
+                  {WEEKDAYS.map(({ day, label }) => {
+                    const d = bookingHours[day] ?? DEFAULT_DAY;
+                    return (
+                      <div key={day} className="flex items-center gap-3 text-sm">
+                        <label className="flex items-center gap-2 w-32 shrink-0 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={d.open}
+                            onChange={(e) => setBookingHours({ ...bookingHours, [day]: { ...d, open: e.target.checked } })}
+                            className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                          />
+                          <span className={d.open ? 'text-gray-700' : 'text-gray-400'}>{label}</span>
+                        </label>
+                        <input
+                          type="time"
+                          value={d.start}
+                          disabled={!d.open}
+                          onChange={(e) => setBookingHours({ ...bookingHours, [day]: { ...d, start: e.target.value } })}
+                          className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs text-gray-700 disabled:bg-gray-50 disabled:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-400"
+                        />
+                        <span className="text-gray-300 text-xs">to</span>
+                        <input
+                          type="time"
+                          value={d.end}
+                          disabled={!d.open}
+                          onChange={(e) => setBookingHours({ ...bookingHours, [day]: { ...d, end: e.target.value } })}
+                          className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs text-gray-700 disabled:bg-gray-50 disabled:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-400"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-[11px] text-gray-400">Uncheck a day to keep it closed. Times are in the timezone set above.</p>
+              </div>
+
+              {bookingMessage && (
+                <div className={`text-sm px-4 py-2.5 rounded-lg border ${
+                  bookingMessage.type === 'ok'
+                    ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                    : 'bg-red-50 border-red-100 text-red-600'
+                }`}>
+                  {bookingMessage.text}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleBookingSave}
+                disabled={updateMutation.isPending}
+                className="px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+              >
+                {updateMutation.isPending ? 'Saving…' : 'Save Booking Hours'}
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+              <h3 className="text-sm font-semibold text-gray-700">Departments</h3>
+              <p className="text-xs text-gray-500 mt-0.5">Show a team as a bookable department so visitors can pick a specific doctor/staff member — leave everything off for a simple, single booking flow.</p>
+            </div>
+            <div className="px-6 py-5 space-y-3">
+              {(teamsData?.items ?? []).length === 0 ? (
+                <p className="text-xs text-gray-400">No teams exist yet — create one under Team &amp; Staff to use this.</p>
+              ) : (
+                (teamsData?.items ?? []).map((t: any) => (
+                  <label key={t._id} className="flex items-center justify-between gap-3 text-sm py-1 cursor-pointer">
+                    <span className="text-gray-700">{t.name}</span>
+                    <span className="flex items-center gap-2 shrink-0">
+                      {togglingTeamId === t._id && <ArrowPathIcon className="h-3.5 w-3.5 text-gray-300 animate-spin" />}
+                      <input
+                        type="checkbox"
+                        checked={!!t.showInWidget}
+                        disabled={togglingTeamId === t._id}
+                        onChange={(e) => handleToggleDepartment(t._id, e.target.checked)}
+                        className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                      />
+                    </span>
+                  </label>
+                ))
+              )}
+              {departmentsMessage && (
+                <div className={`text-sm px-4 py-2.5 rounded-lg border ${
+                  departmentsMessage.type === 'ok'
+                    ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                    : 'bg-red-50 border-red-100 text-red-600'
+                }`}>
+                  {departmentsMessage.text}
+                </div>
+              )}
+              <p className="mt-1 text-[11px] text-gray-400">Changes save immediately — no separate Save button needed.</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+              <h3 className="text-sm font-semibold text-gray-700">Tool Model</h3>
+              <p className="text-xs text-gray-500 mt-0.5">Which AI model looks up product/website info and handles bookings for this widget — doesn't affect your account's default assistant elsewhere.</p>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Model</label>
+                <select value={toolModelPreset} onChange={(e) => setToolModelPreset(e.target.value as ToolModelPreset | '')} className={input}>
+                  {TOOL_MODEL_OPTIONS.map((o) => (
+                    <option key={o.id || 'default'} value={o.id}>{o.name}</option>
+                  ))}
+                </select>
+                <p className="mt-1 text-[11px] text-gray-400">
+                  {TOOL_MODEL_OPTIONS.find((o) => o.id === toolModelPreset)?.description}
+                </p>
+              </div>
+
+              {toolModelMessage && (
+                <div className={`text-sm px-4 py-2.5 rounded-lg border ${
+                  toolModelMessage.type === 'ok'
+                    ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                    : 'bg-red-50 border-red-100 text-red-600'
+                }`}>
+                  {toolModelMessage.text}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleToolModelSave}
+                disabled={aiConfigMutation.isPending}
+                className="px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+              >
+                {aiConfigMutation.isPending ? 'Saving…' : 'Save Tool Model'}
+              </button>
             </div>
           </div>
 

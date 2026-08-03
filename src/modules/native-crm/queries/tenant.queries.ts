@@ -1,6 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../services/api';
 
+export interface TenantBookingHoursConfig {
+  enabled: boolean;
+  timezone: string;
+  slotMinutes: number;
+  leadTimeHours: number;
+  horizonDays: number;
+  hours: Array<{ day: 0 | 1 | 2 | 3 | 4 | 5 | 6; start: string; end: string }>;
+}
+
 export interface TenantWidgetConfig {
   enabled: boolean;
   widgetKey?: string;
@@ -12,6 +21,7 @@ export interface TenantWidgetConfig {
   crawlPageCount?: number;
   logoUrl?: string;
   template?: 'modern' | 'minimal' | 'chips' | 'dark';
+  booking?: TenantBookingHoursConfig;
 }
 
 export interface CrawlStatus {
@@ -22,11 +32,14 @@ export interface CrawlStatus {
   error?: string;
 }
 
+export type ToolModelPreset = 'groq' | 'anthropic' | 'openai' | 'google';
+
 export interface Tenant {
   _id: string;
   name: string;
   widget?: TenantWidgetConfig;
   branding?: { primaryColor?: string; companyName?: string; logoUrl?: string };
+  aiConfig?: { toolModelPreset?: ToolModelPreset | null };
 }
 
 const BASE = '/api/v1/tenants';
@@ -48,6 +61,18 @@ export function useUpdateTenantWidget(id: string) {
   return useMutation({
     mutationFn: (widget: Partial<Omit<TenantWidgetConfig, 'widgetKey' | 'logoUrl'>>) =>
       api.put(`${BASE}/${id}`, { widget }).then((r) => r.data.data as Tenant),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY(id) }),
+  });
+}
+
+/** Governs only the RAG/catalog/booking tool-calling path — never the
+ * plain fast-path/conversational path. `toolModelPreset: null` clears the
+ * override back to the global default. */
+export function useUpdateTenantAIConfig(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (aiConfig: { toolModelPreset?: ToolModelPreset | null }) =>
+      api.put(`${BASE}/${id}`, { aiConfig }).then((r) => r.data.data as Tenant),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY(id) }),
   });
 }
