@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import {
   Squares2X2Icon, AdjustmentsHorizontalIcon, TableCellsIcon, Cog6ToothIcon,
-  BellAlertIcon, BoltIcon, ArrowsRightLeftIcon, ArrowRightIcon, ChatBubbleLeftRightIcon,
+
+  //BellAlertIcon, BoltIcon, ArrowsRightLeftIcon, 
+  ArrowRightIcon, ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline';
 
 interface HubCard {
