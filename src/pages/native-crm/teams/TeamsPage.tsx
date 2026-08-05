@@ -24,8 +24,12 @@ const FIELDS: FSFieldDef[] = [
   { key: 'name',        label: 'Team Name',   type: 'text',        required: true },
   { key: 'description', label: 'Description', type: 'textarea' },
   { key: 'status',      label: 'Status',      type: 'select',      options: ['active', 'inactive'] },
+  { key: 'managerUserId', label: 'Manager', type: 'lookup',
+    lookupModule: 'users', lookupValueField: '_id', lookupLabelField: 'fullName' },
   { key: 'staffIds',    label: 'Staff Members', type: 'multilookup',
     lookupModule: 'staffs', lookupLabelField: 'fullName' },
+  { key: 'serviceIds',  label: 'Services Handled', type: 'multilookup',
+    lookupModule: 'services', lookupLabelField: 'name' },
 ];
 
 const COLUMNS: FSColumnDef[] = [

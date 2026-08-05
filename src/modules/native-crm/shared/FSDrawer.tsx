@@ -16,6 +16,7 @@ import { useCategoriesListQuery } from '../queries/categories.queries';
 import { useServicesListQuery   } from '../queries/services.queries';
 import { useWorkordersListQuery } from '../queries/workorders.queries';
 import { useQuotationsListQuery } from '../queries/quotations.queries';
+import { useUsersListQuery      } from '../queries/users.queries';
 import { useFSSettingsQuery     } from '../queries/fs-settings.queries';
 import api from '../../../services/api';
 import {
@@ -67,6 +68,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
   const { data: categoriesData } = useCategoriesListQuery({ page: 1, limit: 500 });
   const { data: workordersData } = useWorkordersListQuery({ page: 1, limit: 500 });
   const { data: quotationsData } = useQuotationsListQuery({ page: 1, limit: 500 });
+  const { data: usersData      } = useUsersListQuery({ limit: 200 });
 
   // Cascaded — refetch automatically when parent _id changes
   const { data: sitesData    } = useSitesListQuery  ({ page: 1, limit: 500, customerId: selectedLookups['customerId']?._id });
@@ -82,6 +84,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
     categories: categoriesData?.items ?? [],
     workorders: workordersData?.items ?? [],
     quotations: quotationsData?.items ?? [],
+    users:      usersData?.items      ?? [],
   };
 
   useEffect(() => {
@@ -130,8 +133,22 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
     setCustomForm(cf);
 
     setErrors({});
+  // Also re-runs once each lookup dataset finishes its own (async, cold-cache)
+  // fetch — without this, a 'lookup' field opened on an EXISTING record
+  // before its lookupModule's data has loaded would permanently restore to
+  // "nothing selected" (the very first pass through this effect finds
+  // lookupDataMap[...] still empty and never gets another chance to try
+  // again once the real data arrives, since lookupDataMap itself isn't a
+  // stable dependency you can just add — a new object literal every render
+  // would re-run this every render instead). Depending on the underlying
+  // query results directly is what actually fixes it.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [record, fields, module]);
+  }, [
+    record, fields, module,
+    customersData?.items, sitesData?.items, teamsData?.items, staffsData?.items,
+    servicesData?.items, categoriesData?.items, workordersData?.items, quotationsData?.items,
+    usersData?.items,
+  ]);
 
   // Staff availability check — fires when scheduledDate / nextServiceDate / startDate changes
   const hasStaffField = fields.some(f => f.lookupModule === 'staffs');

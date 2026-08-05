@@ -14,6 +14,7 @@ import {
   type TenantWidgetConfig, type ToolModelPreset,
 } from '../../../modules/native-crm/queries/tenant.queries';
 import { useCatalogSources, useImportCatalog } from '../../../modules/native-crm/queries/catalog.queries';
+import { useServicesListQuery } from '../../../modules/native-crm/queries/services.queries';
 
 type Template = NonNullable<TenantWidgetConfig['template']>;
 
@@ -167,6 +168,7 @@ export default function WidgetSettingsPage() {
   const { data: tenant, isLoading, error } = useTenantQuery(isAdmin ? tenantId : '');
   const { data: teamsData } = useTeamsListQuery({ limit: 100 });
   const teamUpdateMutation = useTeamUpdate();
+  const { data: servicesData } = useServicesListQuery({ limit: 200 });
   const updateMutation = useUpdateTenantWidget(tenantId);
   const aiConfigMutation = useUpdateTenantAIConfig(tenantId);
   const regenMutation  = useRegenerateWidgetKey(tenantId);
@@ -337,6 +339,26 @@ export default function WidgetSettingsPage() {
       await teamUpdateMutation.mutateAsync({ id: teamId, data: { showInWidget } });
     } catch {
       setDepartmentsMessage({ type: 'err', text: 'Could not update that department — try again.' });
+    } finally {
+      setTogglingTeamId(null);
+    }
+  };
+
+  // Which real catalog Services this department handles — routes a
+  // chatbot-captured free-text service mention to this team's own
+  // round-robin roster instead of always falling back to the tenant's one
+  // fixed default team. Same team-level Save-immediately UX as the
+  // showInWidget toggle above; editable per-team in full on the Teams page
+  // too (this is a convenience surface, not a second source of truth).
+  const handleToggleTeamService = async (team: any, serviceId: string, checked: boolean) => {
+    setDepartmentsMessage(null);
+    setTogglingTeamId(team._id);
+    const current: string[] = (team.serviceIds ?? []).map((s: any) => (typeof s === 'object' ? s._id : s));
+    const next = checked ? [...current, serviceId] : current.filter((id) => id !== serviceId);
+    try {
+      await teamUpdateMutation.mutateAsync({ id: team._id, data: { serviceIds: next } });
+    } catch {
+      setDepartmentsMessage({ type: 'err', text: 'Could not update that department’s services — try again.' });
     } finally {
       setTogglingTeamId(null);
     }
@@ -644,27 +666,48 @@ export default function WidgetSettingsPage() {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
               <h3 className="text-sm font-semibold text-gray-700">Departments</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Show a team as a bookable department so visitors can pick a specific doctor/staff member — leave everything off for a simple, single booking flow.</p>
+              <p className="text-xs text-gray-500 mt-0.5">Show a team as a bookable department so visitors can pick a specific doctor/staff member — leave everything off for a simple, single booking flow. Picking which Services a department handles also routes a chatbot lead mentioning that service straight to this team, instead of your one default team.</p>
             </div>
             <div className="px-6 py-5 space-y-3">
               {(teamsData?.items ?? []).length === 0 ? (
                 <p className="text-xs text-gray-400">No teams exist yet — create one under Team &amp; Staff to use this.</p>
               ) : (
-                (teamsData?.items ?? []).map((t: any) => (
-                  <label key={t._id} className="flex items-center justify-between gap-3 text-sm py-1 cursor-pointer">
-                    <span className="text-gray-700">{t.name}</span>
-                    <span className="flex items-center gap-2 shrink-0">
-                      {togglingTeamId === t._id && <ArrowPathIcon className="h-3.5 w-3.5 text-gray-300 animate-spin" />}
-                      <input
-                        type="checkbox"
-                        checked={!!t.showInWidget}
-                        disabled={togglingTeamId === t._id}
-                        onChange={(e) => handleToggleDepartment(t._id, e.target.checked)}
-                        className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
-                      />
-                    </span>
-                  </label>
-                ))
+                (teamsData?.items ?? []).map((t: any) => {
+                  const teamServiceIds: string[] = (t.serviceIds ?? []).map((s: any) => (typeof s === 'object' ? s._id : s));
+                  return (
+                    <div key={t._id} className="py-1">
+                      <label className="flex items-center justify-between gap-3 text-sm cursor-pointer">
+                        <span className="text-gray-700">{t.name}</span>
+                        <span className="flex items-center gap-2 shrink-0">
+                          {togglingTeamId === t._id && <ArrowPathIcon className="h-3.5 w-3.5 text-gray-300 animate-spin" />}
+                          <input
+                            type="checkbox"
+                            checked={!!t.showInWidget}
+                            disabled={togglingTeamId === t._id}
+                            onChange={(e) => handleToggleDepartment(t._id, e.target.checked)}
+                            className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                          />
+                        </span>
+                      </label>
+                      {t.showInWidget && (servicesData?.items ?? []).length > 0 && (
+                        <div className="mt-1.5 ml-2 pl-3 border-l border-gray-100 flex flex-wrap gap-x-4 gap-y-1">
+                          {(servicesData?.items ?? []).map((svc: any) => (
+                            <label key={svc._id} className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={teamServiceIds.includes(svc._id)}
+                                disabled={togglingTeamId === t._id}
+                                onChange={(e) => handleToggleTeamService(t, svc._id, e.target.checked)}
+                                className="h-3.5 w-3.5 rounded text-brand-600 focus:ring-brand-400"
+                              />
+                              {svc.name}
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               )}
               {departmentsMessage && (
                 <div className={`text-sm px-4 py-2.5 rounded-lg border ${

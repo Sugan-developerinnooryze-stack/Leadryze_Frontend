@@ -5,6 +5,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { useTeamQuery } from '../../../modules/native-crm/queries/teams.queries';
 import { useStaffsListQuery, useStaffUpdate } from '../../../modules/native-crm/queries/staffs.queries';
+import { useUsersListQuery } from '../../../modules/native-crm/queries/users.queries';
+import { useServicesListQuery } from '../../../modules/native-crm/queries/services.queries';
 import { FSStatusBadge } from '../../../modules/native-crm/shared/types';
 
 function InfoRow({ label, value }: { label: string; value?: React.ReactNode }) {
@@ -28,6 +30,14 @@ export default function TeamViewPage() {
   // All staff — for the assign panel (client-filtered to those not in this team)
   const { data: allStaffData } = useStaffsListQuery({ page: 1, limit: 500 });
   const updateStaff = useStaffUpdate();
+  // team.managerUserId/serviceIds come back as raw ids (no backend populate) —
+  // resolved to display names client-side, same convention this page already
+  // uses for staff (fetched as a flat list, matched by id in render).
+  const { data: usersData }    = useUsersListQuery({ limit: 200 });
+  const { data: servicesData } = useServicesListQuery({ page: 1, limit: 200 });
+  const manager = (usersData?.items ?? []).find((u) => u._id === team?.managerUserId);
+  const teamServiceIds: string[] = (team?.serviceIds ?? []).map((s: any) => (typeof s === 'object' ? s._id : s));
+  const teamServices = (servicesData?.items ?? []).filter((s: any) => teamServiceIds.includes(s._id));
 
   if (isLoading) return (
     <div className="flex items-center justify-center h-full">
@@ -96,6 +106,8 @@ export default function TeamViewPage() {
             <InfoRow label="Name"        value={team.name} />
             <InfoRow label="Description" value={team.description} />
             <InfoRow label="Status"      value={<FSStatusBadge value={team.status ?? 'active'} />} />
+            <InfoRow label="Manager"     value={manager ? [manager.firstName, manager.lastName].filter(Boolean).join(' ') || manager.email : undefined} />
+            <InfoRow label="Services Handled" value={teamServices.length ? teamServices.map((s: any) => s.name).join(', ') : undefined} />
             <InfoRow label="Created"     value={team.createdAt ? new Date(team.createdAt).toLocaleString() : undefined} />
           </div>
         </div>

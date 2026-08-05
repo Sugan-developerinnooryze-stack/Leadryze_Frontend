@@ -25,6 +25,8 @@ const FIELDS: FSFieldDef[] = [
   { key: 'teamId',    label: 'Team',       type: 'lookup',
     lookupModule: 'teams', lookupValueField: '_id', lookupLabelField: 'name' },
   { key: 'status',    label: 'Status',     type: 'select', options: ['active', 'inactive', 'onleave'] },
+  { key: 'userId',    label: 'Linked Login (optional)', type: 'lookup',
+    lookupModule: 'users', lookupValueField: '_id', lookupLabelField: 'fullName' },
 ];
 
 const COLUMNS: FSColumnDef[] = [
