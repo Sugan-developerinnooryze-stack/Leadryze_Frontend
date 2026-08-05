@@ -92,7 +92,7 @@ const FIELD_SERVICE_MODULES = [
 // ConfigurationHubPage, the rest deep-link straight to each area.
 const CONFIGURATION_ITEMS = [
   { key: 'configuration',              label: 'Configuration Hub', icon: Cog6ToothIcon,             color: '#475569' },
-  { key: 'settings/pipelines',         label: 'Pipeline & Stages', icon: Squares2X2Icon,             color: '#8b5cf6' },
+  //{ key: 'settings/pipelines',         label: 'Pipeline & Stages', icon: Squares2X2Icon,             color: '#8b5cf6' },
   { key: 'custom-fields',              label: 'Custom Fields',     icon: AdjustmentsHorizontalIcon,  color: '#7c3aed' },
   { key: 'custom-modules',             label: 'Custom Modules',    icon: TableCellsIcon,             color: '#0d9488' },
   { key: 'settings',                   label: 'FS Settings',       icon: WrenchScrewdriverIcon,      color: '#64748b' },

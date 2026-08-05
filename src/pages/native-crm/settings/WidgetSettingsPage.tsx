@@ -3,7 +3,8 @@ import * as XLSX from 'xlsx';
 import {
   ChatBubbleLeftRightIcon, ArrowPathIcon, ClipboardDocumentIcon, CheckIcon,
   LockClosedIcon, XMarkIcon, PlusIcon, GlobeAltIcon, DocumentArrowUpIcon,
-  PhotoIcon, TrashIcon,
+  PhotoIcon, TrashIcon, Cog6ToothIcon, CalendarDaysIcon, UserGroupIcon,
+  CpuChipIcon, SwatchIcon, Square3Stack3DIcon, KeyIcon, InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../../stores/auth.store';
 import { useTeamsListQuery, useTeamUpdate } from '../../../modules/native-crm/queries/teams.queries';
@@ -55,6 +56,21 @@ const TEMPLATES: Array<{ id: Template; name: string; description: string }> = [
   { id: 'minimal', name: 'Minimal Flat',     description: 'Flat header, sharp corners, thin borders — understated and professional.' },
   { id: 'chips',   name: 'Compact Chips',    description: 'Icon avatar with quick-reply suggestion buttons — guided, less typing upfront.' },
   { id: 'dark',    name: 'Dark Professional', description: 'Dark chrome header, light readable message area — premium, enterprise feel.' },
+];
+
+// Purely a jump-nav for the sections below — mirrors the card order 1:1, no
+// data of its own. Kept as a flat list (not derived from the cards) so the
+// icon/label pairing is explicit and doesn't depend on Tailwind's JIT
+// scanner picking up dynamically-interpolated class names (it won't).
+const NAV_SECTIONS: Array<{ id: string; label: string; icon: React.ComponentType<{ className?: string }> }> = [
+  { id: 'section-config',      label: 'Configuration',     icon: Cog6ToothIcon },
+  { id: 'section-booking',     label: 'Booking Hours',     icon: CalendarDaysIcon },
+  { id: 'section-departments', label: 'Departments',       icon: UserGroupIcon },
+  { id: 'section-tool-model',  label: 'Tool Model',        icon: CpuChipIcon },
+  { id: 'section-appearance',  label: 'Appearance',        icon: SwatchIcon },
+  { id: 'section-website',     label: 'Website Content',   icon: GlobeAltIcon },
+  { id: 'section-catalog',     label: 'Product Catalog',   icon: Square3Stack3DIcon },
+  { id: 'section-embed',       label: 'Widget Key & Embed', icon: KeyIcon },
 ];
 
 /** A tiny, purely illustrative mockup of each template's actual structure —
@@ -157,6 +173,49 @@ function CopyButton({ value }: { value: string }) {
     >
       {copied ? <CheckIcon className="h-4 w-4 text-emerald-500" /> : <ClipboardDocumentIcon className="h-4 w-4" />}
     </button>
+  );
+}
+
+/** Quick-glance chip in the page header — purely presentational, reflects
+ * state already held elsewhere on the page (no data of its own). */
+function StatusPill({ ok, onLabel, offLabel }: { ok: boolean; onLabel: string; offLabel: string }) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
+      ok ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-gray-50 text-gray-500 border-gray-200'
+    }`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${ok ? 'bg-emerald-500' : 'bg-gray-300'}`} />
+      {ok ? onLabel : offLabel}
+    </span>
+  );
+}
+
+/** Every card below shares this exact header shape (icon chip + title +
+ * optional description + optional right-side slot for a toggle) — a single
+ * component so the visual language stays identical across all 8 sections
+ * instead of hand-repeating the markup 8 times with room to drift. */
+function SectionHeader({
+  id, icon: Icon, iconClassName, title, description, right,
+}: {
+  id: string;
+  icon: React.ComponentType<{ className?: string }>;
+  iconClassName: string;
+  title: string;
+  description?: string;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div id={id} className="px-6 py-4 border-b border-gray-100 bg-gray-50/70 flex items-center justify-between gap-3 scroll-mt-6">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${iconClassName}`}>
+          <Icon className="h-[18px] w-[18px]" />
+        </div>
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
+          {description && <p className="text-xs text-gray-500 mt-0.5 leading-snug">{description}</p>}
+        </div>
+      </div>
+      {right && <div className="shrink-0">{right}</div>}
+    </div>
   );
 }
 
@@ -455,31 +514,58 @@ export default function WidgetSettingsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3 shrink-0">
-        <div className="h-9 w-9 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-          <ChatBubbleLeftRightIcon className="h-5 w-5 text-slate-600" />
+      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between gap-3 shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shrink-0 shadow-sm">
+            <ChatBubbleLeftRightIcon className="h-5 w-5 text-white" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-base font-semibold text-gray-900">AI Chatbot Widget</h1>
+            <p className="text-xs text-gray-500 truncate">Let visitors on your own website chat with your AI sales agent 24/7</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-base font-semibold text-gray-900">AI Chatbot Widget</h1>
-          <p className="text-xs text-gray-500">Let visitors on your own website chat with your AI sales agent 24/7</p>
+        <div className="hidden sm:flex items-center gap-2 shrink-0">
+          <StatusPill ok={enabled} onLabel="Widget live" offLabel="Widget off" />
+          <StatusPill ok={bookingEnabled} onLabel="Booking on" offLabel="Booking off" />
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-6">
-        <div className="max-w-2xl space-y-6">
+      <div className="flex-1 overflow-y-auto px-6 py-8">
+        <div className="max-w-5xl mx-auto flex items-start gap-8">
+          <nav className="hidden lg:block w-52 shrink-0 sticky top-8 space-y-0.5">
+            <p className="px-3 pb-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Jump to section</p>
+            {NAV_SECTIONS.map(({ id, label, icon: Icon }) => (
+              <a
+                key={id}
+                href={`#${id}`}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                {label}
+              </a>
+            ))}
+          </nav>
+
+          <div className="flex-1 min-w-0 max-w-2xl space-y-6">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-700">Configuration</h3>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <span className="text-xs text-gray-500">{enabled ? 'Enabled' : 'Disabled'}</span>
-                <input
-                  type="checkbox"
-                  checked={enabled}
-                  onChange={(e) => setEnabled(e.target.checked)}
-                  className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
-                />
-              </label>
-            </div>
+            <SectionHeader
+              id="section-config"
+              icon={Cog6ToothIcon}
+              iconClassName="bg-slate-100 text-slate-600"
+              title="Configuration"
+              description="Core on/off switch, allowed domains, and greeting."
+              right={
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="text-xs text-gray-500">{enabled ? 'Enabled' : 'Disabled'}</span>
+                  <input
+                    type="checkbox"
+                    checked={enabled}
+                    onChange={(e) => setEnabled(e.target.checked)}
+                    className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                  />
+                </label>
+              }
+            />
 
             <div className="px-6 py-5 space-y-5">
               <div>
@@ -554,21 +640,24 @@ export default function WidgetSettingsPage() {
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700">Booking Hours</h3>
-                <p className="text-xs text-gray-500 mt-0.5">When visitors can actually book a real appointment through the widget.</p>
-              </div>
-              <label className="flex items-center gap-2 cursor-pointer shrink-0">
-                <span className="text-xs text-gray-500">{bookingEnabled ? 'Enabled' : 'Disabled'}</span>
-                <input
-                  type="checkbox"
-                  checked={bookingEnabled}
-                  onChange={(e) => setBookingEnabled(e.target.checked)}
-                  className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
-                />
-              </label>
-            </div>
+            <SectionHeader
+              id="section-booking"
+              icon={CalendarDaysIcon}
+              iconClassName="bg-blue-50 text-blue-600"
+              title="Booking Hours"
+              description="When visitors can actually book a real appointment through the widget."
+              right={
+                <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                  <span className="text-xs text-gray-500">{bookingEnabled ? 'Enabled' : 'Disabled'}</span>
+                  <input
+                    type="checkbox"
+                    checked={bookingEnabled}
+                    onChange={(e) => setBookingEnabled(e.target.checked)}
+                    className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                  />
+                </label>
+              }
+            />
             <div className="px-6 py-5 space-y-5">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div>
@@ -664,10 +753,13 @@ export default function WidgetSettingsPage() {
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-              <h3 className="text-sm font-semibold text-gray-700">Departments</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Show a team as a bookable department so visitors can pick a specific doctor/staff member — leave everything off for a simple, single booking flow. Picking which Services a department handles also routes a chatbot lead mentioning that service straight to this team, instead of your one default team.</p>
-            </div>
+            <SectionHeader
+              id="section-departments"
+              icon={UserGroupIcon}
+              iconClassName="bg-violet-50 text-violet-600"
+              title="Departments"
+              description="Show a team as a bookable department so visitors can pick a specific doctor/staff member — leave everything off for a simple, single booking flow. Picking which Services a department handles also routes a chatbot lead mentioning that service straight to this team, instead of your one default team."
+            />
             <div className="px-6 py-5 space-y-3">
               {(teamsData?.items ?? []).length === 0 ? (
                 <p className="text-xs text-gray-400">No teams exist yet — create one under Team &amp; Staff to use this.</p>
@@ -723,10 +815,13 @@ export default function WidgetSettingsPage() {
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-              <h3 className="text-sm font-semibold text-gray-700">Tool Model</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Which AI model looks up product/website info and handles bookings for this widget — doesn't affect your account's default assistant elsewhere.</p>
-            </div>
+            <SectionHeader
+              id="section-tool-model"
+              icon={CpuChipIcon}
+              iconClassName="bg-amber-50 text-amber-600"
+              title="Tool Model"
+              description="Which AI model looks up product/website info and handles bookings for this widget — doesn't affect your account's default assistant elsewhere."
+            />
             <div className="px-6 py-5 space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Model</label>
@@ -762,10 +857,13 @@ export default function WidgetSettingsPage() {
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-              <h3 className="text-sm font-semibold text-gray-700">Appearance</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Every client's own website looks different — pick a logo and layout that fit theirs.</p>
-            </div>
+            <SectionHeader
+              id="section-appearance"
+              icon={SwatchIcon}
+              iconClassName="bg-rose-50 text-rose-600"
+              title="Appearance"
+              description="Every client's own website looks different — pick a logo and layout that fit theirs."
+            />
             <div className="px-6 py-5 space-y-6">
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Logo / Icon</label>
@@ -840,9 +938,13 @@ export default function WidgetSettingsPage() {
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-              <h3 className="text-sm font-semibold text-gray-700">Website Content</h3>
-            </div>
+            <SectionHeader
+              id="section-website"
+              icon={GlobeAltIcon}
+              iconClassName="bg-emerald-50 text-emerald-600"
+              title="Website Content"
+              description="Crawl your own site so the widget can answer from your real pages."
+            />
             <div className="px-6 py-5 space-y-5">
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Your Website URL</label>
@@ -887,9 +989,13 @@ export default function WidgetSettingsPage() {
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-              <h3 className="text-sm font-semibold text-gray-700">Product Catalog</h3>
-            </div>
+            <SectionHeader
+              id="section-catalog"
+              icon={Square3Stack3DIcon}
+              iconClassName="bg-orange-50 text-orange-600"
+              title="Product Catalog"
+              description="Give the widget exact product specs to answer from, not just page text."
+            />
             <div className="px-6 py-5 space-y-4">
               <div>
                 <input
@@ -950,9 +1056,13 @@ export default function WidgetSettingsPage() {
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-              <h3 className="text-sm font-semibold text-gray-700">Widget Key &amp; Embed Snippet</h3>
-            </div>
+            <SectionHeader
+              id="section-embed"
+              icon={KeyIcon}
+              iconClassName="bg-indigo-50 text-indigo-600"
+              title="Widget Key & Embed Snippet"
+              description="The one script tag that goes on your website."
+            />
             <div className="px-6 py-5 space-y-5">
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Widget Key</label>
@@ -1020,9 +1130,13 @@ export default function WidgetSettingsPage() {
             </div>
           </div>
 
-          <div className="bg-blue-50 border border-blue-100 rounded-xl px-5 py-4 text-xs text-blue-700 leading-relaxed">
-            <p className="font-semibold mb-1">How the widget works</p>
-            <p>Once enabled with at least one allowed domain, a visitor on your website can chat with your AI sales agent 24/7. It qualifies the visitor, and once it has a name and a way to reach them, creates a real Lead here in your CRM — automatically assigned to a sales rep and picked up by any automations you've already set up.</p>
+          <div className="bg-blue-50 border border-blue-100 rounded-xl px-5 py-4 flex gap-3">
+            <InformationCircleIcon className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+            <div className="text-xs text-blue-700 leading-relaxed">
+              <p className="font-semibold mb-1">How the widget works</p>
+              <p>Once enabled with at least one allowed domain, a visitor on your website can chat with your AI sales agent 24/7. It qualifies the visitor, and once it has a name and a way to reach them, creates a real Lead here in your CRM — automatically assigned to a sales rep and picked up by any automations you've already set up.</p>
+            </div>
+          </div>
           </div>
         </div>
       </div>

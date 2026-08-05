@@ -15,11 +15,11 @@ interface HubCard {
 }
 
 const CARDS: HubCard[] = [
-  {
-    key: 'pipelines', title: 'Pipelines & Stages',
-    description: 'Configure each module’s own stage list — Leads, Deals, Tasks, Tickets, Quotations, Work Orders, Contracts, Invoices.',
-    icon: Squares2X2Icon, color: '#8b5cf6', path: '/native-crm/settings/pipelines',
-  },
+  // {
+  //   key: 'pipelines', title: 'Pipelines & Stages',
+  //   description: 'Configure each module’s own stage list — Leads, Deals, Tasks, Tickets, Quotations, Work Orders, Contracts, Invoices.',
+  //   icon: Squares2X2Icon, color: '#8b5cf6', path: '/native-crm/settings/pipelines',
+  // },
   {
     key: 'custom-fields', title: 'Custom Fields',
     description: 'Add extra fields to any built-in module without a code change.',
@@ -35,21 +35,21 @@ const CARDS: HubCard[] = [
     description: 'Company info, document prefixes, branding, and the document-generation workflow.',
     icon: Cog6ToothIcon, color: '#64748b', path: '/native-crm/settings',
   },
-  {
-    key: 'notifications', title: 'Notifications',
-    description: 'Reminder timing, on-create confirmations, and delivery channels.',
-    icon: BellAlertIcon, color: '#0ea5e9', path: '/native-crm/settings/notifications',
-  },
-  {
-    key: 'automations', title: 'Automations',
-    description: '“When [module] status changes to [X] → send [email/SMS] using [template]”.',
-    icon: BoltIcon, color: '#f59e0b', path: '/native-crm/settings/automations',
-  },
-  {
-    key: 'import-export', title: 'Import / Export',
-    description: 'CSV export for any module, plus validated CSV import for Leads and Deals.',
-    icon: ArrowsRightLeftIcon, color: '#16a34a', path: '/native-crm/settings/import-export',
-  },
+  // {
+  //   key: 'notifications', title: 'Notifications',
+  //   description: 'Reminder timing, on-create confirmations, and delivery channels.',
+  //   icon: BellAlertIcon, color: '#0ea5e9', path: '/native-crm/settings/notifications',
+  // },
+  // {
+  //   key: 'automations', title: 'Automations',
+  //   description: '“When [module] status changes to [X] → send [email/SMS] using [template]”.',
+  //   icon: BoltIcon, color: '#f59e0b', path: '/native-crm/settings/automations',
+  // },
+  // {
+  //   key: 'import-export', title: 'Import / Export',
+  //   description: 'CSV export for any module, plus validated CSV import for Leads and Deals.',
+  //   icon: ArrowsRightLeftIcon, color: '#16a34a', path: '/native-crm/settings/import-export',
+  // },
   {
     key: 'ai-widget', title: 'AI Chatbot Widget',
     description: 'Embed a 24/7 AI sales agent on your own website — it captures and assigns leads automatically.',
