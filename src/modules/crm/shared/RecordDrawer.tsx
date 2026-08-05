@@ -32,7 +32,20 @@ export default function RecordDrawer({
 
   const initForm = useCallback(() => {
     const f: Record<string, string> = {};
-    for (const field of config.fields) f[field.key] = record ? String(record[field.key] ?? '') : '';
+    for (const field of config.fields) {
+      const raw = record ? record[field.key] : undefined;
+      if (raw == null || raw === '') { f[field.key] = ''; continue; }
+      // <input type="datetime-local">/type="date"> require an exact
+      // "YYYY-MM-DDTHH:mm" / "YYYY-MM-DD" value — the stored value is a full
+      // ISO string (e.g. "...T12:30:00.000Z"), and a browser silently
+      // renders anything else as empty rather than erroring, which is why
+      // the edit form previously showed blank Start/End fields even though
+      // the record itself had real values.
+      if (field.type === 'datetime' && typeof raw === 'string') f[field.key] = raw.slice(0, 16);
+      else if (field.type === 'date' && typeof raw === 'string') f[field.key] = raw.slice(0, 10);
+      else if (field.isArray && Array.isArray(raw)) f[field.key] = raw.join(', ');
+      else f[field.key] = String(raw);
+    }
     return f;
   }, [config.fields, record]);
 
@@ -81,6 +94,22 @@ export default function RecordDrawer({
     setSaving(true);
     try {
       const payload: Record<string, unknown> = { ...form };
+      // A bare "YYYY-MM-DDTHH:mm" string (no timezone) is parsed by the JS
+      // Date constructor as LOCAL time of whichever machine happens to run
+      // the backend process — silently shifting the stored instant by the
+      // server's own UTC offset (the same class of bug just fixed in the
+      // meeting-confirmation email). Appending an explicit UTC designator
+      // here makes the round-trip exact regardless of server timezone, and
+      // matches the raw-digit convention this table/edit form already uses
+      // everywhere else (no per-viewer timezone conversion).
+      for (const field of config.fields) {
+        const v = payload[field.key];
+        if (field.type === 'datetime' && typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) {
+          payload[field.key] = `${v}:00.000Z`;
+        } else if (field.isArray && typeof v === 'string') {
+          payload[field.key] = v.split(',').map((s) => s.trim()).filter(Boolean);
+        }
+      }
       if (activeCustomFields.length > 0) payload.customFields = customForm;
       // On edit, always send all three together (even cleared to '') so
       // removing a link actually persists — omitting them here would leave

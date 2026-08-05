@@ -18,7 +18,7 @@ export const config: ModulePageConfig = {
     { key: 'location',      label: 'Location',      type: 'text',     tableCol: true },
     { key: 'meetingStatus', label: 'Status',        type: 'select',   tableCol: true,
       options: ['scheduled', 'completed', 'cancelled'] },
-    { key: 'attendees',     label: 'Attendees',     type: 'text',     placeholder: 'Comma-separated names' },
+    { key: 'attendees',     label: 'Attendees',     type: 'text',     placeholder: 'Comma-separated names', isArray: true },
     { key: 'notes',         label: 'Notes',         type: 'textarea' },
   ],
 };

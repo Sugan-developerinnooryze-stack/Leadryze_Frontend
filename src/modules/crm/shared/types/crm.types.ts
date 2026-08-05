@@ -36,6 +36,12 @@ export interface FieldConfig {
   sortable?:    boolean;
   section?:     string;
   searchable?:  boolean;
+  /** The backend field is a real string[] (e.g. Meeting.attendees) — the
+   * form still edits it as one comma-separated text input (simplest UX for
+   * a short list of names), but RecordDrawer needs to join the array for
+   * display and split it back on save so the payload matches what the
+   * schema actually validates against. */
+  isArray?:     boolean;
 }
 
 export interface ModulePageConfig {
