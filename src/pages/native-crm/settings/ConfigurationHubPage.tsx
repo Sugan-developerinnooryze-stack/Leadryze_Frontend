@@ -4,7 +4,7 @@ import {
 
   //BellAlertIcon, BoltIcon, ArrowsRightLeftIcon, 
   ArrowRightIcon,
-  // ChatBubbleLeftRightIcon,
+   ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline';
 
 interface HubCard {
@@ -53,11 +53,11 @@ const CARDS: HubCard[] = [
   //   description: 'CSV export for any module, plus validated CSV import for Leads and Deals.',
   //   icon: ArrowsRightLeftIcon, color: '#16a34a', path: '/native-crm/settings/import-export',
   // },
-  // {
-  //   key: 'ai-widget', title: 'AI Chatbot Widget',
-  //   description: 'Embed a 24/7 AI sales agent on your own website — it captures and assigns leads automatically.',
-  //   icon: ChatBubbleLeftRightIcon, color: '#2563eb', path: '/native-crm/settings/widget',
-  // },
+  {
+    key: 'ai-widget', title: 'AI Chatbot Widget',
+    description: 'Embed a 24/7 AI sales agent on your own website — it captures and assigns leads automatically.',
+    icon: ChatBubbleLeftRightIcon, color: '#2563eb', path: '/native-crm/settings/widget',
+  },
 ];
 
 export default function ConfigurationHubPage() {
