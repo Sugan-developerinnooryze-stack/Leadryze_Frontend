@@ -50,6 +50,7 @@ import {
   StarIcon,
   WrenchScrewdriverIcon,
   AdjustmentsHorizontalIcon,
+  ShieldCheckIcon,
 //  BellAlertIcon,
   //ArrowsRightLeftIcon,
 } from '@heroicons/react/24/outline';
@@ -66,6 +67,7 @@ const FIELD_SERVICE_MODULES = [
   { key: 'categories', label: 'Categories', icon: TagIcon,               color: '#8b5cf6' },
   { key: 'services',   label: 'Services',   icon: WrenchScrewdriverIcon, color: '#0ea5e9' },
   { key: 'teams',      label: 'Teams',      icon: UserGroupIcon,         color: '#10b981' },
+  { key: 'supervisors', label: 'Supervisors', icon: ShieldCheckIcon,     color: '#4f46e5' },
   { key: 'staffs',     label: 'Staffs',     icon: UserCircleIcon,        color: '#f97316' },
   { key: 'customers',  label: 'Customers',  icon: UsersIcon,             color: '#6366f1' },
   { key: 'sites',      label: 'Sites',      icon: MapPinIcon,            color: '#ef4444' },

@@ -33,6 +33,7 @@ const CategoriesPage     = lazy(() => import('./pages/native-crm/categories/Cate
 const FsServicesPage     = lazy(() => import('./pages/native-crm/services/ServicesPage'));
 const TeamsPage          = lazy(() => import('./pages/native-crm/teams/TeamsPage'));
 const TeamViewPage       = lazy(() => import('./pages/native-crm/teams/TeamViewPage'));
+const SupervisorsPage    = lazy(() => import('./pages/native-crm/teams/SupervisorsPage'));
 const StaffsPage         = lazy(() => import('./pages/native-crm/staffs/StaffsPage'));
 const StaffViewPage      = lazy(() => import('./pages/native-crm/staffs/StaffViewPage'));
 const FsCustomersPage    = lazy(() => import('./pages/native-crm/customers/CustomersPage'));
@@ -61,6 +62,8 @@ const ConfigurationHubPage     = lazy(() => import('./pages/native-crm/settings/
 const AutomationRulesPage      = lazy(() => import('./pages/native-crm/settings/AutomationRulesPage'));
 const ImportExportPage         = lazy(() => import('./pages/native-crm/settings/ImportExportPage'));
 const WidgetSettingsPage       = lazy(() => import('./pages/native-crm/settings/WidgetSettingsPage'));
+const VoicePlaygroundPage      = lazy(() => import('./pages/native-crm/settings/VoicePlaygroundPage'));
+const DataScopeSettingsPage    = lazy(() => import('./pages/native-crm/settings/DataScopeSettingsPage'));
 const MessageHistoryPage       = lazy(() => import('./pages/native-crm/MessageHistoryPage'));
 const NativeLogsPage          = lazy(() => import('./pages/native-crm/native-logs/NativeLogsPage'));
 const BranchesPage            = lazy(() => import('./pages/native-crm/branches/BranchesPage'));
@@ -157,6 +160,7 @@ export default function App() {
           <Route path="native-crm/services"   element={S(FsServicesPage)} />
           <Route path="native-crm/teams"      element={S(TeamsPage)} />
           <Route path="native-crm/teams/:id"  element={S(TeamViewPage)} />
+          <Route path="native-crm/supervisors" element={S(SupervisorsPage)} />
           <Route path="native-crm/staffs"     element={S(StaffsPage)} />
           <Route path="native-crm/staffs/:id" element={S(StaffViewPage)} />
           <Route path="native-crm/customers"  element={S(FsCustomersPage)} />
@@ -189,6 +193,8 @@ export default function App() {
           <Route path="native-crm/settings/notifications" element={S(NotificationSettingsPage)} />
           <Route path="native-crm/settings/pipelines"      element={S(PipelineSettingsPage)} />
           <Route path="native-crm/settings/widget"         element={S(WidgetSettingsPage)} />
+          <Route path="native-crm/settings/voice-playground" element={S(VoicePlaygroundPage)} />
+          <Route path="native-crm/settings/data-scope"     element={S(DataScopeSettingsPage)} />
           <Route path="native-crm/message-history"        element={S(MessageHistoryPage)} />
           <Route path="native-crm/native-logs"         element={S(NativeLogsPage)} />
           <Route path="native-crm/branches"            element={S(BranchesPage)} />

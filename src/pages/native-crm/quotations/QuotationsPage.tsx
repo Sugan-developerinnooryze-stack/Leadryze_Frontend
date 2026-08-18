@@ -85,7 +85,7 @@ export default function QuotationsPage() {
 
   useEffect(() => { setPage(1); }, [search, status]);
 
-  const { data: result, isLoading } = useQuotationsListQuery({ page, limit: 20, search: search || undefined, status: status || undefined });
+  const { data: result, isLoading, error } = useQuotationsListQuery({ page, limit: 20, search: search || undefined, status: status || undefined });
   const items = result?.items ?? [];
   const meta  = result?.meta  ?? { total: 0, page: 1, totalPages: 1 };
 
@@ -145,6 +145,7 @@ export default function QuotationsPage() {
         columns={COLUMNS}
         data={items}
         loading={isLoading}
+        errorStatus={(error as any)?.response?.status}
         total={meta.total}
         page={meta.page}
         totalPages={meta.totalPages}

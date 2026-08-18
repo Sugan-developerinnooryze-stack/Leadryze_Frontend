@@ -1,13 +1,29 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeftIcon, UserGroupIcon, UserPlusIcon, XMarkIcon, EyeIcon,
+  UserPlusIcon as LeadIcon, CalendarDaysIcon, UsersIcon,
 } from '@heroicons/react/24/outline';
 import { useTeamQuery } from '../../../modules/native-crm/queries/teams.queries';
 import { useStaffsListQuery, useStaffUpdate } from '../../../modules/native-crm/queries/staffs.queries';
 import { useUsersListQuery } from '../../../modules/native-crm/queries/users.queries';
 import { useServicesListQuery } from '../../../modules/native-crm/queries/services.queries';
 import { FSStatusBadge } from '../../../modules/native-crm/shared/types';
+import api from '../../../services/api';
+
+/** This team's OWN real numbers — computed server-side from this team's own
+ * active staff roster, not from whoever happens to be logged in viewing the
+ * page. Correct and understandable for any viewer (a Tenant Admin browsing
+ * every team, or the team's own Supervisor). */
+function useTeamStats(teamId: string) {
+  return useQuery({
+    queryKey: ['native-crm', 'teams', teamId, 'stats'],
+    queryFn: () => api.get(`/api/v1/native-crm/teams/${teamId}/stats`).then((r) => r.data.data as { staffCount: number; leads: number; meetings: number; customers: number }),
+    enabled: !!teamId,
+    staleTime: 30_000,
+  });
+}
 
 function InfoRow({ label, value }: { label: string; value?: React.ReactNode }) {
   return (
@@ -38,6 +54,8 @@ export default function TeamViewPage() {
   const manager = (usersData?.items ?? []).find((u) => u._id === team?.managerUserId);
   const teamServiceIds: string[] = (team?.serviceIds ?? []).map((s: any) => (typeof s === 'object' ? s._id : s));
   const teamServices = (servicesData?.items ?? []).filter((s: any) => teamServiceIds.includes(s._id));
+
+  const { data: teamStats } = useTeamStats(id ?? '');
 
   if (isLoading) return (
     <div className="flex items-center justify-center h-full">
@@ -106,9 +124,30 @@ export default function TeamViewPage() {
             <InfoRow label="Name"        value={team.name} />
             <InfoRow label="Description" value={team.description} />
             <InfoRow label="Status"      value={<FSStatusBadge value={team.status ?? 'active'} />} />
-            <InfoRow label="Manager"     value={manager ? [manager.firstName, manager.lastName].filter(Boolean).join(' ') || manager.email : undefined} />
+            <InfoRow label="Supervisor"  value={manager ? [manager.firstName, manager.lastName].filter(Boolean).join(' ') || manager.email : 'Not assigned'} />
             <InfoRow label="Services Handled" value={teamServices.length ? teamServices.map((s: any) => s.name).join(', ') : undefined} />
             <InfoRow label="Created"     value={team.createdAt ? new Date(team.createdAt).toLocaleString() : undefined} />
+          </div>
+        </div>
+
+        {/* This team's own activity — real counts for exactly this team's
+            staff, not whoever's logged in viewing the page. */}
+        <div className="max-w-4xl">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Team Activity</p>
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: 'Leads',     value: teamStats?.leads,     Icon: LeadIcon,         color: 'text-violet-600',  bg: 'bg-violet-50' },
+              { label: 'Meetings',  value: teamStats?.meetings,  Icon: CalendarDaysIcon, color: 'text-sky-600',     bg: 'bg-sky-50'    },
+              { label: 'Customers', value: teamStats?.customers, Icon: UsersIcon,        color: 'text-emerald-600', bg: 'bg-emerald-50' },
+            ].map((s) => (
+              <div key={s.label} className={`rounded-xl border border-gray-200 shadow-sm p-4 flex items-center gap-3 ${s.bg}`}>
+                <s.Icon className={`h-6 w-6 shrink-0 ${s.color}`} />
+                <div>
+                  <p className="text-xs text-gray-500">{s.label}</p>
+                  <p className={`text-xl font-bold ${s.color}`}>{s.value ?? '—'}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

@@ -6,6 +6,7 @@ import type { ModulePageConfig, CrmRecord } from './types/crm.types';
 import { useCustomFieldsQuery } from '../../native-crm/queries/custom-fields.queries';
 import CustomFieldRenderer from '../../native-crm/shared/CustomFieldRenderer';
 import FsRelationPicker, { FsRelation } from './FsRelationPicker';
+import MeetingAssignmentPanel from './MeetingAssignmentPanel';
 
 // Only these 4 modules can attach to a Field Service record — Contact/Company/
 // Deal are already bridged via Lead conversion and don't need this picker.
@@ -165,7 +166,7 @@ export default function RecordDrawer({
               {errors._global}
             </div>
           )}
-          {config.fields.map((field) => (
+          {config.fields.filter((field) => !field.hideInForm).map((field) => (
             <CrmField
               key={field.key}
               field={field}
@@ -204,6 +205,10 @@ export default function RecordDrawer({
 
           {showFsRelation && (
             <FsRelationPicker value={relation} onChange={setRelation} />
+          )}
+
+          {moduleName === 'meetings' && isEdit && record && (
+            <MeetingAssignmentPanel record={record} apiBase={config.apiBase} onReassigned={onSaved} />
           )}
         </div>
 

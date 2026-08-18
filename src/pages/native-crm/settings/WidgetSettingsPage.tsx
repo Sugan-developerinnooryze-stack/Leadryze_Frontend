@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
+import api from '../../../services/api';
+import { SUPPORTED_LANGUAGES } from '../../../modules/native-crm/shared/languages';
 import {
   ChatBubbleLeftRightIcon, ArrowPathIcon, ClipboardDocumentIcon, CheckIcon,
   LockClosedIcon, XMarkIcon, PlusIcon, GlobeAltIcon, DocumentArrowUpIcon,
   PhotoIcon, TrashIcon, Cog6ToothIcon, CalendarDaysIcon, UserGroupIcon,
   CpuChipIcon, SwatchIcon, Square3Stack3DIcon, KeyIcon, InformationCircleIcon,
+  MicrophoneIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../../stores/auth.store';
 import { useTeamsListQuery, useTeamUpdate } from '../../../modules/native-crm/queries/teams.queries';
@@ -12,12 +15,21 @@ import {
   useTenantQuery, useUpdateTenantWidget, useRegenerateWidgetKey,
   useTriggerWebsiteCrawl, useCrawlStatus, useUploadWidgetLogo, useRemoveWidgetLogo,
   useUpdateTenantAIConfig,
-  type TenantWidgetConfig, type ToolModelPreset,
+  type TenantWidgetConfig, type ToolModelPreset, type VoiceProvider, type TenantVoicePreset,
 } from '../../../modules/native-crm/queries/tenant.queries';
 import { useCatalogSources, useImportCatalog } from '../../../modules/native-crm/queries/catalog.queries';
 import { useServicesListQuery } from '../../../modules/native-crm/queries/services.queries';
 
 type Template = NonNullable<TenantWidgetConfig['template']>;
+
+/** Mirrors ai/src/config/index.ts's CARTESIA_VOICE_PRESETS exactly (same
+ * real, Cartesia-API-verified voice IDs) — kept as a separate copy since the
+ * frontend and ai/ projects don't share a build step, matching how the
+ * language registry is duplicated the same way. */
+const CARTESIA_VOICE_PRESETS: Record<'female' | 'male', TenantVoicePreset> = {
+  female: { provider: 'cartesia', voiceId: '8a1b8af0-c4f6-423f-a268-5507fd4aefdf', displayName: 'Denise (Professional Woman)', gender: 'female', language: 'en' },
+  male:   { provider: 'cartesia', voiceId: '5cf0e4d9-ca2b-4fd5-81fa-89db3b645539', displayName: 'Derrick (Professional Man)',  gender: 'male',   language: 'en' },
+};
 
 const WEEKDAYS: Array<{ day: 0 | 1 | 2 | 3 | 4 | 5 | 6; label: string }> = [
   { day: 1, label: 'Monday' },
@@ -33,6 +45,18 @@ interface DayHours { open: boolean; start: string; end: string; }
 type WeekHours = Record<number, DayHours>;
 
 const DEFAULT_DAY: DayHours = { open: false, start: '09:00', end: '17:00' };
+
+// requireTeam/requireService are tri-state (true/false/undefined="auto") on
+// the AI side, but a plain checkbox can't represent "auto" distinctly from
+// "off" — both rendered as unchecked, so admins could never reliably turn a
+// question off (it already looked off). An explicit 3-way select removes
+// that ambiguity entirely.
+function tristateToSelect(value: boolean | undefined): 'auto' | 'always' | 'never' {
+  return value === undefined ? 'auto' : value ? 'always' : 'never';
+}
+function selectToTristate(value: string): boolean | undefined {
+  return value === 'auto' ? undefined : value === 'always';
+}
 
 function defaultWeekHours(): WeekHours {
   const week: WeekHours = {};
@@ -67,6 +91,7 @@ const NAV_SECTIONS: Array<{ id: string; label: string; icon: React.ComponentType
   { id: 'section-booking',     label: 'Booking Hours',     icon: CalendarDaysIcon },
   { id: 'section-departments', label: 'Departments',       icon: UserGroupIcon },
   { id: 'section-tool-model',  label: 'Tool Model',        icon: CpuChipIcon },
+  { id: 'section-voice',       label: 'Voice',             icon: MicrophoneIcon },
   { id: 'section-appearance',  label: 'Appearance',        icon: SwatchIcon },
   { id: 'section-website',     label: 'Website Content',   icon: GlobeAltIcon },
   { id: 'section-catalog',     label: 'Product Catalog',   icon: Square3Stack3DIcon },
@@ -248,13 +273,35 @@ export default function WidgetSettingsPage() {
   const [template, setTemplate]         = useState<Template>('modern');
   const [toolModelPreset, setToolModelPreset] = useState<ToolModelPreset | ''>('');
   const [toolModelMessage, setToolModelMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [autoConvertLeadOnMeetingCompleted, setAutoConvertLeadOnMeetingCompleted] = useState(false);
   const [bookingEnabled, setBookingEnabled]   = useState(false);
   const [bookingTimezone, setBookingTimezone] = useState('UTC');
   const [bookingSlotMinutes, setBookingSlotMinutes]     = useState(30);
   const [bookingLeadTimeHours, setBookingLeadTimeHours] = useState(2);
   const [bookingHorizonDays, setBookingHorizonDays]     = useState(14);
   const [bookingHours, setBookingHours] = useState<WeekHours>(defaultWeekHours());
+  // undefined = "never explicitly configured" — resolved on the AI side as
+  // requireTeam ?? hasWidgetDepartments, so an untouched tenant with
+  // showInWidget departments keeps asking about them, unchanged. The
+  // checkbox itself only ever writes an explicit true/false once touched.
+  const [bookingRequireTeam, setBookingRequireTeam] = useState<boolean | undefined>(undefined);
+  const [bookingRequireService, setBookingRequireService] = useState<boolean | undefined>(undefined);
+  const [bookingRequireName, setBookingRequireName] = useState(true);
+  const [bookingContactRequirement, setBookingContactRequirement] = useState<'email_only' | 'phone_only' | 'email_or_phone' | 'email_and_phone'>('email_or_phone');
+  const [bookingStaffLabel, setBookingStaffLabel] = useState('team member');
   const [bookingMessage, setBookingMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [voiceEnabled, setVoiceEnabled]   = useState(false);
+  const [voiceProvider, setVoiceProvider] = useState<VoiceProvider>('groq');
+  const [voiceName, setVoiceName]         = useState('');
+  const [sttLanguage, setSttLanguage]     = useState('');
+  const [voiceAutoPlay, setVoiceAutoPlay] = useState(true);
+  const [continuousModeEnabled, setContinuousModeEnabled] = useState(false);
+  const [maxSessionMinutes, setMaxSessionMinutes] = useState<string>('');
+  const [allowTextDuringVoice, setAllowTextDuringVoice] = useState(true);
+  const [voicePresetGender, setVoicePresetGender] = useState<'female' | 'male'>('female');
+  const [testVoiceState, setTestVoiceState] = useState<'idle' | 'loading' | 'error'>('idle');
+  const testVoiceAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [voiceMessage, setVoiceMessage]   = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [departmentsMessage, setDepartmentsMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [togglingTeamId, setTogglingTeamId] = useState<string | null>(null);
   const [message, setMessage]           = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -290,8 +337,25 @@ export default function WidgetSettingsPage() {
       } else {
         setBookingHours(defaultWeekHours());
       }
+      setBookingRequireTeam(booking?.requireTeam);
+      setBookingRequireService(booking?.requireService);
+      setBookingRequireName(booking?.requireName ?? true);
+      setBookingContactRequirement(booking?.contactRequirement ?? 'email_or_phone');
+      setBookingStaffLabel(booking?.staffLabel ?? 'team member');
+
+      const voice = tenant.widget.voice;
+      setVoiceEnabled(voice?.enabled ?? false);
+      setVoiceProvider(voice?.sttProvider ?? 'groq');
+      setVoiceName(voice?.voiceName ?? '');
+      setSttLanguage(voice?.sttLanguage ?? '');
+      setVoiceAutoPlay(voice?.autoPlay ?? true);
+      setContinuousModeEnabled(voice?.continuousModeEnabled ?? false);
+      setMaxSessionMinutes(voice?.maxSessionMinutes ? String(voice.maxSessionMinutes) : '');
+      setAllowTextDuringVoice(voice?.allowTextDuringVoice ?? true);
+      setVoicePresetGender(voice?.voicePreset?.gender ?? 'female');
     }
     setToolModelPreset(tenant?.aiConfig?.toolModelPreset ?? '');
+    setAutoConvertLeadOnMeetingCompleted(tenant?.aiConfig?.autoConvertLeadOnMeetingCompleted ?? false);
   }, [tenant]);
 
   useEffect(() => {
@@ -362,8 +426,8 @@ export default function WidgetSettingsPage() {
   const handleToolModelSave = async () => {
     setToolModelMessage(null);
     try {
-      await aiConfigMutation.mutateAsync({ toolModelPreset: toolModelPreset || null });
-      setToolModelMessage({ type: 'ok', text: 'Tool model saved.' });
+      await aiConfigMutation.mutateAsync({ toolModelPreset: toolModelPreset || null, autoConvertLeadOnMeetingCompleted });
+      setToolModelMessage({ type: 'ok', text: 'Settings saved.' });
     } catch (err: any) {
       setToolModelMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
     }
@@ -383,11 +447,62 @@ export default function WidgetSettingsPage() {
           leadTimeHours: bookingLeadTimeHours,
           horizonDays: bookingHorizonDays,
           hours,
+          requireTeam: bookingRequireTeam,
+          requireService: bookingRequireService,
+          requireName: bookingRequireName,
+          contactRequirement: bookingContactRequirement,
+          staffLabel: bookingStaffLabel.trim() || 'team member',
         },
       });
       setBookingMessage({ type: 'ok', text: 'Booking hours saved.' });
     } catch (err: any) {
       setBookingMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
+    }
+  };
+
+  // Reuses updateMutation (useUpdateTenantWidget) directly — voice is just
+  // one more field on the same widget object, exactly like booking already
+  // is, so no separate mutation hook was needed for this.
+  const handleVoiceSave = async () => {
+    setVoiceMessage(null);
+    try {
+      await updateMutation.mutateAsync({
+        voice: {
+          enabled: voiceEnabled,
+          sttProvider: voiceProvider,
+          ttsProvider: voiceProvider,
+          voiceName: voiceName.trim() || undefined,
+          sttLanguage: sttLanguage.trim() || undefined,
+          autoPlay: voiceAutoPlay,
+          continuousModeEnabled,
+          maxSessionMinutes: maxSessionMinutes.trim() ? Number(maxSessionMinutes) : undefined,
+          allowTextDuringVoice,
+          voicePreset: continuousModeEnabled ? CARTESIA_VOICE_PRESETS[voicePresetGender] : undefined,
+        },
+      });
+      setVoiceMessage({ type: 'ok', text: 'Voice settings saved.' });
+    } catch (err: any) {
+      setVoiceMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
+    }
+  };
+
+  // Synthesizes a short sample sentence with the currently-selected preset
+  // voice so a tenant admin can hear it before it's ever used on a real
+  // continuous-voice call — calls the AI service's preview endpoint through
+  // the same authenticated staff-JWT proxy the Voice Playground already
+  // uses, not the public widgetKey path.
+  const handleTestVoice = async () => {
+    setTestVoiceState('loading');
+    try {
+      const res = await api.post('/api/v1/ai/voice/preview', { voiceId: voicePresetGender });
+      const data = res.data.data as { audio: string; audioFormat: string };
+      if (testVoiceAudioRef.current) {
+        testVoiceAudioRef.current.src = `data:audio/${data.audioFormat};base64,${data.audio}`;
+        void testVoiceAudioRef.current.play().catch(() => {});
+      }
+      setTestVoiceState('idle');
+    } catch {
+      setTestVoiceState('error');
     }
   };
 
@@ -731,6 +846,74 @@ export default function WidgetSettingsPage() {
                 <p className="mt-2 text-[11px] text-gray-400">Uncheck a day to keep it closed. Times are in the timezone set above.</p>
               </div>
 
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Required Before Booking</label>
+                <p className="mb-2 text-[11px] text-gray-400">
+                  Only ask visitors for what your business actually needs — not every business needs a department/service question.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Ask which department/team</label>
+                    <select
+                      value={tristateToSelect(bookingRequireTeam)}
+                      onChange={(e) => setBookingRequireTeam(selectToTristate(e.target.value))}
+                      className={input}
+                    >
+                      <option value="auto">Auto (recommended) — ask only if departments are configured</option>
+                      <option value="always">Always ask</option>
+                      <option value="never">Never ask</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Ask what service/reason the visit is for</label>
+                    <select
+                      value={tristateToSelect(bookingRequireService)}
+                      onChange={(e) => setBookingRequireService(selectToTristate(e.target.value))}
+                      className={input}
+                    >
+                      <option value="auto">Auto (recommended) — off unless you turn it on</option>
+                      <option value="always">Always ask</option>
+                      <option value="never">Never ask</option>
+                    </select>
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={bookingRequireName}
+                    onChange={(e) => setBookingRequireName(e.target.checked)}
+                    className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                  />
+                  Require the visitor's name
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Contact Info Required</label>
+                  <select
+                    value={bookingContactRequirement}
+                    onChange={(e) => setBookingContactRequirement(e.target.value as typeof bookingContactRequirement)}
+                    className={input}
+                  >
+                    <option value="email_or_phone">Email OR phone</option>
+                    <option value="email_only">Email only</option>
+                    <option value="phone_only">Phone only</option>
+                    <option value="email_and_phone">Email AND phone</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Staff Title</label>
+                  <input
+                    value={bookingStaffLabel}
+                    onChange={(e) => setBookingStaffLabel(e.target.value)}
+                    className={input}
+                    placeholder="e.g. Doctor, Stylist, Consultant, team member"
+                  />
+                  <p className="mt-1 text-[11px] text-gray-400">What the AI calls a staff member when talking to visitors.</p>
+                </div>
+              </div>
+
               {bookingMessage && (
                 <div className={`text-sm px-4 py-2.5 rounded-lg border ${
                   bookingMessage.type === 'ok'
@@ -835,6 +1018,25 @@ export default function WidgetSettingsPage() {
                 </p>
               </div>
 
+              <div className="pt-3 border-t border-gray-100">
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoConvertLeadOnMeetingCompleted}
+                    onChange={(e) => setAutoConvertLeadOnMeetingCompleted(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium text-gray-800">
+                      Auto-convert Lead to Customer when their appointment is marked completed
+                    </span>
+                    <span className="block text-[11px] text-gray-400 mt-0.5">
+                      Off by default — conversion stays a manual action from the Lead's own Convert tab unless this is turned on.
+                    </span>
+                  </span>
+                </label>
+              </div>
+
               {toolModelMessage && (
                 <div className={`text-sm px-4 py-2.5 rounded-lg border ${
                   toolModelMessage.type === 'ok'
@@ -851,8 +1053,190 @@ export default function WidgetSettingsPage() {
                 disabled={aiConfigMutation.isPending}
                 className="px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
               >
-                {aiConfigMutation.isPending ? 'Saving…' : 'Save Tool Model'}
+                {aiConfigMutation.isPending ? 'Saving…' : 'Save Settings'}
               </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <SectionHeader
+              id="section-voice"
+              icon={MicrophoneIcon}
+              iconClassName="bg-cyan-50 text-cyan-600"
+              title="Voice"
+              description="Let visitors talk to the widget with their microphone instead of typing — push-to-talk, powered by the same AI."
+              right={
+                <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                  <span className="text-xs text-gray-500">{voiceEnabled ? 'Enabled' : 'Disabled'}</span>
+                  <input
+                    type="checkbox"
+                    checked={voiceEnabled}
+                    onChange={(e) => setVoiceEnabled(e.target.checked)}
+                    className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                  />
+                </label>
+              }
+            />
+            <div className="px-6 py-5 space-y-5">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Conversation Mode</label>
+                <div className="flex gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="voiceConversationMode"
+                      checked={!continuousModeEnabled}
+                      onChange={() => setContinuousModeEnabled(false)}
+                      className="h-4 w-4 text-brand-600 focus:ring-brand-400"
+                    />
+                    <span className="text-sm text-gray-700">Push-to-talk</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="voiceConversationMode"
+                      checked={continuousModeEnabled}
+                      onChange={() => setContinuousModeEnabled(true)}
+                      className="h-4 w-4 text-brand-600 focus:ring-brand-400"
+                    />
+                    <span className="text-sm text-gray-700">Continuous (hands-free)</span>
+                  </label>
+                </div>
+                <p className="mt-1 text-[11px] text-gray-400">
+                  Continuous mode holds an open, natural back-and-forth conversation — visitors don't tap to record each turn, and the AI can be
+                  interrupted mid-reply. Real per-minute cost is materially higher than push-to-talk (a dedicated real-time voice platform plus
+                  streaming speech-to-text/text-to-speech, on top of the LLM cost already tracked).
+                </p>
+              </div>
+              {continuousModeEnabled && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Max Call Length (minutes)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={maxSessionMinutes}
+                      onChange={(e) => setMaxSessionMinutes(e.target.value)}
+                      className={input}
+                      placeholder="No limit"
+                    />
+                    <p className="mt-1 text-[11px] text-gray-400">
+                      Hard per-call duration cap — the AI speaks a wrap-up and ends the call once reached. Separate from the monthly voice-minutes
+                      quota above, this protects against one runaway call using up the whole month's budget alone.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Typing During a Call</label>
+                    <label className="flex items-center gap-2 cursor-pointer mt-2">
+                      <input
+                        type="checkbox"
+                        checked={allowTextDuringVoice}
+                        onChange={(e) => setAllowTextDuringVoice(e.target.checked)}
+                        className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                      />
+                      <span className="text-sm text-gray-700">Allow visitors to type while a voice call is active</span>
+                    </label>
+                    <p className="mt-1 text-[11px] text-gray-400">
+                      On by default (hybrid mode). Turn off to require one active conversational channel at a time.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Voice</label>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={voicePresetGender}
+                        onChange={(e) => setVoicePresetGender(e.target.value as 'female' | 'male')}
+                        className={input}
+                      >
+                        <option value="female">Female — {CARTESIA_VOICE_PRESETS.female.displayName}</option>
+                        <option value="male">Male — {CARTESIA_VOICE_PRESETS.male.displayName}</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={handleTestVoice}
+                        disabled={testVoiceState === 'loading'}
+                        className="shrink-0 px-3 py-2.5 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors whitespace-nowrap"
+                      >
+                        {testVoiceState === 'loading' ? 'Loading…' : '🔊 Test Voice'}
+                      </button>
+                    </div>
+                    <audio ref={testVoiceAudioRef} className="hidden" />
+                    {testVoiceState === 'error' && (
+                      <p className="mt-1 text-[11px] text-red-500">Could not play a preview — try again.</p>
+                    )}
+                    <p className="mt-1 text-[11px] text-gray-400">
+                      Continuous calls always listen with Deepgram and speak with Cartesia — that's fixed, not configurable here.
+                      Confirm this voice sounds right, then Save Voice Settings below. (The Speech Provider field further down is
+                      for Push-to-talk only. The Voice Name field is also used for Push-to-talk, but doubles as a fallback voice
+                      for Continuous calls whenever no Male/Female preset is selected above.)
+                    </p>
+                  </div>
+                </div>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Push-to-talk Speech Provider</label>
+                  <select value={voiceProvider} onChange={(e) => setVoiceProvider(e.target.value as VoiceProvider)} className={input}>
+                    <option value="groq">Groq (recommended)</option>
+                  </select>
+                  <p className="mt-1 text-[11px] text-gray-400">
+                    Handles both listening (speech-to-text) and speaking (text-to-speech) for Push-to-talk only — no separate account
+                    needed. Continuous (hands-free) calls always use Deepgram + Cartesia instead, regardless of this setting.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Push-to-talk Voice Name (advanced)</label>
+                  <input value={voiceName} onChange={(e) => setVoiceName(e.target.value)} className={input} placeholder="e.g. Fritz-PlayAI (leave blank for default)" />
+                  <p className="mt-1 text-[11px] text-gray-400">Used for Push-to-talk. Also used as a fallback voice for Continuous calls if no Male/Female preset is selected above — pick a preset above for direct control over the Continuous voice instead.</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Speech Language</label>
+                  <select value={sttLanguage} onChange={(e) => setSttLanguage(e.target.value)} className={input}>
+                    <option value="">Auto-detect</option>
+                    {SUPPORTED_LANGUAGES.map((l) => (
+                      <option key={l.code} value={l.code}>{l.label}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-[11px] text-gray-400">
+                    Used by both Push-to-talk and Continuous calls. Reply language uses the AI Agent's own Language setting elsewhere in Settings.
+                  </p>
+                </div>
+                <div className="flex items-end pb-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={voiceAutoPlay}
+                      onChange={(e) => setVoiceAutoPlay(e.target.checked)}
+                      className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                    />
+                    <span className="text-sm text-gray-700">Auto-play spoken replies</span>
+                  </label>
+                </div>
+              </div>
+
+              {voiceMessage && (
+                <div className={`text-sm px-4 py-2.5 rounded-lg border ${
+                  voiceMessage.type === 'ok'
+                    ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                    : 'bg-red-50 border-red-100 text-red-600'
+                }`}>
+                  {voiceMessage.text}
+                </div>
+              )}
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleVoiceSave}
+                  disabled={updateMutation.isPending}
+                  className="px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                >
+                  {updateMutation.isPending ? 'Saving…' : 'Save Voice Settings'}
+                </button>
+                <a href="/native-crm/settings/voice-playground" className="text-xs font-medium text-brand-600 hover:text-brand-700">
+                  Test in Voice Playground →
+                </a>
+              </div>
             </div>
           </div>
 

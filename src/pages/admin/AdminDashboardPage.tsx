@@ -462,6 +462,10 @@ interface TenantAiUsage {
   tenantId: string; tenantName: string; plan: string;
   monthlyTokenLimit: number; tokensUsedThisMonth: number; percentUsed: number;
   estimatedCostUsd: number; requestCount: number; moderationFallbackCount: number;
+  sttSeconds: number; ttsCharacters: number; voiceCostUsd: number; voiceRequestCount: number;
+  monthlyVoiceMinutesLimit: number; continuousVoiceMinutesUsed: number; voiceMinutesPercentUsed: number;
+  continuousVoiceSessionCount: number; deepgramSttSeconds: number; cartesiaTtsCharacters: number;
+  continuousVoiceCostUsd: number;
 }
 
 const ROLE_BADGE: Record<string, string> = {
@@ -751,20 +755,22 @@ function HealthPanel() {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Est. Cost</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Conversations</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase" title="How many times OpenAI's safety check was temporarily unreachable and a backup check ran instead — the chat still worked, this just flags when the primary safety provider was down">Safety Check Issues</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase" title="Speech-to-text + text-to-speech usage from the push-to-talk voice widget, this month">Push-to-talk Voice</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase" title="Continuous, hands-free voice conversation (LiveKit) — a separate meter and budget from push-to-talk above. Minutes used / monthly budget, session count, and estimated cost across LiveKit + Deepgram + Cartesia.">Continuous Voice</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800/60">
               {aiUsageLoad && aiUsage.length === 0
                 ? [0, 1, 2].map((i) => (
                     <tr key={i} className="bg-gray-900/40">
-                      <td colSpan={7} className="px-4 py-3">
+                      <td colSpan={9} className="px-4 py-3">
                         <div className="h-4 bg-gray-800 rounded animate-pulse w-3/4" />
                       </td>
                     </tr>
                   ))
                 : aiUsage.length === 0
                 ? (
-                  <tr><td colSpan={7} className="px-4 py-6 text-center text-xs text-gray-600">No AI usage recorded yet this month</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-6 text-center text-xs text-gray-600">No AI usage recorded yet this month</td></tr>
                 ) : aiUsage.map((t) => {
                   const pct = Math.round(t.percentUsed * 100);
                   const barColor = pct >= 100 ? 'bg-red-500' : pct >= 95 ? 'bg-red-400' : pct >= 90 ? 'bg-orange-400' : pct >= 80 ? 'bg-yellow-400' : 'bg-green-500';
@@ -790,6 +796,29 @@ function HealthPanel() {
                         {t.moderationFallbackCount > 0
                           ? <span className="text-amber-400">{t.moderationFallbackCount}</span>
                           : <span className="text-gray-600">0</span>}
+                      </td>
+                      <td className="px-4 py-3 tabular-nums">
+                        {t.voiceRequestCount > 0 ? (
+                          <span className="text-cyan-400">{t.voiceRequestCount} · ${t.voiceCostUsd.toFixed(4)}</span>
+                        ) : (
+                          <span className="text-gray-600">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 tabular-nums">
+                        {t.continuousVoiceSessionCount > 0 ? (() => {
+                          const vPct = Math.round(t.voiceMinutesPercentUsed * 100);
+                          const vTextColor = vPct >= 95 ? 'text-red-400' : vPct >= 80 ? 'text-yellow-400' : 'text-purple-300';
+                          return (
+                            <div className="flex flex-col gap-0.5">
+                              <span className={vTextColor}>
+                                {t.continuousVoiceMinutesUsed.toFixed(1)} / {t.monthlyVoiceMinutesLimit.toLocaleString()} min ({vPct}%{vPct >= 100 ? ' — paused' : ''})
+                              </span>
+                              <span className="text-gray-500 text-[11px]">{t.continuousVoiceSessionCount} calls · ${t.continuousVoiceCostUsd.toFixed(4)}</span>
+                            </div>
+                          );
+                        })() : (
+                          <span className="text-gray-600">—</span>
+                        )}
                       </td>
                     </tr>
                   );

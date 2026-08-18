@@ -8,6 +8,44 @@ export interface TenantBookingHoursConfig {
   leadTimeHours: number;
   horizonDays: number;
   hours: Array<{ day: 0 | 1 | 2 | 3 | 4 | 5 | 6; start: string; end: string }>;
+  requireTeam?: boolean;
+  requireService?: boolean;
+  requireName?: boolean;
+  contactRequirement?: 'email_only' | 'phone_only' | 'email_or_phone' | 'email_and_phone';
+  staffLabel?: string;
+}
+
+export type VoiceProvider = 'groq';
+
+export interface TenantVoicePreset {
+  provider: 'cartesia';
+  voiceId: string;
+  displayName: string;
+  gender: 'male' | 'female';
+  language: string;
+}
+
+export interface TenantVoiceConfig {
+  enabled: boolean;
+  sttProvider: VoiceProvider;
+  ttsProvider: VoiceProvider;
+  voiceName?: string;
+  sttLanguage?: string;
+  autoPlay: boolean;
+  /** Continuous, hands-free voice conversation (LiveKit) — separate from
+   * `enabled` above (push-to-talk); a tenant can run either, both, or
+   * neither independently. */
+  continuousModeEnabled?: boolean;
+  /** Hard per-call duration cap (minutes) for continuous voice — separate
+   * from the monthly voice-minutes quota (aiConfig.monthlyVoiceMinutesLimit). */
+  maxSessionMinutes?: number;
+  /** Whether the text input stays usable while a continuous call is active
+   * (default true — hybrid mode). */
+  allowTextDuringVoice?: boolean;
+  /** Structured Cartesia voice preset for CONTINUOUS voice — kept alongside
+   * (not replacing) voiceName, which stays the push-to-talk (Groq/Orpheus)
+   * free-text override. */
+  voicePreset?: TenantVoicePreset;
 }
 
 export interface TenantWidgetConfig {
@@ -22,6 +60,7 @@ export interface TenantWidgetConfig {
   logoUrl?: string;
   template?: 'modern' | 'minimal' | 'chips' | 'dark';
   booking?: TenantBookingHoursConfig;
+  voice?: TenantVoiceConfig;
 }
 
 export interface CrawlStatus {
@@ -39,7 +78,8 @@ export interface Tenant {
   name: string;
   widget?: TenantWidgetConfig;
   branding?: { primaryColor?: string; companyName?: string; logoUrl?: string };
-  aiConfig?: { toolModelPreset?: ToolModelPreset | null };
+  aiConfig?: { toolModelPreset?: ToolModelPreset | null; autoConvertLeadOnMeetingCompleted?: boolean };
+  dataScopeConfig?: Record<string, boolean>;
 }
 
 const BASE = '/api/v1/tenants';
@@ -71,8 +111,21 @@ export function useUpdateTenantWidget(id: string) {
 export function useUpdateTenantAIConfig(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (aiConfig: { toolModelPreset?: ToolModelPreset | null }) =>
+    mutationFn: (aiConfig: { toolModelPreset?: ToolModelPreset | null; autoConvertLeadOnMeetingCompleted?: boolean }) =>
       api.put(`${BASE}/${id}`, { aiConfig }).then((r) => r.data.data as Tenant),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY(id) }),
+  });
+}
+
+/** Per-module row-level scoping toggle — mirrors useUpdateTenantWidget()'s
+ * exact shape. Only ever sends the keys the caller changed; the backend's
+ * own dot-notation merge (tenant.service.ts's updateTenant()) means any
+ * module key not included here is left completely untouched. */
+export function useUpdateTenantDataScopeConfig(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (dataScopeConfig: Record<string, boolean>) =>
+      api.put(`${BASE}/${id}`, { dataScopeConfig }).then((r) => r.data.data as Tenant),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY(id) }),
   });
 }

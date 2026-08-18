@@ -87,61 +87,84 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
     users:      usersData?.items      ?? [],
   };
 
+  // Tracks which record/module this drawer has already initialized `form`
+  // for — a real, confirmed bug: `form`/`customForm`/`errors` used to reset
+  // to blank on EVERY re-run of this effect, including re-runs caused by a
+  // cascaded lookup query resolving (e.g. selecting a Team on the Staff form
+  // triggers the shared "staff in this team" cascaded query used elsewhere,
+  // whose result is a fresh object reference — that alone re-ran this whole
+  // effect and silently wiped out everything the user had already typed,
+  // including the very Team selection that triggered it). The fix: only
+  // reset `form`/`customForm`/`errors` once per genuine record/module
+  // identity change, never as a side effect of a lookup dataset arriving.
+  const initializedForRef = useRef<string | null>(null);
+
   useEffect(() => {
-    const initial: Record<string, any> = {};
-    fields.forEach((f) => {
-      if (f.type === 'servicelines' || f.type === 'multilookup' || f.type === 'multiselect' || f.type === 'emaillist' || f.type === 'phonelist') {
-        initial[f.key] = record?.[f.key] ?? [];
-      } else if (f.type === 'lookup') {
-        // Handle populated Mongoose objects (e.g. record.teamId = { _id: "...", name: "..." })
-        const raw = record?.[f.key];
-        if (raw && typeof raw === 'object' && raw._id) {
-          initial[f.key] = f.lookupValueField === '_id' ? raw._id?.toString() : (raw[f.lookupValueField!] ?? '');
+    const identity = `${module ?? ''}:${record?._id ?? 'create'}`;
+    if (initializedForRef.current !== identity) {
+      initializedForRef.current = identity;
+
+      const initial: Record<string, any> = {};
+      fields.forEach((f) => {
+        if (f.type === 'servicelines' || f.type === 'multilookup' || f.type === 'multiselect' || f.type === 'emaillist' || f.type === 'phonelist') {
+          initial[f.key] = record?.[f.key] ?? [];
+        } else if (f.type === 'lookup') {
+          // Handle populated Mongoose objects (e.g. record.teamId = { _id: "...", name: "..." })
+          const raw = record?.[f.key];
+          if (raw && typeof raw === 'object' && raw._id) {
+            initial[f.key] = f.lookupValueField === '_id' ? raw._id?.toString() : (raw[f.lookupValueField!] ?? '');
+          } else {
+            initial[f.key] = raw ?? '';
+          }
         } else {
-          initial[f.key] = raw ?? '';
+          initial[f.key] = record?.[f.key] ?? '';
         }
-      } else {
-        initial[f.key] = record?.[f.key] ?? '';
+      });
+      // Pre-fill branchId from global context when creating a new record
+      if (!record && fields.some((f) => f.type === 'branch-select')) {
+        initial.branchId = currentBranch?._id ?? null;
       }
-    });
-    // Pre-fill branchId from global context when creating a new record
-    if (!record && fields.some((f) => f.type === 'branch-select')) {
-      initial.branchId = currentBranch?._id ?? null;
+      setForm(initial);
+
+      const cf: Record<string, any> = {};
+      activeCustomFields.forEach((f) => {
+        cf[f.fieldKey] = record?.customFields?.[f.fieldKey] ?? '';
+      });
+      setCustomForm(cf);
+
+      setErrors({});
     }
 
-    setForm(initial);
-
-    // Restore selectedLookups from existing record so cascades work on edit
-    const lookups: Record<string, any> = {};
-    fields.forEach((f) => {
-      if (f.type === 'lookup' && record?.[f.key]) {
-        const opts = lookupDataMap[f.lookupModule!] ?? [];
-        const rawVal = typeof record[f.key] === 'object' ? record[f.key]?._id?.toString() : record[f.key];
-        const found = opts.find(r => {
-          const optVal = f.lookupValueField === '_id' ? r._id?.toString() : r[f.lookupValueField!];
-          return optVal === rawVal;
-        }) ?? null;
-        if (found) lookups[f.key] = found;
+    // Restore selectedLookups from an EXISTING record only — a create-mode
+    // drawer (record === null) has nothing to restore, and must never have
+    // its own live, in-progress selections overwritten here. Uses a
+    // functional merge (not a wholesale replace) so a re-run triggered by a
+    // late-arriving lookup dataset can only ADD values found in `record`,
+    // never erase a field the user already picked interactively.
+    if (record) {
+      const lookups: Record<string, any> = {};
+      fields.forEach((f) => {
+        if (f.type === 'lookup' && record?.[f.key]) {
+          const opts = lookupDataMap[f.lookupModule!] ?? [];
+          const rawVal = typeof record[f.key] === 'object' ? record[f.key]?._id?.toString() : record[f.key];
+          const found = opts.find(r => {
+            const optVal = f.lookupValueField === '_id' ? r._id?.toString() : r[f.lookupValueField!];
+            return optVal === rawVal;
+          }) ?? null;
+          if (found) lookups[f.key] = found;
+        }
+      });
+      if (Object.keys(lookups).length) {
+        setSelectedLookups((prev) => ({ ...prev, ...lookups }));
       }
-    });
-    setSelectedLookups(lookups);
-
-    const cf: Record<string, any> = {};
-    activeCustomFields.forEach((f) => {
-      cf[f.fieldKey] = record?.customFields?.[f.fieldKey] ?? '';
-    });
-    setCustomForm(cf);
-
-    setErrors({});
-  // Also re-runs once each lookup dataset finishes its own (async, cold-cache)
-  // fetch — without this, a 'lookup' field opened on an EXISTING record
-  // before its lookupModule's data has loaded would permanently restore to
-  // "nothing selected" (the very first pass through this effect finds
-  // lookupDataMap[...] still empty and never gets another chance to try
-  // again once the real data arrives, since lookupDataMap itself isn't a
-  // stable dependency you can just add — a new object literal every render
-  // would re-run this every render instead). Depending on the underlying
-  // query results directly is what actually fixes it.
+    }
+  // Still re-runs once each lookup dataset finishes its own (async,
+  // cold-cache) fetch — without this, a 'lookup' field opened on an
+  // EXISTING record before its lookupModule's data has loaded would
+  // permanently restore to "nothing selected". That re-run is now safe: it
+  // only ever merges newly-found values into selectedLookups (see above),
+  // and never touches form/customForm/errors again once initialized (see
+  // initializedForRef above).
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     record, fields, module,

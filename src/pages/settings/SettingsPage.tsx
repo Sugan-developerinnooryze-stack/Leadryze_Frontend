@@ -8,6 +8,7 @@ import {
   UserGroupIcon, ShieldCheckIcon, KeyIcon, LockClosedIcon,
   EyeIcon, EyeSlashIcon,
 } from '@heroicons/react/24/outline';
+import { SUPPORTED_LANGUAGES } from '../../modules/native-crm/shared/languages';
 
 /* ── section wrapper ──────────────────────────────────────────────────── */
 function Section({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
@@ -1603,13 +1604,9 @@ export default function SettingsPage() {
           </Field>
           <Field label="Response Language">
             <select className="input" value={language} onChange={(e) => setLanguage(e.target.value)}>
-              <option value="en">English</option>
-              <option value="hi">Hindi</option>
-              <option value="ta">Tamil</option>
-              <option value="te">Telugu</option>
-              <option value="ms">Bahasa Malaysia</option>
-              <option value="zh">Chinese (Simplified)</option>
-              <option value="ar">Arabic</option>
+              {SUPPORTED_LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code}>{l.label}</option>
+              ))}
             </select>
           </Field>
           <Field label="Custom Instructions">

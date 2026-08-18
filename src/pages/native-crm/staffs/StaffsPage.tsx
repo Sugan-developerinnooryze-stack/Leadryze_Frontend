@@ -31,7 +31,19 @@ const FIELDS: FSFieldDef[] = [
 
 const COLUMNS: FSColumnDef[] = [
   { key: 'staffId', label: 'ID' },
-  { key: 'name',    label: 'Name',   render: (r) => [r.firstName, r.lastName].filter(Boolean).join(' ') || 'â€”' },
+  { key: 'name',    label: 'Name',   render: (r: any) => (
+    <span className="inline-flex items-center gap-1.5">
+      {[r.firstName, r.lastName].filter(Boolean).join(' ') || '—'}
+      {r.source === 'supervisor_flow' && (
+        <span
+          className="px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-medium shrink-0"
+          title="Created via the Supervisors page"
+        >
+          Via Supervisor
+        </span>
+      )}
+    </span>
+  ) },
   { key: 'email',   label: 'Email' },
   { key: 'phone',   label: 'Phone' },
   { key: 'role',    label: 'Role' },
@@ -49,7 +61,7 @@ export default function StaffsPage() {
 
   useEffect(() => { setPage(1); }, [search, status]);
 
-  const { data: result, isLoading } = useStaffsListQuery({ page, limit: 20, search: search || undefined, status: status || undefined });
+  const { data: result, isLoading, error } = useStaffsListQuery({ page, limit: 20, search: search || undefined, status: status || undefined });
   const items = result?.items ?? [];
   const meta  = result?.meta  ?? { total: 0, page: 1, totalPages: 1 };
 
@@ -111,6 +123,7 @@ export default function StaffsPage() {
         columns={COLUMNS}
         data={items}
         loading={isLoading}
+        errorStatus={(error as any)?.response?.status}
         total={meta.total}
         page={meta.page}
         totalPages={meta.totalPages}

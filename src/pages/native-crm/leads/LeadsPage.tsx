@@ -11,7 +11,7 @@ import ColumnEditor from '../../../modules/crm/shared/ColumnEditor';
 import type { FieldConfig } from '../../../modules/crm/shared/types/crm.types';
 import {
   useLeadsQuery, useLeadCreate, useLeadUpdate,
-  useLeadDelete, useLeadUpdateStage,
+  useLeadDelete, useLeadUpdateStage, useLeadQuery,
   useLeadsStatsQuery, useLeadConvertToContact,
   useLeadConvertToOpportunity, useLeadConvertToCustomer,
 } from '../../../modules/native-crm/queries/leads.queries';
@@ -511,6 +511,8 @@ const ACTION_COLORS: Record<string, string> = {
   updated:        'bg-gray-100 text-gray-600',
   note_added:     'bg-yellow-100 text-yellow-700',
   assigned:       'bg-purple-100 text-purple-700',
+  reassigned:     'bg-indigo-100 text-indigo-700',
+  converted:      'bg-emerald-100 text-emerald-700',
   uploaded:       'bg-pink-100 text-pink-700',
   deleted:        'bg-red-100 text-red-700',
 };
@@ -598,13 +600,21 @@ function ConvertTab({ lead }: { lead: any }) {
 }
 
 function LeadDetailPanel({
-  lead, onClose, onEdit,
+  lead: listLead, onClose, onEdit,
 }: {
   lead: any; onClose: () => void;
   onEdit: (lead: any) => void;
 }) {
   const [tab, setTab] = useState<'overview'|'sales'|'timeline'|'convert'>('overview');
   const { stages } = usePipelineStages('lead', DEFAULT_LEAD_STAGES);
+  // The list response (listLead) omits supervisorName (live-resolved,
+  // single-record only — see lead.controller.ts's own comment on why it's
+  // never included in a list to avoid an N+1 join on every page load).
+  // Fetching the single record here fills that one gap; everything else
+  // already comes through on the list response since listLeads() has no
+  // field projection.
+  const { data: fullLead } = useLeadQuery(listLead._id);
+  const lead = fullLead ?? listLead;
   const stageMeta = stages.find((s) => s.key === lead.status);
   const { data: timelineEvents = [], isLoading: tlLoading } = useEntityTimelineQuery('leads', lead._id);
   const qc = useQueryClient();
@@ -679,6 +689,9 @@ function LeadDetailPanel({
             <InfoRow label="Priority"      value={lead.priority} />
             <InfoRow label="Source"        value={(lead.source ?? '').replace(/_/g, ' ')} />
             <InfoRow label="Score"         value={lead.score} />
+            <InfoRow label="Owner"         value={lead.leadOwner} />
+            <InfoRow label="Team"          value={lead.teamName} />
+            <InfoRow label="Supervisor"    value={lead.supervisorName} />
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4">Address</p>
             <InfoRow label="Address"    value={lead.address} />
             <InfoRow label="City"       value={lead.city} />

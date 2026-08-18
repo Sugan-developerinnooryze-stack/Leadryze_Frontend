@@ -42,6 +42,13 @@ export interface FieldConfig {
    * display and split it back on save so the payload matches what the
    * schema actually validates against. */
   isArray?:     boolean;
+  /** System-managed display field (e.g. assignedStaffName/teamName/source,
+   * populated server-side by round robin/reassignment) — shown as a table
+   * column when tableCol:true, but never rendered as an editable input in
+   * the generic RecordDrawer, so a user can't accidentally overwrite a
+   * value that's meant to change only through the dedicated
+   * assignment/reassignment flow. */
+  hideInForm?:  boolean;
 }
 
 export interface ModulePageConfig {

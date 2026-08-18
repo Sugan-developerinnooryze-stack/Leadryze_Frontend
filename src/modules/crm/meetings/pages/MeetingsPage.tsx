@@ -19,6 +19,9 @@ export const config: ModulePageConfig = {
     { key: 'meetingStatus', label: 'Status',        type: 'select',   tableCol: true,
       options: ['scheduled', 'completed', 'cancelled'] },
     { key: 'attendees',     label: 'Attendees',     type: 'text',     placeholder: 'Comma-separated names', isArray: true },
+    { key: 'assignedStaffName', label: 'Assigned To', type: 'text', tableCol: true, hideInForm: true },
+    { key: 'teamName',      label: 'Team',          type: 'text',     tableCol: true, hideInForm: true },
+    { key: 'source',        label: 'Source',        type: 'select',   tableCol: true, hideInForm: true, options: ['manual', 'widget'] },
     { key: 'notes',         label: 'Notes',         type: 'textarea' },
   ],
 };

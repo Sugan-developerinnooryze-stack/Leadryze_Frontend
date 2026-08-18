@@ -34,7 +34,19 @@ const FIELDS: FSFieldDef[] = [
 
 const COLUMNS: FSColumnDef[] = [
   { key: 'teamId',      label: 'ID' },
-  { key: 'name',        label: 'Team Name' },
+  { key: 'name',        label: 'Team Name', render: (r: any) => (
+    <span className="inline-flex items-center gap-1.5">
+      {r.name}
+      {r.source === 'supervisor_flow' && (
+        <span
+          className="px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-medium shrink-0"
+          title="Created via the Supervisors page"
+        >
+          Via Supervisor
+        </span>
+      )}
+    </span>
+  ) },
   { key: 'description', label: 'Description' },
   { key: 'status',      label: 'Status', render: (r) => <FSStatusBadge value={r.status ?? 'active'} /> },
   { key: 'branchId', label: 'Company', render: (r: any) => <CompanyBadge branchId={r.branchId} /> },
@@ -50,7 +62,7 @@ export default function TeamsPage() {
 
   useEffect(() => { setPage(1); }, [search, status]);
 
-  const { data: result, isLoading } = useTeamsListQuery({ page, limit: 20, search: search || undefined, status: status || undefined });
+  const { data: result, isLoading, error } = useTeamsListQuery({ page, limit: 20, search: search || undefined, status: status || undefined });
   const items = result?.items ?? [];
   const meta  = result?.meta  ?? { total: 0, page: 1, totalPages: 1 };
 
@@ -155,6 +167,7 @@ export default function TeamsPage() {
         columns={COLUMNS}
         data={items}
         loading={isLoading}
+        errorStatus={(error as any)?.response?.status}
         total={meta.total}
         page={meta.page}
         totalPages={meta.totalPages}

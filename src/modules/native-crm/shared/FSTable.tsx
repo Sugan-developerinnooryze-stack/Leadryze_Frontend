@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 import {
   PencilSquareIcon, TrashIcon, AdjustmentsHorizontalIcon,
   XMarkIcon, Bars3Icon, ArrowDownTrayIcon, ArrowUpTrayIcon,
-  DocumentArrowDownIcon,
+  DocumentArrowDownIcon, LockClosedIcon,
 } from '@heroicons/react/24/outline';
 import type { FSColumnDef } from './types';
 import api from '../../../services/api';
@@ -409,12 +409,18 @@ interface FSTableProps {
   moduleKey?:       string;
   onRefresh?:       () => void;
   extraRowActions?: (row: any) => React.ReactNode;
+  /** HTTP status of the list query's own error, if any (e.g. 403) — lets the
+   * table distinguish "you don't have permission" from "genuinely empty,"
+   * which otherwise render identically and hide real permission problems
+   * (a role with a stale/missing permission grant looks indistinguishable
+   * from "no records yet" with no way to tell which one it actually is). */
+  errorStatus?:     number;
 }
 
 export default function FSTable({
   columns, data, loading, total, page, limit = 20, totalPages,
   onPageChange, onEdit, onDelete, emptyIcon: EmptyIcon, emptyLabel, onRowClick,
-  moduleKey, onRefresh, extraRowActions,
+  moduleKey, onRefresh, extraRowActions, errorStatus,
 }: FSTableProps) {
   const storageKey = moduleKey ? `fs-cols-${moduleKey}` : null;
   const branches = useBranchStore((s) => s.branches);
@@ -578,6 +584,17 @@ export default function FSTable({
             <span key={i} className="h-2.5 w-2.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  /* ── Permission-denied state — never rendered identically to "empty" ──── */
+  if (errorStatus === 403) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center py-20 text-gray-400">
+        <LockClosedIcon className="h-12 w-12 mb-3 text-amber-300" />
+        <p className="text-sm font-medium text-gray-600">You don't have permission to view this</p>
+        <p className="text-xs text-gray-400 mt-1">Ask a Tenant Admin to grant access under Settings → Permissions.</p>
       </div>
     );
   }

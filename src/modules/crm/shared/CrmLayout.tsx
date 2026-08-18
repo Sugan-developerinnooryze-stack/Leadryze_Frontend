@@ -5,7 +5,7 @@ import {
   MagnifyingGlassIcon, FunnelIcon,
   TableCellsIcon, ChevronDownIcon, ChevronUpIcon,
   ChevronUpDownIcon, AdjustmentsHorizontalIcon,
-  ClockIcon, LinkIcon,
+  ClockIcon, LinkIcon, LockClosedIcon,
 } from '@heroicons/react/24/outline';
 import type { FC, SVGProps } from 'react';
 import api from '../../../services/api';
@@ -153,6 +153,10 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
   const [records, setRecords] = useState<CrmRecord[]>([]);
   const [meta,    setMeta]    = useState<CrmPageMeta>({ total: 0, page: 1, totalPages: 1 });
   const [loading, setLoading] = useState(false);
+  // Tracks a real permission-denied (403) response distinctly from a
+  // genuinely empty list — both used to render identically, silently
+  // hiding a permission problem behind what looked like "no records yet."
+  const [errorStatus, setErrorStatus] = useState<number | undefined>(undefined);
 
   /* ── filters / pagination ── */
   const [search,  setSearch]  = useState('');
@@ -236,6 +240,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
   /* ── fetch ── */
   const fetchRecords = useCallback(async () => {
     setLoading(true);
+    setErrorStatus(undefined);
     try {
       const params: Record<string, unknown> = { page, limit };
       if (search)  params.search = search;
@@ -249,7 +254,10 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
       setRecords(res.data.data ?? []);
       setMeta(res.data.meta ?? { total: 0, page: 1, totalPages: 1 });
       setSelectedIds(new Set());
-    } catch { setRecords([]); }
+    } catch (err: any) {
+      setRecords([]);
+      setErrorStatus(err?.response?.status);
+    }
     finally { setLoading(false); }
   }, [config.apiBase, config.upcomingDateField, page, limit, search, statusF, upcomingOnly, linkedFilter]);
 
@@ -590,6 +598,16 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
                   style={{ animationDelay: `${i * 0.15}s` }}
                 />
               ))}
+            </div>
+          </div>
+        ) : errorStatus === 403 ? (
+          <div className="flex flex-col items-center justify-center h-64 gap-4 text-center px-4">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-amber-100">
+              <LockClosedIcon className="h-8 w-8 text-amber-500" />
+            </div>
+            <div>
+              <p className="text-gray-700 font-semibold">You don't have permission to view this</p>
+              <p className="text-gray-400 text-sm mt-1">Ask a Tenant Admin to grant access under Settings → Permissions.</p>
             </div>
           </div>
         ) : sortedRecords.length === 0 ? (

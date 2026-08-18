@@ -77,17 +77,39 @@ const CONNECTOR_THEME: Record<string, { dot: string; label: string; bar: string;
 };
 
 const STATUS_CONFIG: Record<string, { bar: string; dot: string }> = {
-  new:       { bar: 'bg-blue-500',    dot: 'bg-blue-500'    },
-  contacted: { bar: 'bg-violet-500',  dot: 'bg-violet-500'  },
-  qualified: { bar: 'bg-emerald-500', dot: 'bg-emerald-500' },
-  lost:      { bar: 'bg-rose-500',    dot: 'bg-rose-500'    },
-  converted: { bar: 'bg-teal-500',    dot: 'bg-teal-500'    },
+  new:               { bar: 'bg-blue-500',    dot: 'bg-blue-500'    },
+  contacted:         { bar: 'bg-violet-500',  dot: 'bg-violet-500'  },
+  qualified:         { bar: 'bg-emerald-500', dot: 'bg-emerald-500' },
+  meeting_scheduled: { bar: 'bg-sky-500',     dot: 'bg-sky-500'     },
+  proposal_sent:     { bar: 'bg-amber-500',   dot: 'bg-amber-500'   },
+  negotiation:       { bar: 'bg-orange-500',  dot: 'bg-orange-500'  },
+  won:               { bar: 'bg-teal-500',    dot: 'bg-teal-500'    },
+  converted:         { bar: 'bg-teal-500',    dot: 'bg-teal-500'    },
+  lost:              { bar: 'bg-rose-500',    dot: 'bg-rose-500'    },
+  on_hold:           { bar: 'bg-gray-400',    dot: 'bg-gray-400'    },
+  disqualified:      { bar: 'bg-rose-400',    dot: 'bg-rose-400'    },
+};
+
+/* ── Lead source (channel) branding — native Lead.source values, distinct
+   from CONNECTOR_THEME above (which is for synced-connector records). ── */
+const LEAD_SOURCE_THEME: Record<string, { dot: string; label: string; bar: string }> = {
+  website:      { dot: 'bg-blue-500',    label: 'Website',      bar: 'bg-blue-500'    },
+  landing_page: { dot: 'bg-cyan-500',    label: 'Landing Page', bar: 'bg-cyan-500'    },
+  chatbot:      { dot: 'bg-violet-500',  label: 'AI Chatbot',   bar: 'bg-violet-500'  },
+  whatsapp:     { dot: 'bg-green-500',   label: 'WhatsApp',     bar: 'bg-green-500'   },
+  facebook:     { dot: 'bg-indigo-500',  label: 'Facebook',     bar: 'bg-indigo-500'  },
+  google:       { dot: 'bg-red-500',     label: 'Google',       bar: 'bg-red-500'     },
+  manual:       { dot: 'bg-gray-400',    label: 'Manual Entry', bar: 'bg-gray-400'    },
+  csv:          { dot: 'bg-teal-500',    label: 'CSV Import',   bar: 'bg-teal-500'    },
+  api:          { dot: 'bg-sky-500',     label: 'API',          bar: 'bg-sky-500'     },
+  referral:     { dot: 'bg-amber-500',   label: 'Referral',     bar: 'bg-amber-500'   },
+  other:        { dot: 'bg-slate-400',   label: 'Other',        bar: 'bg-slate-400'   },
 };
 
 /* ── Types ────────────────────────────────────────────────────── */
 interface Stats {
-  totalCustomers: number; newToday: number; booked: number;
-  conversionRate: number; byChannel: Record<string, number>; byStatus: Record<string, number>;
+  totalLeads: number; newToday: number; appointments: number;
+  conversionRate: number; bySource: Record<string, number>; byStatus: Record<string, number>;
 }
 interface ModuleInfo { module: string; count: number; }
 type CRMModules = Record<string, ModuleInfo[]>;
@@ -129,10 +151,14 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user?.tenantId) return;
     setIsLoading(true);
+    // Leads/Meetings summary is role-scoped server-side (a Manager/Agent
+    // login sees only their own team/records here) — independent of the
+    // connector-channel filter below, which only affects synced-connector
+    // module counts, not native Lead/Meeting data.
     const params = new URLSearchParams();
     if (activeChannels.length > 0) params.set('channels', activeChannels.join(','));
     Promise.all([
-      api.get(`/api/v1/customers/stats?${params}`),
+      api.get('/api/v1/native-crm/dashboard-stats'),
       api.get(`/api/v1/crm/modules?${params}`),
     ])
       .then(([sr, mr]) => { setStats(sr.data.data); setCrmModules(mr.data.data || {}); })
@@ -140,7 +166,7 @@ export default function DashboardPage() {
       .finally(() => setIsLoading(false));
   }, [user?.tenantId, activeChannels]);
 
-  const s = stats ?? { totalCustomers: 0, newToday: 0, booked: 0, conversionRate: 0, byChannel: {}, byStatus: {} };
+  const s = stats ?? { totalLeads: 0, newToday: 0, appointments: 0, conversionRate: 0, bySource: {}, byStatus: {} };
 
   const visibleModules: ModuleInfo[] = activeChannel
     ? (crmModules[activeChannel] || [])
@@ -148,7 +174,7 @@ export default function DashboardPage() {
 
   const totalCRM    = visibleModules.reduce((a, m) => a + m.count, 0);
   const maxStatus   = Math.max(1, ...Object.values(s.byStatus));
-  const maxChannel  = Math.max(1, ...Object.values(s.byChannel));
+  const maxSource   = Math.max(1, ...Object.values(s.bySource));
   const totalStatus = Object.values(s.byStatus).reduce((a, b) => a + b, 0) || 1;
 
   if (isLoading) {
@@ -187,7 +213,7 @@ export default function DashboardPage() {
       {/* ── Stat cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Total Leads" value={s.totalCustomers}
+          label="Total Leads" value={s.totalLeads}
           icon={UsersIcon}
           gradient="bg-gradient-to-br from-blue-500 to-blue-700"
           sub="All time"
@@ -199,7 +225,7 @@ export default function DashboardPage() {
           sub={s.newToday > 0 ? '↑ Active today' : 'No new leads yet'}
         />
         <StatCard
-          label="Appointments" value={s.booked}
+          label="Appointments" value={s.appointments}
           icon={CalendarIcon}
           gradient="bg-gradient-to-br from-violet-500 to-purple-700"
           sub="Booked"
@@ -264,34 +290,34 @@ export default function DashboardPage() {
       {/* ── Bottom analytics row ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-        {/* Leads by Channel */}
+        {/* Leads by Channel (native Lead.source) */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-base font-semibold text-gray-900">Leads by Channel</h2>
-            <span className="text-xs text-gray-400 font-medium">{s.totalCustomers} total</span>
+            <span className="text-xs text-gray-400 font-medium">{s.totalLeads} total</span>
           </div>
-          {Object.keys(s.byChannel).length === 0 ? (
+          {Object.keys(s.bySource).length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-gray-300">
               <ChartBarIcon className="h-10 w-10 mb-2" />
               <p className="text-sm">No data yet</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {Object.entries(s.byChannel)
+              {Object.entries(s.bySource)
                 .sort(([, a], [, b]) => b - a)
-                .map(([ch, count]) => {
-                  const t   = CONNECTOR_THEME[ch];
-                  const pct = Math.round((count / maxChannel) * 100);
+                .map(([src, count]) => {
+                  const t   = LEAD_SOURCE_THEME[src];
+                  const pct = Math.round((count / maxSource) * 100);
                   return (
-                    <div key={ch}>
+                    <div key={src}>
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-2">
                           <span className={`h-2.5 w-2.5 rounded-full ${t?.dot || 'bg-gray-400'}`} />
-                          <span className="text-sm font-medium text-gray-700">{t?.label || ch}</span>
+                          <span className="text-sm font-medium text-gray-700">{t?.label || src}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-bold text-gray-900">{count}</span>
-                          <span className="text-xs text-gray-400">{Math.round((count / (s.totalCustomers || 1)) * 100)}%</span>
+                          <span className="text-xs text-gray-400">{Math.round((count / (s.totalLeads || 1)) * 100)}%</span>
                         </div>
                       </div>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
