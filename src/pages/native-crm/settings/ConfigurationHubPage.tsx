@@ -4,9 +4,9 @@ import {
 
   //BellAlertIcon, BoltIcon, ArrowsRightLeftIcon,
   ArrowRightIcon,
-      ChatBubbleLeftRightIcon,
-      MicrophoneIcon,
-      ShieldCheckIcon,
+      // ChatBubbleLeftRightIcon,
+      // MicrophoneIcon,
+      // ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 
 interface HubCard {
@@ -55,21 +55,21 @@ const CARDS: HubCard[] = [
   //   description: 'CSV export for any module, plus validated CSV import for Leads and Deals.',
   //   icon: ArrowsRightLeftIcon, color: '#16a34a', path: '/native-crm/settings/import-export',
   // },
-  {
-    key: 'ai-widget', title: 'AI Chatbot Widget',
-    description: 'Embed a 24/7 AI sales agent on your own website — it captures and assigns leads automatically.',
-    icon: ChatBubbleLeftRightIcon, color: '#2563eb', path: '/native-crm/settings/widget',
-  },
-  {
-    key: 'voice-playground', title: 'Voice Playground',
-    description: 'Test speech-to-text and text-to-speech for a tenant without a live embedded widget.',
-    icon: MicrophoneIcon, color: '#0891b2', path: '/native-crm/settings/voice-playground',
-  },
-  {
-    key: 'data-scope', title: 'Data Visibility',
-    description: 'Per module, decide whether each Supervisor only sees their own team’s records, or everyone’s.',
-    icon: ShieldCheckIcon, color: '#4f46e5', path: '/native-crm/settings/data-scope',
-  },
+  // {
+  //   key: 'ai-widget', title: 'AI Chatbot Widget',
+  //   description: 'Embed a 24/7 AI sales agent on your own website — it captures and assigns leads automatically.',
+  //   icon: ChatBubbleLeftRightIcon, color: '#2563eb', path: '/native-crm/settings/widget',
+  // },
+  // {
+  //   key: 'voice-playground', title: 'Voice Playground',
+  //   description: 'Test speech-to-text and text-to-speech for a tenant without a live embedded widget.',
+  //   icon: MicrophoneIcon, color: '#0891b2', path: '/native-crm/settings/voice-playground',
+  // },
+  // {
+  //   key: 'data-scope', title: 'Data Visibility',
+  //   description: 'Per module, decide whether each Supervisor only sees their own team’s records, or everyone’s.',
+  //   icon: ShieldCheckIcon, color: '#4f46e5', path: '/native-crm/settings/data-scope',
+  // },
 ];
 
 export default function ConfigurationHubPage() {
