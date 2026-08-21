@@ -11,6 +11,9 @@ export interface KnowledgeSource {
   itemsImported: number;
   itemsUpdated: number;
   itemsFailed: number;
+  /** Rows created as new for lack of a confident SKU-less match — see
+   * backend catalog-item.service.ts's buildIdentityFingerprint(). */
+  itemsAmbiguous: number;
   lastError?: string;
 }
 
@@ -18,6 +21,7 @@ export interface ImportSummary {
   knowledgeSourceId: string;
   total: number; created: number; updated: number; unchanged: number;
   rejected: Array<{ row: number; outcome: string; error?: string }>;
+  ambiguousCreated: number;
 }
 
 const BASE = '/api/v1/native-crm/catalog';

@@ -27,8 +27,11 @@ export interface FieldConfig {
   label:        string;
   /** 'staffSelect' renders a dropdown of the tenant's NativeStaff, storing
    * their staffId (not a Mongo _id) — same human-readable-ID convention
-   * Custom Module relationship fields use. */
-  type:         'text' | 'email' | 'phone' | 'number' | 'date' | 'datetime' | 'select' | 'textarea' | 'currency' | 'staffSelect';
+   * Custom Module relationship fields use. 'teamSelect'/'categorySelect'
+   * render dropdowns of NativeTeam/NativeCategory, storing their real Mongo
+   * _id (NOT a human code — matches Ticket.teamId/assignRoundRobin's own
+   * expectation for teamId, and NativeCategory has no human code at all). */
+  type:         'text' | 'email' | 'phone' | 'number' | 'date' | 'datetime' | 'select' | 'textarea' | 'currency' | 'staffSelect' | 'teamSelect' | 'categorySelect';
   required?:    boolean;
   options?:     string[];
   placeholder?: string;
@@ -78,4 +81,48 @@ export interface ModulePageConfig {
    * static `options` array on the statusField — omit for modules not yet
    * migrated to tenant-configurable stages, which keep today's static list. */
   pipelineModule?: 'lead' | 'deal' | 'task' | 'ticket' | 'quotation' | 'workorder' | 'contract' | 'invoice';
+  /** Opt-in server-side filter bar, rendered above the table only when
+   * present — every other module's list view is completely unaffected.
+   * Each entry becomes one query param on the existing list request (or two,
+   * for 'dateRange'). 'staffSelect'/'teamSelect'/'categorySelect' reuse the
+   * exact same CrmField dropdown components the create/edit form already
+   * uses, so the dynamic-options fetch only happens for a module that
+   * actually declares one of these. */
+  filterFields?: FilterFieldConfig[];
+  /** Opt-in bulk-action bar entries, rendered alongside the existing
+   * "Delete" button only when present. Each `action` value must match one
+   * of the backend's `POST {apiBase}/bulk` action enum values exactly. */
+  bulkActions?: BulkActionConfig[];
+}
+
+export interface FilterFieldConfig {
+  /** Query param name(s) this filter maps to — both for 'dateRange' (paired
+   * with toKey), just `key` for every other kind. */
+  key:     string;
+  label:   string;
+  kind:    'select' | 'staffSelect' | 'teamSelect' | 'categorySelect' | 'dateRange' | 'text';
+  /** 'select' kind only — static option list (e.g. priority/source/SLA
+   * status). Dynamic kinds (staffSelect/teamSelect/categorySelect) need no
+   * options here — they fetch their own via CrmField. */
+  options?: { value: string; label: string }[];
+  /** 'dateRange' kind only — the end-of-range query param name. */
+  toKey?:  string;
+  placeholder?: string;
+}
+
+export interface BulkActionConfig {
+  /** Must match the backend bulk-action `action` enum exactly. */
+  action:  string;
+  label:   string;
+  /** How this action's value is collected before firing — 'none' fires
+   * immediately with no extra input (e.g. delete-shaped actions handled
+   * outside this config already cover that case, so 'none' is mostly for
+   * a future fixed-value action). */
+  input:   'staffSelect' | 'teamSelect' | 'select' | 'text' | 'none';
+  /** The request-body field name the collected value is sent as (e.g.
+   * 'staffId' for assign_staff, 'status' for set_status, 'tag' for add_tag). */
+  valueField: string;
+  /** 'select' input only. */
+  options?: { value: string; label: string }[];
+  placeholder?: string;
 }

@@ -6,8 +6,16 @@ import { useWorkordersListQuery } from '../../native-crm/queries/workorders.quer
 import { useContractsListQuery } from '../../native-crm/queries/contracts.queries';
 import { useContactsListQuery } from '../queries/contacts.queries';
 import { useCompaniesListQuery } from '../queries/companies.queries';
+import { useProductsListQuery } from '../../native-crm/queries/products.queries';
+import { useAssetsListQuery } from '../../native-crm/queries/assets.queries';
 
-export type FsRelatedModule = 'customer' | 'quotation' | 'workorder' | 'contract' | 'contact' | 'company';
+// 'deal' is accepted at the type level (matches activity-feed.queries.ts's
+// own RelatedModule, and Ticket's backend relatedModule enum already
+// included it) but has no search UI here — no useDealsListQuery hook exists
+// yet, and nothing in this app currently invokes the picker with it. Kept in
+// the union so ActivityFeedPanel's prefillRelation (real deal-view activity
+// feeds, once one exists) type-checks correctly rather than needing a cast.
+export type FsRelatedModule = 'customer' | 'quotation' | 'workorder' | 'contract' | 'contact' | 'company' | 'product' | 'asset' | 'deal';
 
 export interface FsRelation {
   relatedModule?: FsRelatedModule;
@@ -22,6 +30,8 @@ const MODULE_OPTIONS: { value: FsRelatedModule; label: string }[] = [
   { value: 'contract',  label: 'Contract' },
   { value: 'contact',   label: 'Contact' },
   { value: 'company',   label: 'Company' },
+  { value: 'product',   label: 'Product' },
+  { value: 'asset',     label: 'Asset' },
 ];
 
 // Every Field Service record uses its own human-facing *Id field alongside a
@@ -32,12 +42,16 @@ function humanId(m: FsRelatedModule, r: any): string | null {
   if (m === 'quotation') return r.quotationId;
   if (m === 'workorder') return r.workOrderId;
   if (m === 'contract')  return r.contractId;
+  if (m === 'product')   return r.productId;
+  if (m === 'asset')     return r.assetId;
   return null;
 }
 function displayName(m: FsRelatedModule, r: any): string {
   if (m === 'customer') return r.name;
   if (m === 'contact')  return `${r.firstName ?? ''} ${r.lastName ?? ''}`.trim();
   if (m === 'company')  return r.name;
+  if (m === 'product')  return r.name;
+  if (m === 'asset')    return r.name;
   return r.title;
 }
 
@@ -50,12 +64,16 @@ function useSearchResults(moduleType: FsRelatedModule, search: string) {
   const contracts  = useContractsListQuery(params);
   const contacts   = useContactsListQuery(params);
   const companies  = useCompaniesListQuery(params);
+  const products   = useProductsListQuery(params);
+  const assets     = useAssetsListQuery(params);
   if (!enabled) return { items: [], isLoading: false };
   if (moduleType === 'customer')  return { items: customers.data?.items ?? [],  isLoading: customers.isLoading };
   if (moduleType === 'quotation') return { items: quotations.data?.items ?? [], isLoading: quotations.isLoading };
   if (moduleType === 'workorder') return { items: workorders.data?.items ?? [], isLoading: workorders.isLoading };
   if (moduleType === 'contact')   return { items: contacts.data?.items ?? [],   isLoading: contacts.isLoading };
   if (moduleType === 'company')   return { items: companies.data?.items ?? [],  isLoading: companies.isLoading };
+  if (moduleType === 'product')   return { items: products.data?.items ?? [],   isLoading: products.isLoading };
+  if (moduleType === 'asset')     return { items: assets.data?.items ?? [],     isLoading: assets.isLoading };
   return { items: contracts.data?.items ?? [], isLoading: contracts.isLoading };
 }
 

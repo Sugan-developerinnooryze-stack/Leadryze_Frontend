@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import type { FieldConfig } from './types/crm.types';
 import { useStaffsListQuery } from '../../native-crm/queries/staffs.queries';
+import { useTeamsListQuery } from '../../native-crm/queries/teams.queries';
+import { useCategoriesListQuery } from '../../native-crm/queries/categories.queries';
 
 interface Props {
   field:    FieldConfig;
@@ -104,6 +106,42 @@ function StaffSelect({ value, onChange, error }: Omit<Props, 'field'>) {
   );
 }
 
+/* ── Team select (dynamic — NativeTeam, stores _id, same convention
+   Ticket.teamId/assignRoundRobin already expect — NOT a human code, unlike
+   StaffSelect's staffId) ──────────────────────────────────────────── */
+function TeamSelect({ value, onChange, error }: Omit<Props, 'field'>) {
+  const { data } = useTeamsListQuery({ page: 1, limit: 1000 });
+  const teams = data?.items ?? [];
+  const base =
+    'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ' +
+    (error ? 'border-red-400 bg-red-50' : 'border-gray-300');
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} className={base}>
+      <option value="">No team</option>
+      {teams.map((t: any) => (
+        <option key={t._id} value={t._id}>{t.name}</option>
+      ))}
+    </select>
+  );
+}
+
+/* ── Category select (dynamic — NativeCategory, stores _id) ─────────── */
+function CategorySelect({ value, onChange, error }: Omit<Props, 'field'>) {
+  const { data } = useCategoriesListQuery({ page: 1, limit: 1000 });
+  const categories = data?.items ?? [];
+  const base =
+    'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ' +
+    (error ? 'border-red-400 bg-red-50' : 'border-gray-300');
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} className={base}>
+      <option value="">No category</option>
+      {categories.map((c: any) => (
+        <option key={c._id} value={c._id}>{c.name}</option>
+      ))}
+    </select>
+  );
+}
+
 /* ── CrmField ────────────────────────────────────────────────────── */
 export default function CrmField({ field, value, onChange, error }: Props) {
   const base =
@@ -114,6 +152,10 @@ export default function CrmField({ field, value, onChange, error }: Props) {
 
   if (field.type === 'staffSelect') {
     input = <StaffSelect value={value} onChange={onChange} error={error} />;
+  } else if (field.type === 'teamSelect') {
+    input = <TeamSelect value={value} onChange={onChange} error={error} />;
+  } else if (field.type === 'categorySelect') {
+    input = <CategorySelect value={value} onChange={onChange} error={error} />;
   } else if (field.type === 'select' && field.options) {
     if (field.searchable) {
       input = <SearchableSelect field={field} value={value} onChange={onChange} error={error} />;

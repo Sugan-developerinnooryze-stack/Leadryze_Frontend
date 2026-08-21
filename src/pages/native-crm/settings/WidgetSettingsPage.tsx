@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import * as XLSX from 'xlsx';
 import api from '../../../services/api';
 import { SUPPORTED_LANGUAGES } from '../../../modules/native-crm/shared/languages';
@@ -7,18 +8,24 @@ import {
   LockClosedIcon, XMarkIcon, PlusIcon, GlobeAltIcon, DocumentArrowUpIcon,
   PhotoIcon, TrashIcon, Cog6ToothIcon, CalendarDaysIcon, UserGroupIcon,
   CpuChipIcon, SwatchIcon, Square3Stack3DIcon, KeyIcon, InformationCircleIcon,
-  MicrophoneIcon,
+  MicrophoneIcon, CircleStackIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../../stores/auth.store';
 import { useTeamsListQuery, useTeamUpdate } from '../../../modules/native-crm/queries/teams.queries';
 import {
   useTenantQuery, useUpdateTenantWidget, useRegenerateWidgetKey,
   useTriggerWebsiteCrawl, useCrawlStatus, useUploadWidgetLogo, useRemoveWidgetLogo,
-  useUpdateTenantAIConfig,
+  useUpdateTenantAIConfig, useUpdateTenantBranding,
   type TenantWidgetConfig, type ToolModelPreset, type VoiceProvider, type TenantVoicePreset,
 } from '../../../modules/native-crm/queries/tenant.queries';
 import { useCatalogSources, useImportCatalog } from '../../../modules/native-crm/queries/catalog.queries';
+import CatalogImportPreview from '../../../modules/native-crm/shared/CatalogImportPreview';
 import { useServicesListQuery } from '../../../modules/native-crm/queries/services.queries';
+import {
+  useDatasetsList, useImportDataset, useToggleDatasetAvailable, useDeleteDataset, useDatasetImportStatus,
+  type DatasetColumn,
+} from '../../../modules/native-crm/queries/datasets.queries';
+import DatasetImportPreview from '../../../modules/native-crm/shared/DatasetImportPreview';
 
 type Template = NonNullable<TenantWidgetConfig['template']>;
 
@@ -95,6 +102,7 @@ const NAV_SECTIONS: Array<{ id: string; label: string; icon: React.ComponentType
   { id: 'section-appearance',  label: 'Appearance',        icon: SwatchIcon },
   { id: 'section-website',     label: 'Website Content',   icon: GlobeAltIcon },
   { id: 'section-catalog',     label: 'Product Catalog',   icon: Square3Stack3DIcon },
+  { id: 'section-datasets',    label: 'Business Knowledge', icon: CircleStackIcon },
   { id: 'section-embed',       label: 'Widget Key & Embed', icon: KeyIcon },
 ];
 
@@ -178,8 +186,16 @@ const API_ORIGIN: string = (import.meta as any).env?.VITE_API_URL || 'http://loc
 // which is why this is one full URL rather than an origin + a shared suffix.
 const WIDGET_SCRIPT_URL: string = (import.meta as any).env?.VITE_WIDGET_SCRIPT_URL || `${API_ORIGIN}/widget/loader.js`;
 
+// Real bug this closes: entering "127.0.0.1:5501" (a common local-dev/test
+// origin, port included) stored the port verbatim, but the backend's
+// isOriginAllowed() (public-widget.service.ts) only ever compares against
+// new URL(origin).hostname — which never includes a port — so a domain
+// entered with a port could never match and silently 403'd forever. The
+// model's own doc comment (Tenant.widget.allowedDomains) already documents
+// "bare hostnames only (no scheme/port/path)" as the intended contract;
+// this was the one step that didn't actually enforce it.
 function normalizeDomain(raw: string): string {
-  return raw.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+  return raw.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/:\d+$/, '');
 }
 
 function CopyButton({ value }: { value: string }) {
@@ -254,20 +270,35 @@ export default function WidgetSettingsPage() {
   const teamUpdateMutation = useTeamUpdate();
   const { data: servicesData } = useServicesListQuery({ limit: 200 });
   const updateMutation = useUpdateTenantWidget(tenantId);
+  const brandingMutation = useUpdateTenantBranding(tenantId);
   const aiConfigMutation = useUpdateTenantAIConfig(tenantId);
   const regenMutation  = useRegenerateWidgetKey(tenantId);
   const crawlMutation  = useTriggerWebsiteCrawl();
+  const qc = useQueryClient();
   const uploadLogoMutation = useUploadWidgetLogo(tenantId);
   const removeLogoMutation = useRemoveWidgetLogo(tenantId);
   const { data: catalogSources } = useCatalogSources(tenantId);
   const importMutation = useImportCatalog(tenantId);
   const catalogFileInputRef = useRef<HTMLInputElement>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
+  const { data: datasets } = useDatasetsList(tenantId);
+  const importDatasetMutation = useImportDataset(tenantId);
+  const toggleDatasetMutation = useToggleDatasetAvailable(tenantId);
+  const deleteDatasetMutation = useDeleteDataset(tenantId);
+  const datasetFileInputRef = useRef<HTMLInputElement>(null);
 
   const [enabled, setEnabled]           = useState(false);
   const [domains, setDomains]           = useState<string[]>([]);
   const [domainInput, setDomainInput]   = useState('');
   const [greeting, setGreeting]         = useState('');
+  const [quickQuestions, setQuickQuestions] = useState<{ text: string; enabled: boolean }[]>([]);
+  const [quickQuestionInput, setQuickQuestionInput] = useState('');
+  const [showBookingQuickReply, setShowBookingQuickReply] = useState(true);
+  const [autoSendLeadEmails, setAutoSendLeadEmails] = useState(true);
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactAddress, setContactAddress] = useState('');
+  const [contactMessage, setContactMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [teamId, setTeamId]             = useState('');
   const [websiteUrl, setWebsiteUrl]     = useState('');
   const [template, setTemplate]         = useState<Template>('modern');
@@ -308,6 +339,48 @@ export default function WidgetSettingsPage() {
   const [keyMessage, setKeyMessage]     = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [crawlMessage, setCrawlMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [catalogMessage, setCatalogMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [catalogPreview, setCatalogPreview] = useState<{ fileName: string; fileType: 'excel' | 'csv'; aoa: unknown[][] } | null>(null);
+  const [datasetMessage, setDatasetMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [datasetPreview, setDatasetPreview] = useState<
+    { fileName: string; fileType: 'excel' | 'csv' | 'json'; aoa?: unknown[][]; jsonRows?: Record<string, unknown>[] } | null
+  >(null);
+  const [datasetDeleteConfirm, setDatasetDeleteConfirm] = useState<string | null>(null);
+  // Hardening Gap 8 — the import mutation now resolves near-instantly
+  // (the backend responds before the pipeline finishes), so this tracks
+  // which dataset to actually poll for real progress.
+  const [importingDatasetId, setImportingDatasetId] = useState<string | null>(null);
+  const importStatus = useDatasetImportStatus(tenantId, importingDatasetId, { enabled: !!importingDatasetId });
+
+  // Watches the polled import status to terminal completion, then shows
+  // the real result and refreshes the dataset list (which the mutation's
+  // own onSuccess already did once, too early to have final counts). Must
+  // stay above this component's early `if (isLoading)`/`if (!tenant)`
+  // returns below — every hook in this component does, since React
+  // requires the exact same hooks in the exact same order on every render;
+  // placing this next to the handler functions (as originally written) put
+  // it AFTER those guards, so it was skipped entirely on the loading
+  // render and only started firing once `tenant` loaded — a real,
+  // confirmed "Rendered more hooks than during the previous render" crash.
+  useEffect(() => {
+    const latest = importStatus.data?.[0];
+    if (!latest || !['ready', 'ready_with_warnings', 'failed'].includes(latest.status)) return;
+    setDatasetMessage(
+      latest.status === 'failed'
+        ? { type: 'err', text: latest.lastError ?? 'Import failed — no rows could be imported.' }
+        : {
+            type: 'ok',
+            text: `Imported ${latest.recordsInserted} record(s)` +
+              (latest.status === 'ready_with_warnings' ? ' (some rows or records had issues)' : '') +
+              (latest.diffUpdated + latest.diffRemoved + latest.diffUnchanged > 0
+                ? ` — ${latest.diffAdded} new, ${latest.diffUpdated} updated, ${latest.diffRemoved} removed, ${latest.diffUnchanged} unchanged`
+                : '') +
+              (latest.cellsTruncated ? ` — ${latest.cellsTruncated} cell value(s) were truncated during processing` : '') + '.',
+          },
+    );
+    setImportingDatasetId(null);
+    qc.invalidateQueries({ queryKey: ['native-crm', 'datasets', tenantId] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [importStatus.data]);
   const [logoMessage, setLogoMessage]   = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [confirmingRegen, setConfirmingRegen] = useState(false);
   const [isCrawlPolling, setIsCrawlPolling] = useState(false);
@@ -319,9 +392,17 @@ export default function WidgetSettingsPage() {
       setEnabled(tenant.widget.enabled);
       setDomains(tenant.widget.allowedDomains ?? []);
       setGreeting(tenant.widget.greeting ?? '');
+      setQuickQuestions(tenant.widget.quickQuestions ?? []);
+      setShowBookingQuickReply(tenant.widget.showBookingQuickReply !== false);
+      setAutoSendLeadEmails(tenant.widget.autoSendLeadEmails !== false);
       setTeamId(tenant.widget.defaultTeamId ?? '');
       setWebsiteUrl(tenant.widget.websiteUrl ?? '');
       setTemplate(tenant.widget.template ?? 'modern');
+      // A crawl started elsewhere (another tab, or before this page was
+      // last reloaded) can leave the tenant doc mid-crawl even though this
+      // tab's own local isCrawlPolling never got set — resume live polling
+      // so the status pill doesn't sit stuck on stale local state.
+      if (tenant.widget.crawlStatus === 'crawling') setIsCrawlPolling(true);
 
       const booking = tenant.widget.booking;
       setBookingEnabled(booking?.enabled ?? false);
@@ -356,19 +437,33 @@ export default function WidgetSettingsPage() {
     }
     setToolModelPreset(tenant?.aiConfig?.toolModelPreset ?? '');
     setAutoConvertLeadOnMeetingCompleted(tenant?.aiConfig?.autoConvertLeadOnMeetingCompleted ?? false);
+    setContactEmail(tenant?.branding?.contactEmail ?? '');
+    setContactPhone(tenant?.branding?.contactPhone ?? '');
+    setContactAddress(tenant?.branding?.address ?? '');
   }, [tenant]);
 
   useEffect(() => {
     if (isCrawlPolling && crawlStatus && crawlStatus.status !== 'running') {
       setIsCrawlPolling(false);
       if (crawlStatus.status === 'completed') {
+        const failedCount = crawlStatus.failures?.length ?? 0;
         setCrawlMessage({
+          // Still 'ok' even with some failures — a mostly-successful crawl
+          // isn't an error state, matching crawlStatus.status distinguishing
+          // 'ready_with_warnings' from 'failed' on the persisted side too.
           type: 'ok',
-          text: `Crawled ${crawlStatus.pagesCrawled ?? 0} page(s), ingested ${crawlStatus.chunksIngested ?? 0} chunk(s) into the widget's knowledge base.`,
+          text: failedCount > 0
+            ? `Crawled ${crawlStatus.pagesCrawled ?? 0} page(s), ingested ${crawlStatus.chunksIngested ?? 0} chunk(s) — ${failedCount} page(s) failed and were skipped.`
+            : `Crawled ${crawlStatus.pagesCrawled ?? 0} page(s), ingested ${crawlStatus.chunksIngested ?? 0} chunk(s) into the widget's knowledge base.`,
         });
       } else {
         setCrawlMessage({ type: 'err', text: crawlStatus.error || 'Crawl failed.' });
       }
+      // The tenant doc was already updated by the AI service's own
+      // recordWebsiteCrawlResult call by the time polling stops — refetch
+      // so the status pill/counts above reflect the real persisted values
+      // instead of waiting for some other unrelated refetch to happen.
+      qc.invalidateQueries({ queryKey: ['tenants', tenantId] });
     }
   }, [crawlStatus, isCrawlPolling]);
 
@@ -411,15 +506,38 @@ export default function WidgetSettingsPage() {
   };
   const removeDomain = (d: string) => setDomains(domains.filter((x) => x !== d));
 
+  const addQuickQuestion = () => {
+    const q = quickQuestionInput.trim();
+    if (q && !quickQuestions.some((x) => x.text === q)) setQuickQuestions([...quickQuestions, { text: q, enabled: true }]);
+    setQuickQuestionInput('');
+  };
+  const removeQuickQuestion = (text: string) => setQuickQuestions(quickQuestions.filter((x) => x.text !== text));
+  const toggleQuickQuestion = (text: string) =>
+    setQuickQuestions(quickQuestions.map((x) => (x.text === text ? { ...x, enabled: !x.enabled } : x)));
+
   const handleSave = async () => {
     setMessage(null);
     try {
       await updateMutation.mutateAsync({
-        enabled, allowedDomains: domains, greeting, defaultTeamId: teamId || null, template,
+        enabled, allowedDomains: domains, greeting, quickQuestions, showBookingQuickReply, autoSendLeadEmails, defaultTeamId: teamId || null, template,
       });
       setMessage({ type: 'ok', text: 'Widget settings saved.' });
     } catch (err: any) {
       setMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
+    }
+  };
+
+  const handleContactInfoSave = async () => {
+    setContactMessage(null);
+    try {
+      await brandingMutation.mutateAsync({
+        contactEmail: contactEmail.trim(),
+        contactPhone: contactPhone.trim(),
+        address: contactAddress.trim(),
+      });
+      setContactMessage({ type: 'ok', text: 'Contact info saved.' });
+    } catch (err: any) {
+      setContactMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
     }
   };
 
@@ -588,7 +706,11 @@ export default function WidgetSettingsPage() {
 
   // Parsing happens entirely client-side (same convention already used for
   // Lead/Deal bulk import elsewhere in this app) — the backend never
-  // receives a file, only plain JSON rows.
+  // receives a file, only plain JSON rows. Excel/CSV go through a preview
+  // step first (header-row detection can be wrong on a genuinely
+  // ambiguous sheet, so nothing imports until the tenant confirms what
+  // was detected) — JSON has no header-row concept at all, so it keeps
+  // today's exact immediate-import behavior, unaffected by this change.
   const handleCatalogFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ''; // allow re-selecting the same file later
@@ -599,30 +721,109 @@ export default function WidgetSettingsPage() {
     const reader = new FileReader();
     reader.onload = async (ev) => {
       try {
-        let rows: Record<string, unknown>[];
         if (fileType === 'json') {
-          rows = JSON.parse(ev.target?.result as string);
-        } else {
-          const wb = XLSX.read(ev.target?.result, { type: fileType === 'csv' ? 'string' : 'array' });
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '' });
+          const rows = JSON.parse(ev.target?.result as string);
+          if (!Array.isArray(rows) || !rows.length) {
+            setCatalogMessage({ type: 'err', text: 'No rows found in that file.' });
+            return;
+          }
+          const summary = await importMutation.mutateAsync({ fileType, fileLabel: file.name, rows });
+          setCatalogMessage({
+            type: 'ok',
+            text: `Imported: ${summary.created} new, ${summary.updated} updated, ${summary.unchanged} unchanged` +
+              (summary.rejected.length ? `, ${summary.rejected.length} rejected.` : '.'),
+          });
+          return;
         }
-        if (!Array.isArray(rows) || !rows.length) {
+
+        const wb = XLSX.read(ev.target?.result, { type: fileType === 'csv' ? 'string' : 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const aoa = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: '' });
+        if (!Array.isArray(aoa) || !aoa.length) {
           setCatalogMessage({ type: 'err', text: 'No rows found in that file.' });
           return;
         }
-        const summary = await importMutation.mutateAsync({ fileType, fileLabel: file.name, rows });
-        setCatalogMessage({
-          type: 'ok',
-          text: `Imported: ${summary.created} new, ${summary.updated} updated, ${summary.unchanged} unchanged` +
-            (summary.rejected.length ? `, ${summary.rejected.length} rejected.` : '.'),
-        });
+        setCatalogPreview({ fileName: file.name, fileType, aoa });
       } catch {
         setCatalogMessage({ type: 'err', text: 'Could not read or import that file — check the format and try again.' });
       }
     };
     if (fileType === 'excel') reader.readAsArrayBuffer(file);
     else reader.readAsText(file);
+  };
+
+  const confirmCatalogImport = async (rows: Record<string, unknown>[]) => {
+    if (!catalogPreview) return;
+    try {
+      const summary = await importMutation.mutateAsync({ fileType: catalogPreview.fileType, fileLabel: catalogPreview.fileName, rows });
+      setCatalogMessage({
+        type: 'ok',
+        text: `Imported: ${summary.created} new, ${summary.updated} updated, ${summary.unchanged} unchanged` +
+          (summary.rejected.length ? `, ${summary.rejected.length} rejected.` : '.'),
+      });
+      setCatalogPreview(null);
+    } catch {
+      setCatalogMessage({ type: 'err', text: 'Could not import that file — check the format and try again.' });
+    }
+  };
+
+  // Generic Dataset system's own upload path — unlike the Product Catalog
+  // above, EVERY file type (including JSON) goes through the preview step,
+  // since the per-column semantic-role mapping is exactly what this system
+  // needs confirmed before anything imports, not just the header row.
+  const handleDatasetFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setDatasetMessage(null);
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+    const fileType: 'excel' | 'csv' | 'json' = ext === 'json' ? 'json' : ext === 'csv' ? 'csv' : 'excel';
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        if (fileType === 'json') {
+          const rows = JSON.parse(ev.target?.result as string);
+          if (!Array.isArray(rows) || !rows.length) {
+            setDatasetMessage({ type: 'err', text: 'No rows found in that file.' });
+            return;
+          }
+          setDatasetPreview({ fileName: file.name, fileType, jsonRows: rows });
+          return;
+        }
+        const wb = XLSX.read(ev.target?.result, { type: fileType === 'csv' ? 'string' : 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const aoa = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: '' });
+        if (!Array.isArray(aoa) || !aoa.length) {
+          setDatasetMessage({ type: 'err', text: 'No rows found in that file.' });
+          return;
+        }
+        setDatasetPreview({ fileName: file.name, fileType, aoa });
+      } catch {
+        setDatasetMessage({ type: 'err', text: 'Could not read that file — check the format and try again.' });
+      }
+    };
+    if (fileType === 'excel') reader.readAsArrayBuffer(file);
+    else reader.readAsText(file);
+  };
+
+  const confirmDatasetImport = async (params: {
+    datasetId?: string; name: string; sourceFileName: string; sourceType: 'excel' | 'csv' | 'json';
+    columns: DatasetColumn[]; headerRowIndex: number; rows: Record<string, unknown>[]; imageZipRef?: string;
+  }) => {
+    // The ZIP (if any) is already uploaded by this point — DatasetImportPreview
+    // uploads it immediately on selection so its own live match-preview has
+    // a real ref to check against, rather than deferring the upload to here.
+    try {
+      const result = await importDatasetMutation.mutateAsync(params);
+      setDatasetPreview(null);
+      // Hardening Gap 8 — the mutation now resolves as soon as the backend
+      // has created the version and kicked off the background pipeline,
+      // not once it's actually done; start polling for the real outcome.
+      setDatasetMessage({ type: 'ok', text: 'Import started — processing in the background…' });
+      setImportingDatasetId(result.datasetId);
+    } catch (err: any) {
+      setDatasetMessage({ type: 'err', text: err?.response?.data?.message ?? 'Could not import that file — check the format and try again.' });
+    }
   };
 
   const input = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent';
@@ -719,6 +920,82 @@ export default function WidgetSettingsPage() {
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Greeting</label>
                 <input value={greeting} onChange={(e) => setGreeting(e.target.value)} className={input} placeholder="Hi! How can I help you today?" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Quick Questions</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    value={quickQuestionInput}
+                    onChange={(e) => setQuickQuestionInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addQuickQuestion(); } }}
+                    className={input}
+                    placeholder="e.g. Show me butterfly valves"
+                  />
+                  <button
+                    type="button"
+                    onClick={addQuickQuestion}
+                    className="px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-1 shrink-0"
+                  >
+                    <PlusIcon className="h-4 w-4" /> Add
+                  </button>
+                </div>
+                {quickQuestions.length > 0 && (
+                  <div className="flex flex-col gap-1.5 mt-2">
+                    {quickQuestions.map((q) => (
+                      <div key={q.text} className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
+                        <input
+                          type="checkbox"
+                          checked={q.enabled}
+                          onChange={() => toggleQuickQuestion(q.text)}
+                          className="h-3.5 w-3.5"
+                        />
+                        <span className={`flex-1 text-sm ${q.enabled ? 'text-gray-700' : 'text-gray-400 line-through'}`}>{q.text}</span>
+                        <button type="button" onClick={() => removeQuickQuestion(q.text)} className="text-gray-400 hover:text-gray-700">
+                          <XMarkIcon className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="mt-1 text-[11px] text-gray-400">
+                  Suggestion chips shown when the widget opens. Uncheck to hide one without deleting it.
+                  Clicking a chip just sends its text as a normal message — the answer always comes live from your
+                  Business Knowledge, Product Catalog, or website content, never from something set here.
+                </p>
+                <label className="mt-2 flex items-center gap-2 text-xs text-gray-600">
+                  <input type="checkbox" checked={showBookingQuickReply} onChange={(e) => setShowBookingQuickReply(e.target.checked)} className="h-3.5 w-3.5" />
+                  Always show a "Book an appointment" chip alongside the questions above (when booking is enabled)
+                </label>
+                <label className="mt-2 flex items-center gap-2 text-xs text-gray-600">
+                  <input type="checkbox" checked={autoSendLeadEmails} onChange={(e) => setAutoSendLeadEmails(e.target.checked)} className="h-3.5 w-3.5" />
+                  Automatically email a visitor + your assigned team member when the chatbot captures a new lead
+                </label>
+              </div>
+
+              <div className="border-t border-gray-100 pt-4">
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Contact Info (used in lead-confirmation emails)</label>
+                <p className="mb-2 text-[11px] text-gray-400">
+                  Shown to a visitor in the automatic "thank you for visiting" email above — your real, public contact details, not shown anywhere else.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} className={input} placeholder="sales@yourcompany.com" />
+                  <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} className={input} placeholder="+1 555 000 1234" />
+                </div>
+                <input value={contactAddress} onChange={(e) => setContactAddress(e.target.value)} className={`${input} mt-2`} placeholder="Company address" />
+                <div className="mt-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleContactInfoSave}
+                    disabled={brandingMutation.isPending}
+                    className="px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 disabled:opacity-50"
+                  >
+                    {brandingMutation.isPending ? 'Saving...' : 'Save Contact Info'}
+                  </button>
+                  {contactMessage && (
+                    <span className={`text-xs ${contactMessage.type === 'ok' ? 'text-green-600' : 'text-red-600'}`}>{contactMessage.text}</span>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -1354,10 +1631,37 @@ export default function WidgetSettingsPage() {
                 </p>
               </div>
 
-              {tenant.widget?.lastCrawledAt && (
-                <p className="text-xs text-gray-500">
-                  Last crawled {new Date(tenant.widget.lastCrawledAt).toLocaleString()} — {tenant.widget.crawlPageCount ?? 0} page(s) indexed.
-                </p>
+              {(tenant.widget?.crawlStatus || tenant.widget?.lastCrawledAt) && (
+                <div className="flex items-start gap-2 text-xs">
+                  <span className={`shrink-0 px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${
+                    isCrawlPolling || tenant.widget?.crawlStatus === 'crawling' ? 'bg-blue-50 text-blue-600'
+                    : tenant.widget?.crawlStatus === 'ready' ? 'bg-emerald-50 text-emerald-600'
+                    : tenant.widget?.crawlStatus === 'ready_with_warnings' ? 'bg-amber-50 text-amber-600'
+                    : tenant.widget?.crawlStatus === 'failed' ? 'bg-red-50 text-red-600'
+                    : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {isCrawlPolling || tenant.widget?.crawlStatus === 'crawling' ? 'Crawling…'
+                      : tenant.widget?.crawlStatus === 'ready' ? 'Ready'
+                      : tenant.widget?.crawlStatus === 'ready_with_warnings' ? 'Ready — some pages failed'
+                      : tenant.widget?.crawlStatus === 'failed' ? 'Failed'
+                      : 'Not configured'}
+                  </span>
+                  <p className="text-gray-500">
+                    {typeof tenant.widget?.crawlPagesIndexed === 'number' ? (
+                      <>
+                        Pages: {tenant.widget.crawlPagesIndexed}
+                        {typeof tenant.widget.crawlChunksIndexed === 'number' ? ` · Chunks: ${tenant.widget.crawlChunksIndexed}` : ''}
+                        {tenant.widget.crawlPagesFailed ? ` · Failed: ${tenant.widget.crawlPagesFailed}` : ''}
+                      </>
+                    ) : tenant.widget?.crawlPageCount != null ? (
+                      `${tenant.widget.crawlPageCount} page(s) indexed`
+                    ) : null}
+                    {tenant.widget?.lastCrawledAt && ` · Last crawled ${new Date(tenant.widget.lastCrawledAt).toLocaleString()}`}
+                    {tenant.widget?.crawlStatus === 'failed' && tenant.widget?.lastSuccessfulCrawlAt && (
+                      <><br />Last successful crawl: {new Date(tenant.widget.lastSuccessfulCrawlAt).toLocaleString()} ({tenant.widget.lastSuccessfulCrawlPagesIndexed ?? 0} pages)</>
+                    )}
+                  </p>
+                </div>
               )}
 
               {crawlMessage && (
@@ -1417,21 +1721,132 @@ export default function WidgetSettingsPage() {
                 <div className="space-y-2">
                   <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Sources</label>
                   {catalogSources.map((s) => (
-                    <div key={s._id} className="flex items-center justify-between text-xs bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
+                    <div key={s._id} className="flex items-start justify-between text-xs bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 gap-2">
                       <div className="min-w-0">
                         <p className="text-gray-700 truncate">{s.label}</p>
                         <p className="text-gray-400">
                           {s.itemsImported} new · {s.itemsUpdated} updated{s.itemsFailed ? ` · ${s.itemsFailed} failed` : ''}
+                          {s.itemsAmbiguous ? ` · ${s.itemsAmbiguous} ambiguous (review)` : ''}
                           {s.lastSyncAt ? ` · ${new Date(s.lastSyncAt).toLocaleString()}` : ''}
                         </p>
+                        {/* Real failure reason — a red "Failed" pill used to
+                            give no way to know why (the field existed on
+                            the type but was never rendered). */}
+                        {s.status === 'failed' && s.lastError && (
+                          <p className="text-red-500 mt-0.5">{s.lastError}</p>
+                        )}
                       </div>
-                      <span className={`shrink-0 ml-2 px-2 py-0.5 rounded-full font-medium ${
+                      <span className={`shrink-0 ml-2 px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${
                         s.status === 'completed' ? 'bg-emerald-50 text-emerald-600'
                         : s.status === 'failed' ? 'bg-red-50 text-red-600'
                         : 'bg-amber-50 text-amber-600'
                       }`}>
                         {s.status}
                       </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <SectionHeader
+              id="section-datasets"
+              icon={CircleStackIcon}
+              iconClassName="bg-cyan-50 text-cyan-600"
+              title="Business Knowledge"
+              description="Upload any business data — machines, services, courses, price lists — and the widget can answer questions about it."
+            />
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <input
+                  ref={datasetFileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls,.csv,.json"
+                  onChange={handleDatasetFile}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => datasetFileInputRef.current?.click()}
+                  disabled={importDatasetMutation.isPending}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                >
+                  <DocumentArrowUpIcon className={`h-4 w-4 ${importDatasetMutation.isPending ? 'animate-pulse' : ''}`} />
+                  {importDatasetMutation.isPending ? 'Importing…' : 'Upload Data (Excel / CSV / JSON)'}
+                </button>
+                <p className="mt-1.5 text-[11px] text-gray-400">
+                  Separate from the Product Catalog above — for any other business-specific data. You'll review and confirm the column mapping before anything imports.
+                </p>
+              </div>
+
+              {datasetMessage && (
+                <div className={`text-sm px-4 py-2.5 rounded-lg border ${
+                  datasetMessage.type === 'ok'
+                    ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                    : 'bg-red-50 border-red-100 text-red-600'
+                }`}>
+                  {datasetMessage.text}
+                </div>
+              )}
+
+              {datasets && datasets.length > 0 && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Datasets</label>
+                  {datasets.map((d) => (
+                    <div key={d._id} className="flex items-start justify-between text-xs bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 gap-2">
+                      <div className="min-w-0">
+                        <p className="text-gray-700 truncate font-medium">{d.name}</p>
+                        <p className="text-gray-400">
+                          {d.activeVersionDetail
+                            ? `${d.activeVersionDetail.recordsInserted} record(s)${d.activeVersionDetail.recordsFailed ? ` · ${d.activeVersionDetail.recordsFailed} failed` : ''}`
+                            : 'Importing…'}
+                          {d.activeVersion ? ` · v${d.activeVersion}` : ''}
+                        </p>
+                        {d.activeVersionDetail?.status === 'failed' && (
+                          <p className="text-red-500 mt-0.5">Import failed — upload again to retry.</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={d.availableToChatbot}
+                            onChange={(e) => toggleDatasetMutation.mutate({ datasetId: d._id, availableToChatbot: e.target.checked })}
+                            className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-400"
+                          />
+                          <span className={d.availableToChatbot ? 'text-emerald-600 font-medium' : 'text-gray-400'}>
+                            {d.availableToChatbot ? 'Live on widget' : 'Not visible'}
+                          </span>
+                        </label>
+                        {datasetDeleteConfirm === d._id ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => { deleteDatasetMutation.mutate(d._id); setDatasetDeleteConfirm(null); }}
+                              className="px-2 py-1 rounded bg-red-600 text-white font-medium hover:bg-red-700"
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDatasetDeleteConfirm(null)}
+                              className="px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setDatasetDeleteConfirm(d._id)}
+                            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-red-500"
+                          >
+                            <TrashIcon className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1524,6 +1939,29 @@ export default function WidgetSettingsPage() {
           </div>
         </div>
       </div>
+
+      {catalogPreview && (
+        <CatalogImportPreview
+          fileName={catalogPreview.fileName}
+          aoa={catalogPreview.aoa}
+          importing={importMutation.isPending}
+          onCancel={() => setCatalogPreview(null)}
+          onConfirm={confirmCatalogImport}
+        />
+      )}
+
+      {datasetPreview && (
+        <DatasetImportPreview
+          fileName={datasetPreview.fileName}
+          fileType={datasetPreview.fileType}
+          aoa={datasetPreview.aoa}
+          jsonRows={datasetPreview.jsonRows}
+          existingDatasets={datasets ?? []}
+          importing={importDatasetMutation.isPending}
+          onCancel={() => setDatasetPreview(null)}
+          onConfirm={confirmDatasetImport}
+        />
+      )}
     </div>
   );
 }

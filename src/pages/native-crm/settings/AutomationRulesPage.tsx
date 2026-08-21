@@ -8,9 +8,11 @@ import {
   useAutomationRulesQuery, useCreateAutomationRule, useUpdateAutomationRule, useDeleteAutomationRule,
   useMessageTemplatesQuery, useCreateMessageTemplate, useFieldCatalogQuery,
   AutomationRule, AutomationModule, AutomationActionType, AutomationRecipientStrategy, AutomationTriggerType, FieldMapping,
+  FlowCondition, ConditionOperator,
 } from '../../../modules/native-crm/queries/automation-rules.queries';
 import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import { useCustomModulesQuery } from '../../../modules/native-crm/queries/custom-modules.queries';
+import { useTeamsListQuery } from '../../../modules/native-crm/queries/teams.queries';
 
 const BUILT_IN_MODULES: { key: AutomationModule; label: string }[] = [
   { key: 'lead',       label: 'Leads' },
@@ -57,6 +59,23 @@ const RECIPIENT_LABELS: Record<AutomationRecipientStrategy, string> = {
   assigned_user:  'Assigned staff',
 };
 
+const CONDITION_OPERATORS: { value: ConditionOperator; label: string }[] = [
+  { value: '=',             label: 'is' },
+  { value: '!=',            label: 'is not' },
+  { value: '>',             label: '>' },
+  { value: '<',             label: '<' },
+  { value: '>=',            label: '>=' },
+  { value: '<=',            label: '<=' },
+  { value: 'contains',      label: 'contains' },
+  { value: 'startsWith',    label: 'starts with' },
+  { value: 'endsWith',      label: 'ends with' },
+  { value: 'is_empty',      label: 'is empty' },
+  { value: 'is_not_empty',  label: 'is not empty' },
+  { value: 'between',       label: 'between' },
+  { value: 'in_list',       label: 'in list (comma-separated)' },
+  { value: 'not_in_list',   label: 'not in list (comma-separated)' },
+];
+
 function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, initialActionType }: {
   onClose: () => void; rule?: AutomationRule;
   /** Set only when this form was opened by clicking empty space (or dropping
@@ -84,6 +103,11 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
   const [targetModule, setTargetModule] = useState<AutomationModule | ''>(rule?.targetModule ?? '');
   const [fieldMappings, setFieldMappings] = useState<FieldMapping[]>(rule?.fieldMappings ?? []);
   const [backReferenceField, setBackReferenceField] = useState(rule?.backReferenceField ?? '');
+  const [assignTeamId, setAssignTeamId] = useState(rule?.assignTeamId ?? '');
+  const [scheduleCron, setScheduleCron] = useState(rule?.scheduleCron ?? '*/5 * * * *');
+  const [scheduleModule, setScheduleModule] = useState<AutomationModule | ''>(rule?.scheduleModule ?? '');
+  const [scheduleFilter, setScheduleFilter] = useState<FlowCondition[]>(rule?.scheduleFilter ?? []);
+  const [scheduleStampField, setScheduleStampField] = useState(rule?.scheduleStampField ?? '');
   const [enabled, setEnabled]   = useState(rule?.enabled ?? true);
   const [error, setError]       = useState('');
   const [saving, setSaving]     = useState(false);
@@ -95,6 +119,8 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
   const { data: templates = [] } = useMessageTemplatesQuery(templateChannel);
   const { data: sourceFields = [] } = useFieldCatalogQuery(module);
   const { data: targetFields = [] } = useFieldCatalogQuery(targetModule);
+  const { data: scheduleFields = [] } = useFieldCatalogQuery(scheduleModule);
+  const { data: teamList } = useTeamsListQuery({ page: 1, limit: 1000 });
   const createMut = useCreateAutomationRule();
   const updateMut = useUpdateAutomationRule();
   const STAGE_CAPABLE_MODULES = useStageCapableModules();
@@ -105,14 +131,19 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
   const triggerModuleOptions = triggerType === 'status_changed' ? STAGE_CAPABLE_MODULES : EVERY_MODULE;
 
   const isLinkedRecord = actionType === 'create_linked_record';
+  const isAssignment = actionType === 'assign_staff' || actionType === 'assign_team';
+  const isScheduled = triggerType === 'scheduled';
   const triggerReady =
     triggerType === 'status_changed' ? !!triggerStage :
     triggerType === 'record_updated' ? !!triggerField :
+    isScheduled ? !!scheduleCron.trim() && !!scheduleModule :
     true; // record_created / record_deleted need nothing further
   const canSave = name.trim() && triggerReady && (
     isLinkedRecord
       ? targetModule && fieldMappings.length > 0 && fieldMappings.every((m) => (m.sourceType === 'static' ? m.staticValue !== undefined && m.staticValue !== '' : !!m.sourceField))
-      : !!templateId
+      : isAssignment
+        ? (actionType === 'assign_staff' || !!assignTeamId) // assign_staff's team scope is optional; assign_team requires one
+        : !!templateId
   );
 
   const addMapping = () => setFieldMappings((prev) => [...prev, { targetField: '', sourceType: 'field', sourceField: '' }]);
@@ -120,19 +151,39 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
   const patchMapping = (i: number, patch: Partial<FieldMapping>) =>
     setFieldMappings((prev) => prev.map((m, idx) => (idx === i ? { ...m, ...patch } : m)));
 
+  const addCondition = () => setScheduleFilter((prev) => [...prev, { field: '', operator: '=' }]);
+  const removeCondition = (i: number) => setScheduleFilter((prev) => prev.filter((_, idx) => idx !== i));
+  const patchCondition = (i: number, patch: Partial<FlowCondition>) =>
+    setScheduleFilter((prev) => prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
+
   const handleSave = async () => {
     if (!canSave) return;
     setSaving(true);
     setError('');
     try {
       const data = {
-        module, name: name.trim(), triggerType,
+        // A scheduled rule's firing logic reads scheduleModule, not this
+        // top-level module — but the schema still requires SOME value here,
+        // so it's silently kept in sync rather than asking for two
+        // confusingly-similar module pickers.
+        module: isScheduled ? (scheduleModule || module) : module,
+        name: name.trim(), triggerType,
         triggerStage: triggerType === 'status_changed' || triggerType === 'record_updated' ? (triggerStage || undefined) : undefined,
         triggerField: triggerType === 'record_updated' ? triggerField : undefined,
+        ...(isScheduled
+          ? {
+              scheduleCron: scheduleCron.trim(),
+              scheduleModule: scheduleModule || undefined,
+              scheduleFilter: scheduleFilter.length > 0 ? scheduleFilter : undefined,
+              scheduleStampField: scheduleStampField.trim() || undefined,
+            }
+          : {}),
         actionType,
         ...(isLinkedRecord
           ? { targetModule: targetModule || undefined, fieldMappings, backReferenceField: backReferenceField || undefined }
-          : { templateId, recipientStrategy }),
+          : isAssignment
+            ? { assignTeamId: assignTeamId || undefined }
+            : { templateId, recipientStrategy }),
         enabled,
         ...(!isEdit && initialCanvasPosition ? { canvasPosition: initialCanvasPosition } : {}),
       };
@@ -166,24 +217,124 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Module</label>
-                <select value={module} onChange={(e) => { setModule(e.target.value as AutomationModule); setTriggerStage(''); setTriggerField(''); }}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
-                  {triggerModuleOptions.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
-                </select>
-              </div>
-              <div>
+              {/* Scheduled rules pick their own "watch which records" module
+                  below instead — showing both here would be two confusingly
+                  similar module pickers for one rule. */}
+              {triggerType !== 'scheduled' && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Module</label>
+                  <select value={module} onChange={(e) => { setModule(e.target.value as AutomationModule); setTriggerStage(''); setTriggerField(''); }}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                    {triggerModuleOptions.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
+                  </select>
+                </div>
+              )}
+              <div className={triggerType === 'scheduled' ? 'col-span-2' : ''}>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Trigger</label>
-                <select value={triggerType} onChange={(e) => { setTriggerType(e.target.value as AutomationTriggerType); setTriggerStage(''); setTriggerField(''); }}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                <select value={triggerType} onChange={(e) => {
+                  setTriggerType(e.target.value as AutomationTriggerType); setTriggerStage(''); setTriggerField('');
+                  setScheduleModule(''); setScheduleFilter([]); setScheduleStampField('');
+                }} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
                   <option value="status_changed">Status changes to…</option>
                   <option value="record_created">New record created</option>
                   <option value="record_updated">Field updated</option>
                   <option value="record_deleted">Record deleted</option>
+                  <option value="scheduled">On a schedule</option>
                 </select>
               </div>
             </div>
+
+            {isScheduled && (
+              <div className="space-y-3 bg-amber-50/50 border border-amber-100 rounded-lg p-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Watch which records</label>
+                    <select value={scheduleModule} onChange={(e) => { setScheduleModule(e.target.value as AutomationModule); setScheduleFilter([]); }}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                      <option value="">Select module…</option>
+                      {EVERY_MODULE.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Check every</label>
+                    <select value={scheduleCron} onChange={(e) => setScheduleCron(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                      <option value="*/5 * * * *">5 minutes</option>
+                      <option value="*/15 * * * *">15 minutes</option>
+                      <option value="0 * * * *">Hour</option>
+                      <option value="0 */6 * * *">6 hours</option>
+                      <option value="0 0 * * *">Day (midnight)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Only matching records (optional)</label>
+                    <button type="button" onClick={addCondition} disabled={!scheduleModule}
+                      className="text-[11px] font-medium text-brand-600 hover:text-brand-700 disabled:opacity-40">
+                      + Add condition
+                    </button>
+                  </div>
+                  {scheduleFilter.length === 0 && (
+                    <p className="text-[11px] text-gray-400">No conditions — every record in this module matches.</p>
+                  )}
+                  <div className="space-y-2">
+                    {scheduleFilter.map((c, i) => {
+                      const fieldDef = scheduleFields.find((f) => f.key === c.field);
+                      return (
+                        <div key={i} className="flex items-center gap-1.5">
+                          <select value={c.field} onChange={(e) => patchCondition(i, { field: e.target.value })}
+                            className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded-lg">
+                            <option value="">Field…</option>
+                            {scheduleFields.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+                          </select>
+                          <select value={c.operator} onChange={(e) => patchCondition(i, { operator: e.target.value as ConditionOperator })}
+                            className="px-2 py-1.5 text-xs border border-gray-300 rounded-lg">
+                            {CONDITION_OPERATORS.map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
+                          </select>
+                          {!['is_empty', 'is_not_empty'].includes(c.operator) && (
+                            fieldDef?.options ? (
+                              <select value={c.value ?? ''} onChange={(e) => patchCondition(i, { value: e.target.value })}
+                                className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded-lg">
+                                <option value="">Value…</option>
+                                {fieldDef.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                              </select>
+                            ) : (
+                              <input value={c.value ?? ''} onChange={(e) => patchCondition(i, { value: e.target.value })}
+                                placeholder={c.operator === '>' || c.operator === '<' ? 'e.g. now, today, 50000' : 'Value'}
+                                className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded-lg" />
+                            )
+                          )}
+                          {c.operator === 'between' && (
+                            <input value={c.value2 ?? ''} onChange={(e) => patchCondition(i, { value2: e.target.value })}
+                              placeholder="and…" className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded-lg" />
+                          )}
+                          <button type="button" onClick={() => removeCondition(i)} className="p-1.5 text-gray-300 hover:text-red-500">
+                            <TrashIcon className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    Use <code className="bg-gray-100 px-1 rounded">now</code> or <code className="bg-gray-100 px-1 rounded">today</code> as a date value — e.g. a field "&lt;" "now" means overdue.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Prevent re-firing (optional)</label>
+                  <select value={scheduleStampField} onChange={(e) => setScheduleStampField(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                    <option value="">Fire every time it matches</option>
+                    {scheduleFields.filter((f) => f.type === 'date').map((f) => <option key={f.key} value={f.key}>{`Mark "${f.label}" once fired`}</option>)}
+                  </select>
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    Once this rule fires for a record, the chosen field is stamped with the current time — add a condition above like "{scheduleStampField ? scheduleFields.find((f) => f.key === scheduleStampField)?.label : 'that field'} is empty" so a record only fires once instead of every check.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {triggerType === 'status_changed' && (
               <div>
@@ -240,10 +391,30 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
                 <option value="send_sms">Send SMS</option>
                 <option value="send_whatsapp">Send WhatsApp</option>
                 <option value="create_linked_record">Create Linked Record</option>
+                <option value="assign_staff">Assign Staff (Round Robin)</option>
+                <option value="assign_team">Assign Team</option>
               </select>
             </div>
 
-            {!isLinkedRecord && (
+            {isAssignment && (
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                  {actionType === 'assign_staff' ? 'Rotate within team (optional)' : 'Target team'}
+                </label>
+                <select value={assignTeamId} onChange={(e) => setAssignTeamId(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                  <option value="">{actionType === 'assign_staff' ? 'Whole company (all active staff)' : 'Select a team…'}</option>
+                  {(teamList?.items ?? []).map((t: any) => <option key={t._id} value={t._id}>{t.name}</option>)}
+                </select>
+                <p className="text-[11px] text-gray-400 mt-1">
+                  {actionType === 'assign_staff'
+                    ? 'Rotates through active staff (company-wide, or just this team) and writes staffId/teamId onto the record — no notification is sent by this action alone; chain a Send Email/WhatsApp action with recipient "Assigned staff" for that.'
+                    : 'Sets teamId on the record to this fixed team — not rotated.'}
+                </p>
+              </div>
+            )}
+
+            {!isLinkedRecord && !isAssignment && (
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -497,11 +668,17 @@ function describeTriggerShort(rule: AutomationRule): string {
   if (rule.triggerType === 'record_updated') {
     return rule.triggerStage ? `${rule.triggerField} → ${rule.triggerStage}` : `${rule.triggerField} changes`;
   }
+  if (rule.triggerType === 'scheduled') {
+    const n = rule.scheduleFilter?.length ?? 0;
+    return `Scheduled${n > 0 ? ` (${n} condition${n > 1 ? 's' : ''})` : ''}`;
+  }
   return `Status → ${rule.triggerStage}`;
 }
 
 function describeActionShort(rule: AutomationRule, moduleLabel: (m: AutomationModule) => string): string {
   if (rule.actionType === 'create_linked_record') return `Create ${moduleLabel(rule.targetModule as AutomationModule)} record`;
+  if (rule.actionType === 'assign_staff') return 'Assign Staff (Round Robin)';
+  if (rule.actionType === 'assign_team') return 'Assign Team';
   if (rule.actionType === 'send_sms') return 'Send SMS';
   if (rule.actionType === 'send_whatsapp') return 'Send WhatsApp';
   return 'Send Email';
@@ -525,6 +702,7 @@ function describeMappingPreview(rule: AutomationRule): string | null {
 
 function actionAccentClasses(rule: AutomationRule): { bg: string; text: string; border: string } {
   if (rule.actionType === 'create_linked_record') return { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' };
+  if (rule.actionType === 'assign_staff' || rule.actionType === 'assign_team') return { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' };
   if (rule.actionType === 'send_sms') return { bg: 'bg-violet-50', text: 'text-violet-700', border: 'border-violet-200' };
   if (rule.actionType === 'send_whatsapp') return { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' };
   return { bg: 'bg-sky-50', text: 'text-sky-700', border: 'border-sky-200' };
@@ -562,12 +740,15 @@ const TRIGGER_PALETTE: { value: AutomationTriggerType; label: string; hint: stri
   { value: 'record_created', label: 'New Record',      hint: 'When a record is created' },
   { value: 'record_updated', label: 'Field Updated',    hint: 'When one field changes' },
   { value: 'record_deleted', label: 'Record Deleted',   hint: 'When a record is removed' },
+  { value: 'scheduled',      label: 'Scheduled',        hint: 'Checked on a recurring timer' },
 ];
 const ACTION_PALETTE: { value: AutomationActionType; label: string; hint: string }[] = [
   { value: 'send_email',           label: 'Send Email',          hint: 'Email via a template' },
   { value: 'send_sms',             label: 'Send SMS',             hint: 'SMS via a template' },
   { value: 'send_whatsapp',        label: 'Send WhatsApp',        hint: 'WhatsApp via a template' },
   { value: 'create_linked_record', label: 'Create Linked Record', hint: 'Create a record in another module' },
+  { value: 'assign_staff',         label: 'Assign Staff',         hint: 'Round-robin rotate an active staff member onto the record' },
+  { value: 'assign_team',          label: 'Assign Team',          hint: 'Set a fixed target team on the record' },
 ];
 
 function PaletteItem({ kind, value, label, hint, accentClass }: {
@@ -943,10 +1124,14 @@ export default function AutomationRulesPage() {
                         : rule.triggerType === 'record_deleted' ? 'on delete'
                         : rule.triggerType === 'record_updated'
                           ? <>when <span className="font-medium">{rule.triggerField}</span> {rule.triggerStage ? <>→ <span className="font-medium">{rule.triggerStage}</span></> : 'changes'}</>
+                        : rule.triggerType === 'scheduled'
+                          ? <>on a schedule{(rule.scheduleFilter?.length ?? 0) > 0 ? ` (${rule.scheduleFilter!.length} condition${rule.scheduleFilter!.length > 1 ? 's' : ''})` : ''}</>
                         : <>when status → <span className="font-medium">{rule.triggerStage}</span></>}
                       {' '}·{' '}
                       {rule.actionType === 'create_linked_record'
                         ? <>Create <span className="font-medium">{moduleLabel(rule.targetModule as AutomationModule)}</span> record</>
+                        : rule.actionType === 'assign_staff' || rule.actionType === 'assign_team'
+                        ? <>{rule.actionType === 'assign_staff' ? 'Assign Staff (Round Robin)' : 'Assign Team'}</>
                         : <>{rule.actionType === 'send_email' ? 'Email' : rule.actionType === 'send_whatsapp' ? 'WhatsApp' : 'SMS'} · {RECIPIENT_LABELS[rule.recipientStrategy ?? 'record_contact']}</>}
                     </p>
                   </div>

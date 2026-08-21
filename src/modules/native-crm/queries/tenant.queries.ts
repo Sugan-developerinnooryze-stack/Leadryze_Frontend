@@ -53,10 +53,24 @@ export interface TenantWidgetConfig {
   widgetKey?: string;
   allowedDomains: string[];
   greeting?: string;
+  quickQuestions?: { text: string; enabled: boolean }[];
+  showBookingQuickReply?: boolean;
+  /** On by default — sends the automatic lead-confirmation (visitor) +
+   * sales-alert (assigned staff) email pair the moment a real chatbot Lead
+   * is created. See branding.contactEmail/contactPhone/address below for
+   * the info the confirmation email shares with the visitor. */
+  autoSendLeadEmails?: boolean;
   defaultTeamId?: string | null;
   websiteUrl?: string;
+  crawlStatus?: 'not_configured' | 'crawling' | 'ready' | 'ready_with_warnings' | 'failed';
   lastCrawledAt?: string;
   crawlPageCount?: number;
+  crawlPagesIndexed?: number;
+  crawlPagesFailed?: number;
+  crawlChunksIndexed?: number;
+  lastSuccessfulCrawlAt?: string;
+  lastSuccessfulCrawlPagesIndexed?: number;
+  lastSuccessfulCrawlChunksIndexed?: number;
   logoUrl?: string;
   template?: 'modern' | 'minimal' | 'chips' | 'dark';
   booking?: TenantBookingHoursConfig;
@@ -77,7 +91,7 @@ export interface Tenant {
   _id: string;
   name: string;
   widget?: TenantWidgetConfig;
-  branding?: { primaryColor?: string; companyName?: string; logoUrl?: string };
+  branding?: { primaryColor?: string; companyName?: string; logoUrl?: string; contactEmail?: string; contactPhone?: string; address?: string };
   aiConfig?: { toolModelPreset?: ToolModelPreset | null; autoConvertLeadOnMeetingCompleted?: boolean };
   dataScopeConfig?: Record<string, boolean>;
 }
@@ -101,6 +115,20 @@ export function useUpdateTenantWidget(id: string) {
   return useMutation({
     mutationFn: (widget: Partial<Omit<TenantWidgetConfig, 'widgetKey' | 'logoUrl'>>) =>
       api.put(`${BASE}/${id}`, { widget }).then((r) => r.data.data as Tenant),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY(id) }),
+  });
+}
+
+/** Contact info the automatic lead-confirmation email shares with a visitor
+ * — mirrors useUpdateTenantWidget()'s exact shape/pattern. Only companyName/
+ * contactEmail/contactPhone/address are ever accepted here (see
+ * tenant.service.ts's own allow-list) — logoUrl/primaryColor stay off this
+ * path (uploaded/set elsewhere). */
+export function useUpdateTenantBranding(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (branding: { companyName?: string; contactEmail?: string; contactPhone?: string; address?: string }) =>
+      api.put(`${BASE}/${id}`, { branding }).then((r) => r.data.data as Tenant),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY(id) }),
   });
 }

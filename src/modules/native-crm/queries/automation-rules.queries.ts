@@ -8,15 +8,29 @@ export type BuiltInAutomationModule = 'lead' | 'deal' | 'task' | 'ticket' | 'quo
 /** Tenant-built Custom Modules share this same automation engine via a
  * `custom:<slug>` module value. */
 export type AutomationModule = BuiltInAutomationModule | `custom:${string}`;
-export type AutomationActionType = 'send_email' | 'send_sms' | 'send_whatsapp' | 'create_linked_record';
+export type AutomationActionType = 'send_email' | 'send_sms' | 'send_whatsapp' | 'create_linked_record' | 'assign_staff' | 'assign_team';
 export type AutomationRecipientStrategy = 'record_contact' | 'assigned_user';
-export type AutomationTriggerType = 'status_changed' | 'record_created' | 'record_updated' | 'record_deleted';
+// 'webhook' isn't exposed in this UI yet (a separate, unrelated trigger type
+// — no form built for it either) — only 'scheduled' is added here.
+export type AutomationTriggerType = 'status_changed' | 'record_created' | 'record_updated' | 'record_deleted' | 'scheduled';
 
 export interface FieldMapping {
   targetField:  string;
   sourceType:   'field' | 'static';
   sourceField?: string;
   staticValue?: string;
+}
+
+export type ConditionOperator =
+  | '=' | '!=' | '>' | '<' | '>=' | '<='
+  | 'contains' | 'startsWith' | 'endsWith'
+  | 'is_empty' | 'is_not_empty' | 'between' | 'in_list' | 'not_in_list';
+
+export interface FlowCondition {
+  field: string;
+  operator: ConditionOperator;
+  value?: string;
+  value2?: string;
 }
 
 export interface AutomationRule {
@@ -32,6 +46,21 @@ export interface AutomationRule {
   triggerStage?:     string;
   /** Which field to watch — required only when triggerType is 'record_updated'. */
   triggerField?:     string;
+  /** Only meaningful when triggerType is 'scheduled' — a real cron
+   * expression, the module whose records get queried (independent of the
+   * rule's own top-level `module`, which stays required by the schema but is
+   * otherwise unused for firing logic on a scheduled rule), an optional
+   * AND-combined filter, and an idempotency stamp field (see
+   * scheduleStampField's own note below). */
+  scheduleCron?:       string;
+  scheduleModule?:     AutomationModule;
+  scheduleFilter?:     FlowCondition[];
+  /** After this rule fires for a matched record, that record's own field of
+   * this name gets set to "now" — so it naturally stops matching on the next
+   * tick once the filter above includes an "is empty" condition on it.
+   * Without this, a still-matching record (e.g. one whose fields a
+   * notify-only rule never changes) re-fires every single tick forever. */
+  scheduleStampField?: string;
   actionType:        AutomationActionType;
   /** Required only for send_email/send_sms. */
   templateId?:        string;
@@ -41,6 +70,10 @@ export interface AutomationRule {
   targetModule?:       AutomationModule;
   fieldMappings?:      FieldMapping[];
   backReferenceField?: string;
+  /** actionType === 'assign_staff': OPTIONAL round-robin scope (a NativeTeam
+   * _id) — rotates across every active tenant staff when omitted.
+   * actionType === 'assign_team': REQUIRED — the fixed target team. */
+  assignTeamId?: string;
   /** Node position on the visual automation canvas — absent until a rule's
    * node has been dragged at least once, in which case the canvas falls
    * back to an auto-layout grid position for that render only. */

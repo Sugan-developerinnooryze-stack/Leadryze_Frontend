@@ -22,17 +22,22 @@ const BUILT_IN_MODULES: { key: BuiltInPipelineModule; label: string }[] = [
 const PALETTE = ['#6366f1', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ec4899', '#f97316', '#10b981', '#ef4444', '#94a3b8', '#64748b'];
 
 // Each module's own set of meaningful semantic outcomes — must match the
-// exact tag strings the backend resolves via getOutcomeStageKey (Task/Ticket
-// have no automation hooked to an outcome tag, so they offer none here).
-// Custom Modules have no built-in business logic keyed to an outcome tag
-// either — their automation rules trigger on the stage key itself. Every
-// module (including these) still gets the standalone Terminal toggle below,
+// exact tag strings the backend resolves via getOutcomeStageKey (Task has no
+// automation hooked to an outcome tag, so it offers none here). Custom
+// Modules have no built-in business logic keyed to an outcome tag either —
+// their automation rules trigger on the stage key itself. Every module
+// (including these) still gets the standalone Terminal toggle below,
 // independent of this list.
 const OUTCOME_OPTIONS: Record<BuiltInPipelineModule, { value: string; label: string }[]> = {
   lead:      [{ value: 'won', label: 'Won' }, { value: 'lost', label: 'Lost' }],
   deal:      [{ value: 'won', label: 'Won' }, { value: 'lost', label: 'Lost' }],
   task:      [],
-  ticket:    [],
+  // 'resolved'/'closed' drive ticket.service.ts's resolvedAt/closedAt SLA
+  // stamping (getOutcomeStageKey, rename-safe) — a tenant who edits their
+  // Ticket pipeline needs to be able to re-point these tags to whichever
+  // stage they rename/add, or SLA stamping silently keeps falling back to
+  // the seeded 'resolved'/'closed' keys forever.
+  ticket:    [{ value: 'resolved', label: 'Resolved (SLA resolution stamp)' }, { value: 'closed', label: 'Closed (SLA closure stamp)' }],
   quotation: [{ value: 'approved', label: 'Approved' }],
   workorder: [
     { value: 'scheduled', label: 'Scheduled (auto-generated)' },

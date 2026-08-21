@@ -2,9 +2,8 @@ import { useState } from 'react';
 import {
   ClipboardDocumentListIcon, LifebuoyIcon, PhoneIcon, CalendarDaysIcon, PlusIcon, EnvelopeIcon,
 } from '@heroicons/react/24/outline';
-import { useActivityFeedQuery, ActivityFeedItem, ActivityKind } from '../queries/activity-feed.queries';
+import { useActivityFeedQuery, ActivityFeedItem, ActivityKind, RelatedModule } from '../queries/activity-feed.queries';
 import RecordDrawer from '../../crm/shared/RecordDrawer';
-import type { FsRelatedModule } from '../../crm/shared/FsRelationPicker';
 import { config as taskConfig } from '../../crm/tasks/pages/TasksPage';
 import { config as ticketConfig } from '../../crm/tickets/pages/TicketsPage';
 import { config as callConfig } from '../../crm/calls/pages/CallsPage';
@@ -53,7 +52,12 @@ function fmtDate(d: string | undefined): string {
 export default function ActivityFeedPanel({
   relatedModule, relatedId, relatedLabel,
 }: {
-  relatedModule: FsRelatedModule;
+  // Narrower than FsRelationPicker's own FsRelatedModule (which also allows
+  // 'product'/'asset' as something a Ticket/Task/etc. can LINK TO) — this
+  // panel renders an activity feed FOR a record's own detail page, and the
+  // backend's activity-feed.service.ts genuinely only supports this smaller
+  // set (no Product/Asset detail page in this app renders one).
+  relatedModule: RelatedModule;
   relatedId:     string;
   relatedLabel:  string;
 }) {

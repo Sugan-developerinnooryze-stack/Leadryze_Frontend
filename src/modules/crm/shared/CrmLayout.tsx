@@ -15,8 +15,9 @@ import FileActionsDropdown, { deriveAllColumns, fmtVal } from './FileActionsDrop
 import KanbanBoard from './KanbanBoard';
 import CalendarView from './CalendarView';
 import FsRelationPicker, { FsRelation } from './FsRelationPicker';
+import CrmField from './CrmField';
 import { statusColor } from './crm.colors';
-import type { FieldConfig, ModulePageConfig, CrmRecord, CrmPageMeta } from './types/crm.types';
+import type { FieldConfig, ModulePageConfig, CrmRecord, CrmPageMeta, FilterFieldConfig, BulkActionConfig } from './types/crm.types';
 import { useCustomFieldsQuery } from '../../native-crm/queries/custom-fields.queries';
 import { usePipelineStages } from '../../native-crm/queries/pipeline-config.queries';
 
@@ -121,6 +122,163 @@ function BulkDeleteConfirm({
   );
 }
 
+/* ── FilterBar — opt-in via config.filterFields, server-side (each control's
+   value becomes a query param on the existing list request, not a
+   client-side re-filter of the current page). Toggled open/closed by the
+   toolbar's own "Filters" button (see CrmLayout's filterOpen state) instead
+   of always rendering, and laid out as a labeled grid rather than a packed
+   flex-wrap line — both fix the real visual crowding/collision a dense
+   field set (9 controls for Tickets) produced when this was always-visible
+   with no labels. `statusControl` is an optional extra slot (Tickets'
+   existing tenant-pipeline-aware status filter, which needs to stay on its
+   own dynamic-options state rather than FilterFieldConfig's static-only
+   'select' kind) rendered as the panel's first cell. ─────────────────── */
+function FilterBar({
+  fields, values, onChange, onClear, statusControl,
+}: {
+  fields:   FilterFieldConfig[];
+  values:   Record<string, string>;
+  onChange: (key: string, value: string) => void;
+  onClear:  () => void;
+  statusControl?: React.ReactNode;
+}) {
+  const inputCls = 'w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500';
+  const labelCls = 'text-xs font-medium text-gray-500 mb-1 block';
+  const hasAny = Object.values(values).some(Boolean);
+  return (
+    <div className="px-4 py-3 border-b border-gray-200 shrink-0 bg-gray-50">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {statusControl}
+        {fields.map((f) => {
+          if (f.kind === 'dateRange') {
+            return (
+              <div key={f.key}>
+                <span className={labelCls}>{f.label}</span>
+                <div className="flex items-center gap-1">
+                  <input type="date" value={values[f.key] ?? ''} onChange={(e) => onChange(f.key, e.target.value)} className={inputCls} />
+                  <span className="text-xs text-gray-400 shrink-0">–</span>
+                  <input type="date" value={values[f.toKey!] ?? ''} onChange={(e) => onChange(f.toKey!, e.target.value)} className={inputCls} />
+                </div>
+              </div>
+            );
+          }
+          if (f.kind === 'text') {
+            return (
+              <div key={f.key}>
+                <span className={labelCls}>{f.label}</span>
+                <input
+                  type="text" value={values[f.key] ?? ''}
+                  onChange={(e) => onChange(f.key, e.target.value)}
+                  placeholder={f.placeholder ?? f.label}
+                  className={inputCls}
+                />
+              </div>
+            );
+          }
+          if (f.kind === 'staffSelect' || f.kind === 'teamSelect' || f.kind === 'categorySelect') {
+            return (
+              <div key={f.key}>
+                <span className={labelCls}>{f.label}</span>
+                <CrmField
+                  field={{ key: f.key, label: f.label, type: f.kind }}
+                  value={values[f.key] ?? ''}
+                  onChange={(v) => onChange(f.key, v)}
+                />
+              </div>
+            );
+          }
+          // 'select' — static options
+          return (
+            <div key={f.key}>
+              <span className={labelCls}>{f.label}</span>
+              <select value={values[f.key] ?? ''} onChange={(e) => onChange(f.key, e.target.value)} className={inputCls}>
+                <option value="">All</option>
+                {(f.options ?? []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+          );
+        })}
+      </div>
+      {hasAny && (
+        <button onClick={onClear} className="mt-2.5 text-xs text-gray-400 hover:text-gray-600 underline transition-colors">
+          Clear filters
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ── BulkActionButton — opt-in via config.bulkActions. 'none' input fires
+   immediately; every other input opens a small inline popover to collect
+   the value (staff/team/status/priority picker or a tag text box) before
+   posting to POST {apiBase}/bulk. ──────────────────────────────────── */
+function BulkActionButton({
+  config, onRun, busy,
+}: {
+  config: BulkActionConfig;
+  onRun:  (value: string) => void;
+  busy:   boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState('');
+
+  if (config.input === 'none') {
+    return (
+      <button
+        onClick={() => onRun('')}
+        disabled={busy}
+        className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 bg-white rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+      >
+        {config.label}
+      </button>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        disabled={busy}
+        className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 bg-white rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+      >
+        {config.label}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute top-full mt-1.5 left-0 z-20 bg-white border border-gray-200 rounded-xl shadow-lg p-3 min-w-[220px]">
+            {config.input === 'text' ? (
+              <input
+                autoFocus type="text" value={value} onChange={(e) => setValue(e.target.value)}
+                placeholder={config.placeholder ?? config.label}
+                className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            ) : config.input === 'select' ? (
+              <select value={value} onChange={(e) => setValue(e.target.value)} className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm">
+                <option value="">Select…</option>
+                {(config.options ?? []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            ) : (
+              <CrmField
+                field={{ key: config.valueField, label: config.label, type: config.input }}
+                value={value}
+                onChange={setValue}
+              />
+            )}
+            <button
+              onClick={() => { if (value) { onRun(value); setOpen(false); setValue(''); } }}
+              disabled={!value || busy}
+              className="mt-2 w-full px-3 py-1.5 bg-gray-900 hover:bg-gray-800 disabled:opacity-40 text-white text-xs font-medium rounded-lg transition-colors"
+            >
+              Apply
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /* ── SortIcon ───────────────────────────────────────────────────────────────── */
 function SortIcon({ col, sortKey, sortDir }: { col: string; sortKey: string; sortDir: 'asc' | 'desc' }) {
   if (sortKey !== col)
@@ -169,6 +327,13 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
   const [upcomingOnly, setUpcomingOnly] = useState(false);
   const [linkedFilter, setLinkedFilter] = useState<FsRelation>({});
   const [linkedFilterOpen, setLinkedFilterOpen] = useState(false);
+  // Opt-in server-side filter bar (config.filterFields) — one entry per
+  // FilterFieldConfig.key ('dateRange' kind stores both key/toKey values
+  // under those same two keys), sent as query params alongside search/status.
+  const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+  const filterActiveCount = config.filterFields
+    ? Object.values(filterValues).filter(Boolean).length + (statusF ? 1 : 0)
+    : 0;
 
   /* ── sort ── */
   const [sortKey, setSortKey] = useState('');
@@ -250,6 +415,9 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
         params.relatedModule = linkedFilter.relatedModule;
         params.relatedId = linkedFilter.relatedId;
       }
+      for (const [k, v] of Object.entries(filterValues)) {
+        if (v) params[k] = v;
+      }
       const res = await api.get<{ data: CrmRecord[]; meta: CrmPageMeta }>(config.apiBase, { params });
       setRecords(res.data.data ?? []);
       setMeta(res.data.meta ?? { total: 0, page: 1, totalPages: 1 });
@@ -259,7 +427,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
       setErrorStatus(err?.response?.status);
     }
     finally { setLoading(false); }
-  }, [config.apiBase, config.upcomingDateField, page, limit, search, statusF, upcomingOnly, linkedFilter]);
+  }, [config.apiBase, config.upcomingDateField, page, limit, search, statusF, upcomingOnly, linkedFilter, filterValues]);
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
@@ -296,6 +464,28 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
     await Promise.all([...selectedIds].map((id) => api.delete(`${config.apiBase}/${id}`)));
     setBulkDeleteOpen(false);
     fetchRecords();
+  };
+
+  /* ── bulk actions (opt-in via config.bulkActions) — one request to the
+     module's POST {apiBase}/bulk, not N individual calls, so array-append
+     semantics (e.g. Add Tag) and permission-per-action checks live in one
+     place server-side rather than being re-implemented per action here. ── */
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const runBulkAction = async (ba: BulkActionConfig, value: string) => {
+    setBulkBusy(true);
+    try {
+      await api.post(`${config.apiBase}/bulk`, {
+        ticketIds: [...selectedIds],
+        action: ba.action,
+        ...(value ? { [ba.valueField]: value } : {}),
+      });
+      fetchRecords();
+    } catch {
+      // Errors (e.g. a 403 on an action the role can't perform) surface via
+      // the normal API error toast/interceptor already wired app-wide.
+    } finally {
+      setBulkBusy(false);
+    }
   };
 
   /* ── helpers ── */
@@ -408,22 +598,33 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
             <span className="hidden sm:inline">Edit columns ({visibleKeys.length})</span>
           </button>
 
-          {/* Filters */}
+          {/* Filters — a module with config.filterFields (Tickets, so far)
+              gets the full toggled panel (rendered below the toolbar, see
+              FilterBar render further down) with status folded in as its
+              first cell; every other module keeps today's exact small
+              status-only popover, unchanged. */}
           <div className="relative">
             <button
               onClick={() => setFilterOpen((v) => !v)}
               className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg text-sm transition-colors ${
-                statusF
+                statusF || filterActiveCount > 0
                   ? 'border-blue-500 bg-blue-50 text-blue-700'
                   : 'border-gray-300 text-gray-600 hover:bg-gray-50'
               }`}
             >
               <FunnelIcon className="h-4 w-4" />
               <span className="hidden sm:inline">Filters</span>
-              {statusF && <span className="h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />}
+              {(statusF || filterActiveCount > 0) && (
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
+              )}
+              {filterActiveCount > 0 && (
+                <span className="text-[10px] font-bold bg-blue-600 text-white rounded-full h-4 w-4 flex items-center justify-center">
+                  {filterActiveCount}
+                </span>
+              )}
             </button>
 
-            {filterOpen && (
+            {filterOpen && !config.filterFields && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setFilterOpen(false)} />
                 <div className="absolute top-full mt-1.5 right-0 z-20 bg-white border border-gray-200 rounded-xl shadow-lg p-3 min-w-[200px]">
@@ -492,7 +693,13 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
             {linkedFilterOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setLinkedFilterOpen(false)} />
-                <div className="absolute top-full mt-1.5 right-0 z-20 bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-80">
+                {/* z-30, deliberately higher than the toggled filter panel's
+                    default stacking (see FilterBar's render below) — a
+                    defensive belt-and-suspenders on top of the panel now
+                    being toggle-shown rather than always-on, so the two can
+                    never visually bleed into each other even if both
+                    happen to be open at once. */}
+                <div className="absolute top-full mt-1.5 right-0 z-30 bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-80">
                   <FsRelationPicker
                     value={linkedFilter}
                     onChange={(v) => { setLinkedFilter(v); setPage(1); if (v.relatedId) setLinkedFilterOpen(false); }}
@@ -539,11 +746,48 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
         </div>
       </div>
 
+      {/* ── Filter panel (opt-in via config.filterFields) — toggled by the
+          toolbar's "Filters" button (filterOpen), not always-visible; status
+          (tenant-pipeline-aware, so it stays on its own dynamic-options
+          state rather than FilterFieldConfig's static-only 'select' kind)
+          is folded in as the panel's first cell. ─────────────────────── */}
+      {config.filterFields && config.filterFields.length > 0 && filterOpen && (
+        <FilterBar
+          fields={config.filterFields}
+          values={{ ...filterValues, _status: statusF }}
+          onChange={(key, value) => { setFilterValues((prev) => ({ ...prev, [key]: value })); setPage(1); }}
+          onClear={() => { setFilterValues({}); setStatusF(''); setPage(1); }}
+          statusControl={
+            <div>
+              <span className="text-xs font-medium text-gray-500 mb-1 block">
+                {config.statusField?.replace(/_/g, ' ') ?? 'Status'}
+              </span>
+              <select
+                value={statusF}
+                onChange={(e) => { setStatusF(e.target.value); setPage(1); }}
+                className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All</option>
+                {statusOptions.map((o) => <option key={o} value={o} className="capitalize">{o.replace(/_/g, ' ')}</option>)}
+              </select>
+            </div>
+          }
+        />
+      )}
+
       {/* ── Bulk actions bar ──────────────────────────────────────────────── */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 px-6 py-2.5 bg-blue-50 border-b border-blue-200 shrink-0">
+        <div className="flex items-center gap-3 px-6 py-2.5 bg-blue-50 border-b border-blue-200 shrink-0 flex-wrap">
           <span className="text-sm font-semibold text-blue-800">{selectedIds.size} selected</span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {(config.bulkActions ?? []).map((ba) => (
+              <BulkActionButton
+                key={ba.action}
+                config={ba}
+                onRun={(value) => runBulkAction(ba, value)}
+                busy={bulkBusy}
+              />
+            ))}
             <button
               onClick={() => setBulkDeleteOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 border border-red-300 bg-white rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
@@ -723,6 +967,14 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
                           ? (r.customFields as Record<string, unknown> | undefined)?.[col.key.slice(4)]
                           : r[col.key];
                         const isStatus = col.type === 'select';
+                        // Ticket's derived SLA badge (deriveSlaStatus() on
+                        // the backend) — a targeted special-case for one
+                        // known semantic key, same pattern as the image/
+                        // video previews below, not a generic system.
+                        const slaLabel: Record<string, string> = {
+                          on_track: '🟢 On Track', warning: '🟡 Warning', breached: '🔴 Breached', no_sla: '⚪ No SLA',
+                        };
+                        const isSlaStatus = col.key === 'slaStatus';
 
                         // Image preview
                         const isImgUrl = typeof v === 'string' && /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(v);
@@ -749,6 +1001,8 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
                                 <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h6l2 2h4a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
                                 {(v as string[]).length} videos
                               </span>
+                            ) : isSlaStatus ? (
+                              <span className="text-xs whitespace-nowrap">{slaLabel[String(v ?? '')] ?? '—'}</span>
                             ) : isStatus ? (
                               <StatusBadge value={String(v ?? '')} />
                             ) : (
