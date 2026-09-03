@@ -51,8 +51,8 @@ import {
   WrenchScrewdriverIcon,
   AdjustmentsHorizontalIcon,
   ShieldCheckIcon,
-  BellAlertIcon,
-  ArrowsRightLeftIcon,
+  // BellAlertIcon,
+  // ArrowsRightLeftIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth.store';
@@ -94,13 +94,13 @@ const FIELD_SERVICE_MODULES = [
 // ConfigurationHubPage, the rest deep-link straight to each area.
 const CONFIGURATION_ITEMS = [
   { key: 'configuration',              label: 'Configuration Hub', icon: Cog6ToothIcon,             color: '#475569' },
-  { key: 'settings/pipelines',         label: 'Pipeline & Stages', icon: Squares2X2Icon,             color: '#8b5cf6' },
+  //{ key: 'settings/pipelines',         label: 'Pipeline & Stages', icon: Squares2X2Icon,             color: '#8b5cf6' },
   { key: 'custom-fields',              label: 'Custom Fields',     icon: AdjustmentsHorizontalIcon,  color: '#7c3aed' },
   { key: 'custom-modules',             label: 'Custom Modules',    icon: TableCellsIcon,             color: '#0d9488' },
   { key: 'settings',                   label: 'FS Settings',       icon: WrenchScrewdriverIcon,      color: '#64748b' },
-  { key: 'settings/notifications',     label: 'Notifications',     icon: BellAlertIcon,              color: '#0ea5e9' },
-  { key: 'settings/automations',       label: 'Automations',       icon: BoltIcon,                   color: '#f59e0b' },
-  { key: 'settings/import-export',     label: 'Import & Export',   icon: ArrowsRightLeftIcon,        color: '#16a34a' },
+  //{ key: 'settings/notifications',     label: 'Notifications',     icon: BellAlertIcon,              color: '#0ea5e9' },
+  //{ key: 'settings/automations',       label: 'Automations',       icon: BoltIcon,                   color: '#f59e0b' },
+  //{ key: 'settings/import-export',     label: 'Import & Export',   icon: ArrowsRightLeftIcon,        color: '#16a34a' },
 ] as const;
 
 // Maps each Native CRM / Field Service sidebar entry to the exact
