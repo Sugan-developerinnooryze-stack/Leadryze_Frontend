@@ -18,6 +18,7 @@ import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-setti
 import { buildPrefill } from '../../../modules/native-crm/shared/buildPrefill';
 import { formatDuration } from '../../../modules/native-crm/shared/duration';
 import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
+import { useCustomerNameMap } from '../../../modules/native-crm/shared/useCustomerNameMap';
 
 const FIELDS: FSFieldDef[] = [
   { key: 'branchId',      label: 'Company',         type: 'branch-select' },
@@ -43,29 +44,6 @@ const FIELDS: FSFieldDef[] = [
   { key: 'notes',         label: 'Notes',           type: 'textarea' },
 ];
 
-const COLUMNS: FSColumnDef[] = [
-  { key: 'workOrderId',   label: 'ID' },
-  { key: 'title',         label: 'Title' },
-  { key: 'customerId',    label: 'Customer' },
-  { key: 'scheduledDate', label: 'Scheduled', render: (r) => {
-    if (!r.scheduledDate) return 'â€"';
-    const d = new Date(r.scheduledDate);
-    const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0;
-    return hasTime ? d.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : d.toLocaleDateString();
-  }},
-  { key: 'staffIds', label: 'Staff', render: (r) => {
-    const ids: string[] = r.staffIds?.length ? r.staffIds : (r.staffId ? [r.staffId] : []);
-    return ids.length ? ids.join(', ') : 'â€"';
-  }},
-  { key: 'durationHours', label: 'Duration', render: (r) => formatDuration(r.durationHours) },
-  { key: 'priority',      label: 'Priority',  render: (r) => {
-    const colors: Record<string, string> = { high: 'text-red-600 bg-red-50', medium: 'text-amber-600 bg-amber-50', low: 'text-green-600 bg-green-50' };
-    const c = colors[r.priority] ?? 'text-gray-600 bg-gray-50';
-    return <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${c}`}>{r.priority ?? 'medium'}</span>;
-  }},
-  { key: 'status',   label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
-  { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
-];
 
 const STATUS_OPTIONS = ['draft', 'scheduled', 'in_progress', 'completed', 'cancelled'];
 
@@ -90,6 +68,34 @@ export default function WorkordersPage() {
     () => FIELDS.map((f) => (f.key === 'status' ? { ...f, options: statusOptions } : f)),
     [statusOptions],
   );
+
+  const customerNames = useCustomerNameMap();
+  const columns: FSColumnDef[] = useMemo(() => [
+    { key: 'workOrderId',   label: 'ID' },
+    { key: 'title',         label: 'Title' },
+    { key: 'customerName',  label: 'Customer',
+      render: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '—',
+      exportValue: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '' },
+    { key: 'customerId',    label: 'Customer ID' },
+    { key: 'scheduledDate', label: 'Scheduled', render: (r) => {
+      if (!r.scheduledDate) return 'â€"';
+      const d = new Date(r.scheduledDate);
+      const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0;
+      return hasTime ? d.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : d.toLocaleDateString();
+    }},
+    { key: 'staffIds', label: 'Staff', render: (r) => {
+      const ids: string[] = r.staffIds?.length ? r.staffIds : (r.staffId ? [r.staffId] : []);
+      return ids.length ? ids.join(', ') : 'â€"';
+    }},
+    { key: 'durationHours', label: 'Duration', render: (r) => formatDuration(r.durationHours) },
+    { key: 'priority',      label: 'Priority',  render: (r) => {
+      const colors: Record<string, string> = { high: 'text-red-600 bg-red-50', medium: 'text-amber-600 bg-amber-50', low: 'text-green-600 bg-green-50' };
+      const c = colors[r.priority] ?? 'text-gray-600 bg-gray-50';
+      return <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${c}`}>{r.priority ?? 'medium'}</span>;
+    }},
+    { key: 'status',   label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
+    { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
+  ], [customerNames]);
 
   useEffect(() => {
     const state = location.state as any;
@@ -159,7 +165,7 @@ export default function WorkordersPage() {
       </div>
 
       <FSTable
-        columns={COLUMNS}
+        columns={columns}
         data={items}
         loading={isLoading}
         errorStatus={(error as any)?.response?.status}

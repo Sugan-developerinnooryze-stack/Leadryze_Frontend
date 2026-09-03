@@ -4,7 +4,14 @@ import api from '../../../services/api';
 const BASE = '/api/v1/native-crm/deals';
 const KEY  = ['native-crm', 'deals'] as const;
 
-interface DealFilters { page?: number; limit?: number; search?: string; stage?: string; }
+interface DealFilters {
+  page?: number; limit?: number; search?: string; stage?: string;
+  /** Built-in field name, or `customFields.<key>` for a tenant custom field. */
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+  /** JSON-encoded FlowCondition[] — same convention the automation engines use. */
+  customFieldFilters?: string;
+}
 interface Meta        { total: number; page: number; totalPages: number; }
 
 export function useDealsQuery(params?: DealFilters, enabled = true) {

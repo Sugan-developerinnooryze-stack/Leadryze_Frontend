@@ -17,6 +17,7 @@ import { CompanyFilterBar } from '../../../components/native-crm/CompanyFilterBa
 import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-settings.queries';
 import { buildPrefill } from '../../../modules/native-crm/shared/buildPrefill';
 import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
+import { useCustomerNameMap } from '../../../modules/native-crm/shared/useCustomerNameMap';
 
 const FIELDS: FSFieldDef[] = [
   { key: 'branchId',      label: 'Company',       type: 'branch-select' },
@@ -32,15 +33,6 @@ const FIELDS: FSFieldDef[] = [
   { key: 'notes',         label: 'Notes',         type: 'textarea' },
 ];
 
-const COLUMNS: FSColumnDef[] = [
-  { key: 'quotationId', label: 'ID' },
-  { key: 'title',       label: 'Title' },
-  { key: 'customerId',  label: 'Customer' },
-  { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `$${Number(r.servicesAmountWithTax).toFixed(2)}` : 'â€"' },
-  { key: 'validUntil',  label: 'Valid Until', render: (r) => r.validUntil ? new Date(r.validUntil).toLocaleDateString() : 'â€"' },
-  { key: 'status',   label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
-  { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
-];
 
 const STATUS_OPTIONS = ['draft', 'sent', 'approved', 'rejected'];
 
@@ -72,6 +64,26 @@ export default function QuotationsPage() {
     () => FIELDS.map((f) => (f.key === 'status' ? { ...f, options: statusOptions } : f)),
     [statusOptions],
   );
+
+  // Customer column resolves the row's own customerId (a plain business-
+  // friendly string like "BADE2FF4-CUS-0019", not a Mongo ref — see
+  // useCustomerNameMap's own comment) to the real customer name. The ID
+  // itself stays visible in its own column, relabeled "Customer ID", since
+  // it's still real reference data a tenant may want (e.g. to cross-check
+  // against an export) — this is additive, not a replacement.
+  const customerNames = useCustomerNameMap();
+  const columns: FSColumnDef[] = useMemo(() => [
+    { key: 'quotationId', label: 'ID' },
+    { key: 'title',       label: 'Title' },
+    { key: 'customerName', label: 'Customer',
+      render: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '—',
+      exportValue: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '' },
+    { key: 'customerId',  label: 'Customer ID' },
+    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `$${Number(r.servicesAmountWithTax).toFixed(2)}` : 'â€"' },
+    { key: 'validUntil',  label: 'Valid Until', render: (r) => r.validUntil ? new Date(r.validUntil).toLocaleDateString() : 'â€"' },
+    { key: 'status',   label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
+    { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
+  ], [customerNames]);
 
   // Open drawer pre-filled when navigated here from another module
   useEffect(() => {
@@ -142,7 +154,7 @@ export default function QuotationsPage() {
       </div>
 
       <FSTable
-        columns={COLUMNS}
+        columns={columns}
         data={items}
         loading={isLoading}
         errorStatus={(error as any)?.response?.status}

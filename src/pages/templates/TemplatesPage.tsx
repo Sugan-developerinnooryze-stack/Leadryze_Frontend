@@ -1,9 +1,10 @@
-import { useEffect, useState, FormEvent, useCallback } from 'react';
+import { useEffect, useState, useRef, FormEvent, useCallback } from 'react';
 import { PlusIcon, ClipboardDocumentIcon, TrashIcon } from '@heroicons/react/24/outline';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth.store';
 import toast from 'react-hot-toast';
 import Modal from '../../components/Modal';
+import VariablePicker from '../native-crm/settings/VariablePicker';
 
 interface Template {
   _id: string;
@@ -53,6 +54,8 @@ export default function TemplatesPage() {
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
   const [detectedVars, setDetectedVars] = useState<string[]>([]);
+  const subjectRef = useRef<HTMLInputElement>(null);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   const fetchTemplates = useCallback(() => {
     if (!user?.tenantId) return;
@@ -80,7 +83,7 @@ export default function TemplatesPage() {
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
   useEffect(() => {
-    const matches = form.body.match(/\{\{(\w+)\}\}/g) || [];
+    const matches = form.body.match(/\{\{([\w.]+)\}\}/g) || [];
     setDetectedVars([...new Set(matches.map((m) => m.replace(/\{\{|\}\}/g, '')))]);
   }, [form.body]);
 
@@ -241,19 +244,26 @@ export default function TemplatesPage() {
 
           {form.type === 'email' && (
             <div>
-              <label className="label">Email Subject</label>
-              <input className="input" placeholder="Your meeting is confirmed — {{time}}" value={form.subject} onChange={f('subject')} />
+              <div className="flex items-center justify-between mb-1">
+                <label className="label mb-0">Email Subject</label>
+                <VariablePicker module="" targetRef={subjectRef} value={form.subject} onChange={(v) => setForm((p) => ({ ...p, subject: v }))} />
+              </div>
+              <input ref={subjectRef} className="input" placeholder="Your meeting is confirmed — {{time}}" value={form.subject} onChange={f('subject')} />
             </div>
           )}
 
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="label mb-0">Message Body *</label>
-              <button type="button" onClick={applyHint} className="text-xs text-brand-600 hover:underline">
-                Use sample for "{CATEGORY_LABELS[form.category] ?? form.category}"
-              </button>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={applyHint} className="text-xs text-brand-600 hover:underline">
+                  Use sample for "{CATEGORY_LABELS[form.category] ?? form.category}"
+                </button>
+                <VariablePicker module="" targetRef={bodyRef} value={form.body} onChange={(v) => setForm((p) => ({ ...p, body: v }))} />
+              </div>
             </div>
             <textarea
+              ref={bodyRef}
               className="input font-mono text-sm"
               rows={6}
               placeholder="Write your message. Use {{name}}, {{date}}, {{time}}, {{company}}, {{meeting}} for dynamic fields."

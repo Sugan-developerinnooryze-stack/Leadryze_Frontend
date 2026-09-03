@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   PlusIcon, MagnifyingGlassIcon, Squares2X2Icon, TableCellsIcon,
-  XMarkIcon, BriefcaseIcon, ChevronDownIcon, CheckIcon,
+  XMarkIcon, BriefcaseIcon, ChevronDownIcon, CheckIcon, AdjustmentsHorizontalIcon,
 } from '@heroicons/react/24/outline';
 import {
   useDealsQuery, useDealCreate, useDealUpdate,
@@ -9,21 +9,33 @@ import {
 } from '../../../modules/native-crm/queries/deals.queries';
 import { useCustomersListQuery } from '../../../modules/native-crm/queries/customers.queries';
 import { RecordLockBanner } from '../../../components/native-crm/RecordLockBanner';
+import { usePipelineStages, type PipelineStage } from '../../../modules/native-crm/queries/pipeline-config.queries';
+import { useCustomFieldsQuery } from '../../../modules/native-crm/queries/custom-fields.queries';
+import { useCustomFormTemplatesQuery } from '../../../modules/native-crm/queries/custom-form-templates.queries';
+import CustomFieldRenderer from '../../../modules/native-crm/shared/CustomFieldRenderer';
+import RecordTimeline from '../../../modules/native-crm/shared/RecordTimeline';
+import ColumnEditor from '../../../modules/crm/shared/ColumnEditor';
+import { fmtVal } from '../../../modules/crm/shared/FileActionsDropdown';
+import type { FieldConfig } from '../../../modules/crm/shared/types/crm.types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STAGES = [
-  { key: 'prospect',    label: 'Prospect',    color: '#6366f1' },
-  { key: 'qualified',   label: 'Qualified',   color: '#0ea5e9' },
-  { key: 'proposal',    label: 'Proposal',    color: '#f59e0b' },
-  { key: 'negotiation', label: 'Negotiation', color: '#f97316' },
-  { key: 'closed_won',  label: 'Won',         color: '#10b981' },
-  { key: 'closed_lost', label: 'Lost',        color: '#ef4444' },
-] as const;
+// Falls back to this while Pipeline Settings' 'deal' stages are loading or
+// unconfigured — the tenant's own configured stages (usePipelineStages)
+// take over the moment they load, same convention LeadsPage.tsx already uses.
+const DEFAULT_DEAL_STAGES: PipelineStage[] = [
+  { key: 'prospect',    label: 'Prospect',    color: '#6366f1', order: 0, isTerminal: false, outcome: null,  isActive: true },
+  { key: 'qualified',   label: 'Qualified',   color: '#0ea5e9', order: 1, isTerminal: false, outcome: null,  isActive: true },
+  { key: 'proposal',    label: 'Proposal',    color: '#f59e0b', order: 2, isTerminal: false, outcome: null,  isActive: true },
+  { key: 'negotiation', label: 'Negotiation', color: '#f97316', order: 3, isTerminal: false, outcome: null,  isActive: true },
+  { key: 'closed_won',  label: 'Won',         color: '#10b981', order: 4, isTerminal: true,  outcome: 'won',  isActive: true },
+  { key: 'closed_lost', label: 'Lost',        color: '#ef4444', order: 5, isTerminal: true,  outcome: 'lost', isActive: true },
+];
 
 const EMPTY_FORM = {
   title: '', amount: '', currency: 'INR', stage: 'prospect',
   contactName: '', companyName: '', closeDate: '', notes: '',
+  customFields: {} as Record<string, any>,
 };
 
 function formatCurrency(n?: number) {
@@ -31,18 +43,45 @@ function formatCurrency(n?: number) {
   return '₹' + n.toLocaleString('en-IN');
 }
 
+// Optional extra list-view columns, same "Edit Columns" mechanism
+// LeadsPage.tsx already has — merged with the tenant's custom fields inside
+// the component once they load (see allExtraColumns below).
+const DEAL_EXTRA_COLUMNS: FieldConfig[] = [
+  { key: 'currency',        label: 'Currency',        type: 'text' },
+  { key: 'assignedStaffId', label: 'Assigned To',     type: 'text' },
+  { key: 'notes',           label: 'Notes',           type: 'text' },
+  { key: 'tags',            label: 'Tags',            type: 'text' },
+  { key: 'createdAt',       label: 'Created At',      type: 'date' },
+];
+
+const DEAL_SORT_FIELDS: { key: string; label: string }[] = [
+  { key: 'createdAt', label: 'Created' },
+  { key: 'title',     label: 'Title' },
+  { key: 'amount',    label: 'Amount' },
+  { key: 'closeDate', label: 'Close Date' },
+];
+
+/** Same resolution rule as LeadsPage.tsx's own getFieldValue — a plain key
+ * reads directly, `customFields.<key>` reads out of the record's own
+ * customFields sub-object. */
+function getFieldValue(record: any, key: string): any {
+  if (key.startsWith('customFields.')) return record.customFields?.[key.slice('customFields.'.length)];
+  return record[key];
+}
+
 // ─── Deal Card ────────────────────────────────────────────────────────────────
 
 function DealCard({
   deal,
+  stageMeta,
   onDragStart,
   onClick,
 }: {
   deal: any;
+  stageMeta?: PipelineStage;
   onDragStart: (e: React.DragEvent, deal: any) => void;
   onClick: (deal: any) => void;
 }) {
-  const stageMeta = STAGES.find((s) => s.key === deal.stage);
   return (
     <div
       draggable
@@ -80,7 +119,7 @@ function DealCard({
 function KanbanColumn({
   stage, deals, onDragStart, onDrop, onCardClick,
 }: {
-  stage: typeof STAGES[number];
+  stage: PipelineStage;
   deals: any[];
   onDragStart: (e: React.DragEvent, deal: any) => void;
   onDrop: (e: React.DragEvent, stageKey: string) => void;
@@ -111,7 +150,7 @@ function KanbanColumn({
           ${over ? 'bg-brand-50 dark:bg-gray-700 ring-2 ring-brand-300' : 'bg-gray-50 dark:bg-gray-900'}`}
       >
         {deals.map((deal) => (
-          <DealCard key={deal._id} deal={deal} onDragStart={onDragStart} onClick={onCardClick} />
+          <DealCard key={deal._id} deal={deal} stageMeta={stage} onDragStart={onDragStart} onClick={onCardClick} />
         ))}
       </div>
     </div>
@@ -251,7 +290,31 @@ function DealForm({ form, setForm, onSubmit, saving, submitLabel }: {
   form: any; setForm: (f: any) => void;
   onSubmit: () => void; saving: boolean; submitLabel: string;
 }) {
+  const { stages } = usePipelineStages('deal', DEFAULT_DEAL_STAGES);
   const set = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
+
+  const { data: customFields = [] } = useCustomFieldsQuery('deals');
+  const activeCustomFields = customFields.filter((cf) => cf.isActive);
+  const { data: formTemplates = [] } = useCustomFormTemplatesQuery();
+  const setCustomField = (key: string, val: any) =>
+    setForm((p: any) => ({ ...p, customFields: { ...p.customFields, [key]: val } }));
+
+  // Seed any active field the current form doesn't already have a value for
+  // (new create, or a field added to the tenant's config since this deal was
+  // last saved) — same convention ContractFormDrawer.tsx already uses, keeps
+  // every input controlled from the first render instead of flipping
+  // uncontrolled->controlled once a value is typed.
+  useEffect(() => {
+    setForm((p: any) => {
+      const cf = { ...p.customFields };
+      let changed = false;
+      activeCustomFields.forEach((f) => {
+        if (cf[f.fieldKey] === undefined) { cf[f.fieldKey] = ''; changed = true; }
+      });
+      return changed ? { ...p, customFields: cf } : p;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customFields.length]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -264,7 +327,7 @@ function DealForm({ form, setForm, onSubmit, saving, submitLabel }: {
         </Field>
         <Field label="Stage">
           <select className={inp()} value={form.stage} onChange={(e) => set('stage', e.target.value)}>
-            {STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+            {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
         </Field>
 
@@ -286,6 +349,29 @@ function DealForm({ form, setForm, onSubmit, saving, submitLabel }: {
           </Field>
         </div>
       </div>
+
+      {activeCustomFields.length > 0 && (
+        <div className="pt-3 mt-1 border-t border-gray-100 dark:border-gray-700">
+          <p className="text-xs font-bold text-brand-500 uppercase tracking-wider mb-3">Custom Fields</p>
+          <div className="flex flex-col gap-3">
+            {activeCustomFields.map((cf) => (
+              <Field key={cf.fieldKey} label={`${cf.label}${cf.required ? ' *' : ''}`}>
+                <CustomFieldRenderer
+                  field={cf}
+                  value={form.customFields?.[cf.fieldKey]}
+                  onChange={(val) => setCustomField(cf.fieldKey, val)}
+                  templateFields={
+                    cf.fieldType === 'custom_form'
+                      ? formTemplates.find((t) => t._id === cf.formTemplateId)?.fields
+                      : undefined
+                  }
+                />
+              </Field>
+            ))}
+          </div>
+        </div>
+      )}
+
       <button
         onClick={onSubmit}
         disabled={saving || !form.title?.trim()}
@@ -314,7 +400,10 @@ function DealDetailPanel({
 }: {
   deal: any; onClose: () => void; onEdit: (deal: any) => void; onUnlocked: () => void;
 }) {
-  const stageMeta = STAGES.find((s) => s.key === deal.stage);
+  const { stages } = usePipelineStages('deal', DEFAULT_DEAL_STAGES);
+  const stageMeta = stages.find((s) => s.key === deal.stage);
+  const { data: customFields = [] } = useCustomFieldsQuery('deals');
+  const activeCustomFields = customFields.filter((cf) => cf.isActive);
 
   return (
     <div className="flex flex-col h-full">
@@ -359,11 +448,22 @@ function DealDetailPanel({
           </>
         )}
 
+        {activeCustomFields.length > 0 && (
+          <>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4">Custom Fields</p>
+            {activeCustomFields.map((cf) => {
+              const val = deal.customFields?.[cf.fieldKey];
+              const display = Array.isArray(val) ? val.join(', ') : (val && typeof val === 'object' ? JSON.stringify(val) : val);
+              return <InfoRow key={cf.fieldKey} label={cf.label} value={display} />;
+            })}
+          </>
+        )}
+
         {/* Stage changer */}
         <div className="mt-6">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Move to Stage</p>
           <div className="flex flex-wrap gap-2">
-            {STAGES.map((s) => (
+            {stages.map((s) => (
               <span
                 key={s.key}
                 className={`text-xs px-2.5 py-1 rounded-full font-semibold cursor-default
@@ -376,6 +476,12 @@ function DealDetailPanel({
               </span>
             ))}
           </div>
+        </div>
+
+        {/* Timeline */}
+        <div className="mt-6">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Activity Timeline</p>
+          <RecordTimeline entityModule="deal" entityId={deal._id} />
         </div>
       </div>
     </div>
@@ -392,23 +498,64 @@ export default function DealsPage() {
   const [selectedDeal, setSelectedDeal] = useState<any | null>(null);
   const [form,         setForm]         = useState<any>({ ...EMPTY_FORM });
   const [saving,       setSaving]       = useState(false);
+  const [showFilters,  setShowFilters]  = useState(false);
+  const [columnEditorOpen, setColumnEditorOpen] = useState(false);
+  const [extraVisibleKeys, setExtraVisibleKeys] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('crm-cols-deals-extra');
+      if (saved) return JSON.parse(saved) as string[];
+    } catch {}
+    return [];
+  });
+  const [sortBy,  setSortBy]  = useState('');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [customFieldFilterValues, setCustomFieldFilterValues] = useState<Record<string, string>>({});
   const dragDealRef = useRef<any>(null);
 
-  const { data, isLoading } = useDealsQuery({ search: search || undefined, stage: filterStage || undefined, limit: 500 });
+  const { data: mainCustomFields = [] } = useCustomFieldsQuery('deals');
+  const activeCustomFields = mainCustomFields.filter((f) => f.isActive);
+  const customFieldColumns: FieldConfig[] = activeCustomFields.map((f) => ({
+    key: `customFields.${f.fieldKey}`, label: f.label, type: 'text',
+  }));
+  const allExtraColumns = [...DEAL_EXTRA_COLUMNS, ...customFieldColumns];
+  const allSortFields = [...DEAL_SORT_FIELDS, ...customFieldColumns.map((c) => ({ key: c.key, label: c.label }))];
+  const extraCols = extraVisibleKeys
+    .map((k) => allExtraColumns.find((f) => f.key === k))
+    .filter(Boolean) as FieldConfig[];
+  const handleApplyExtraColumns = (keys: string[]) => {
+    setExtraVisibleKeys(keys);
+    try { localStorage.setItem('crm-cols-deals-extra', JSON.stringify(keys)); } catch {}
+  };
+
+  const customFieldFilterConditions = Object.entries(customFieldFilterValues)
+    .filter(([, v]) => v.trim() !== '')
+    .map(([key, value]) => ({ field: key, operator: 'contains' as const, value }));
+
+  const { data, isLoading } = useDealsQuery({
+    search: search || undefined, stage: filterStage || undefined,
+    sortBy: sortBy || undefined, sortDir,
+    customFieldFilters: customFieldFilterConditions.length > 0 ? JSON.stringify(customFieldFilterConditions) : undefined,
+    limit: 500,
+  });
   const deals = data?.items ?? [];
+
+  const { stages } = usePipelineStages('deal', DEFAULT_DEAL_STAGES);
 
   const createMut = useDealCreate();
   const updateMut = useDealUpdate();
   const deleteMut = useDealDelete();
   const stageMut  = useDealUpdateStage();
 
-  // Stats
+  // Stats — "Won" is membership in any stage tagged outcome:'won', not a
+  // hardcoded 'closed_won' string, so a tenant renaming that stage (or using
+  // a different key entirely) doesn't silently break these numbers.
+  const wonStageKeys = new Set(stages.filter((s) => s.outcome === 'won').map((s) => s.key));
   const totalValue = deals.reduce((s, d) => s + (d.amount ?? 0), 0);
-  const wonDeals   = deals.filter((d) => d.stage === 'closed_won').length;
-  const wonValue   = deals.filter((d) => d.stage === 'closed_won').reduce((s, d) => s + (d.amount ?? 0), 0);
+  const wonDeals   = deals.filter((d) => wonStageKeys.has(d.stage)).length;
+  const wonValue   = deals.filter((d) => wonStageKeys.has(d.stage)).reduce((s, d) => s + (d.amount ?? 0), 0);
 
   // Kanban grouping
-  const byStage = STAGES.reduce<Record<string, any[]>>((acc, s) => {
+  const byStage = stages.reduce<Record<string, any[]>>((acc, s) => {
     acc[s.key] = deals.filter((d) => d.stage === s.key);
     return acc;
   }, {} as any);
@@ -483,8 +630,20 @@ export default function DealsPage() {
             onChange={(e) => setFilterStage(e.target.value)}
           >
             <option value="">All Stages</option>
-            {STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+            {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
+          <button
+            onClick={() => setShowFilters((v) => !v)}
+            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors
+              ${showFilters ? 'border-brand-400 text-brand-600 bg-brand-50 dark:bg-brand-900/20' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+            <AdjustmentsHorizontalIcon className="h-3.5 w-3.5" /> Sort
+          </button>
+          {view === 'list' && (
+            <button onClick={() => setColumnEditorOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+              Columns{extraCols.length > 0 ? ` (${extraCols.length})` : ''}
+            </button>
+          )}
           <div className="ml-auto flex items-center gap-2">
             <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
               <button onClick={() => setView('kanban')}
@@ -502,6 +661,45 @@ export default function DealsPage() {
             </button>
           </div>
         </div>
+
+        {/* Sort / custom-field filter bar */}
+        {showFilters && (
+          <div className="flex flex-col gap-2 px-5 py-2.5 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-xs text-gray-400">Sort:</span>
+              <select className="text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-400"
+                value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                <option value="">Default</option>
+                {allSortFields.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+              </select>
+              {sortBy && (
+                <button onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
+                  className="text-xs px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+                  {sortDir === 'asc' ? '↑ Ascending' : '↓ Descending'}
+                </button>
+              )}
+              {(sortBy || Object.values(customFieldFilterValues).some((v) => v.trim())) && (
+                <button onClick={() => { setSortBy(''); setCustomFieldFilterValues({}); }} className="text-xs text-red-500 hover:text-red-700">
+                  Clear
+                </button>
+              )}
+            </div>
+            {activeCustomFields.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-gray-50 dark:border-gray-800">
+                <span className="text-xs text-gray-400">Custom fields:</span>
+                {activeCustomFields.map((f) => (
+                  <input
+                    key={f.fieldKey}
+                    placeholder={f.label}
+                    value={customFieldFilterValues[`customFields.${f.fieldKey}`] ?? ''}
+                    onChange={(e) => setCustomFieldFilterValues((prev) => ({ ...prev, [`customFields.${f.fieldKey}`]: e.target.value }))}
+                    className="text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1.5 w-32 focus:outline-none focus:ring-1 focus:ring-brand-400"
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Stats bar */}
         {deals.length > 0 && (
@@ -530,7 +728,7 @@ export default function DealsPage() {
             </div>
           ) : view === 'kanban' ? (
             <div className="flex gap-3 p-4 min-w-max h-full">
-              {STAGES.map((stage) => (
+              {stages.map((stage) => (
                 <KanbanColumn
                   key={stage.key}
                   stage={stage}
@@ -552,15 +750,18 @@ export default function DealsPage() {
                       <th className="px-4 py-3 text-left font-semibold">Stage</th>
                       <th className="px-4 py-3 text-right font-semibold">Amount</th>
                       <th className="px-4 py-3 text-left font-semibold">Close Date</th>
+                      {extraCols.map((col) => (
+                        <th key={col.key} className="px-4 py-3 text-left font-semibold">{col.label}</th>
+                      ))}
                       <th className="px-4 py-3 text-right font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                     {deals.length === 0 && (
-                      <tr><td colSpan={6} className="py-12 text-center text-gray-400">No deals found</td></tr>
+                      <tr><td colSpan={6 + extraCols.length} className="py-12 text-center text-gray-400">No deals found</td></tr>
                     )}
                     {deals.map((deal) => {
-                      const s = STAGES.find((x) => x.key === deal.stage);
+                      const s = stages.find((x) => x.key === deal.stage);
                       return (
                         <tr key={deal._id} className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer" onClick={() => openDetail(deal)}>
                           <td className="px-4 py-3">
@@ -578,6 +779,11 @@ export default function DealsPage() {
                           <td className="px-4 py-3 text-xs text-gray-400">
                             {deal.closeDate ? new Date(deal.closeDate).toLocaleDateString('en-IN') : '—'}
                           </td>
+                          {extraCols.map((col) => (
+                            <td key={col.key} className="px-4 py-3 text-xs text-gray-500">
+                              {fmtVal(getFieldValue(deal, col.key), col.type)}
+                            </td>
+                          ))}
                           <td className="px-4 py-3 text-right">
                             <button onClick={(e) => { e.stopPropagation(); openEdit(deal); }}
                               className="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 mr-1">Edit</button>
@@ -640,6 +846,15 @@ export default function DealsPage() {
             />
           )}
         </div>
+      )}
+
+      {columnEditorOpen && (
+        <ColumnEditor
+          allFields={allExtraColumns}
+          visibleKeys={extraVisibleKeys}
+          onApply={handleApplyExtraColumns}
+          onClose={() => setColumnEditorOpen(false)}
+        />
       )}
     </div>
   );

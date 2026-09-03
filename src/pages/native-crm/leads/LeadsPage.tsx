@@ -1,9 +1,9 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   PlusIcon, MagnifyingGlassIcon, Squares2X2Icon, TableCellsIcon,
   XMarkIcon, UserPlusIcon, PhoneIcon, EnvelopeIcon, BuildingOfficeIcon,
   ArrowRightCircleIcon, CheckCircleIcon, ChevronDownIcon,
-  ClockIcon, CurrencyRupeeIcon, TrophyIcon, ArrowTrendingUpIcon,
+  CurrencyRupeeIcon, TrophyIcon, ArrowTrendingUpIcon,
   AdjustmentsHorizontalIcon,
 } from '@heroicons/react/24/outline';
 import FileActionsDropdown, { fmtVal } from '../../../modules/crm/shared/FileActionsDropdown';
@@ -15,7 +15,7 @@ import {
   useLeadsStatsQuery, useLeadConvertToContact,
   useLeadConvertToOpportunity, useLeadConvertToCustomer,
 } from '../../../modules/native-crm/queries/leads.queries';
-import { useEntityTimelineQuery } from '../../../modules/native-crm/queries/timeline.queries';
+import RecordTimeline from '../../../modules/native-crm/shared/RecordTimeline';
 import { useStaffsListQuery } from '../../../modules/native-crm/queries/staffs.queries';
 import { usePipelineStages, type PipelineStage } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import { RecordLockBanner } from '../../../components/native-crm/RecordLockBanner';
@@ -23,6 +23,9 @@ import { CompanyBadge } from '../../../components/native-crm/CompanyBadge';
 import { CompanyFilterBar } from '../../../components/native-crm/CompanyFilterBar';
 import { useBranchStore } from '../../../stores/branch.store';
 import { useQueryClient } from '@tanstack/react-query';
+import { useCustomFieldsQuery } from '../../../modules/native-crm/queries/custom-fields.queries';
+import { useCustomFormTemplatesQuery } from '../../../modules/native-crm/queries/custom-form-templates.queries';
+import CustomFieldRenderer from '../../../modules/native-crm/shared/CustomFieldRenderer';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -82,6 +85,7 @@ const EMPTY_FORM = {
   status: 'new', source: 'manual', rating: 'warm', priority: 'medium',
   score: 0, expectedRevenue: '', budget: '', leadOwner: '', leadOwnerStaffId: '',
   requirement: '', painPoints: '', notes: '',
+  customFields: {} as Record<string, any>,
 };
 
 // Full field set — used by the File dropdown (Export Excel/CSV, Download
@@ -119,6 +123,27 @@ const CORE_COVERED_KEYS = new Set([
   'status', 'source', 'rating', 'expectedRevenue',
 ]);
 const LEAD_EXTRA_COLUMNS: FieldConfig[] = LEAD_FIELD_CONFIG.filter((f) => !CORE_COVERED_KEYS.has(f.key));
+
+// Built-in fields a user can sort the list by — custom fields are appended
+// to this dynamically inside the component, once their definitions load.
+const LEAD_SORT_FIELDS: { key: string; label: string }[] = [
+  { key: 'lastActivityAt', label: 'Last Activity' },
+  { key: 'createdAt',      label: 'Created' },
+  { key: 'firstName',      label: 'First Name' },
+  { key: 'company',        label: 'Company' },
+  { key: 'expectedRevenue',label: 'Expected Revenue' },
+  { key: 'score',          label: 'Score' },
+];
+
+/** Resolves a FieldConfig's `key` against a record — a plain key reads
+ * directly, a `customFields.<key>` key reads out of the record's own
+ * customFields sub-object. Lets extraCols stay a flat list mixing built-in
+ * and custom-field columns without the render code needing to know which
+ * is which. */
+function getFieldValue(record: any, key: string): any {
+  if (key.startsWith('customFields.')) return record.customFields?.[key.slice('customFields.'.length)];
+  return record[key];
+}
 
 // Leads has no bulk-selection UI — a stable empty Set so FileActionsDropdown
 // always treats "all loaded leads" as the export/selection scope.
@@ -245,10 +270,31 @@ function LeadForm({ form, setForm, onSubmit, saving, submitLabel }: {
 }) {
   const set = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
   const branches = useBranchStore((s) => s.branches.filter((b) => b.status === 'active'));
-  const [section, setSection] = useState<'basic'|'contact'|'address'|'sales'>('basic');
+  const [section, setSection] = useState<'basic'|'contact'|'address'|'sales'|'custom'>('basic');
   const { stages } = usePipelineStages('lead', DEFAULT_LEAD_STAGES);
   const { data: staffData } = useStaffsListQuery({ page: 1, limit: 1000 });
   const staffOptions = staffData?.items ?? [];
+
+  const { data: customFields = [] } = useCustomFieldsQuery('leads');
+  const activeCustomFields = customFields.filter((cf) => cf.isActive);
+  const { data: formTemplates = [] } = useCustomFormTemplatesQuery();
+  const setCustomField = (key: string, val: any) =>
+    setForm((p: any) => ({ ...p, customFields: { ...p.customFields, [key]: val } }));
+
+  // Seed any active field the current form doesn't already have a value for —
+  // same convention DealsPage.tsx/ContractFormDrawer.tsx already use, keeps
+  // every input controlled from the first render.
+  useEffect(() => {
+    setForm((p: any) => {
+      const cf = { ...p.customFields };
+      let changed = false;
+      activeCustomFields.forEach((f) => {
+        if (cf[f.fieldKey] === undefined) { cf[f.fieldKey] = ''; changed = true; }
+      });
+      return changed ? { ...p, customFields: cf } : p;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customFields.length]);
 
   // Owner is a real staff reference (leadOwnerStaffId) so automation rules
   // can actually email the assigned owner — leadOwner is kept in sync as
@@ -265,6 +311,7 @@ function LeadForm({ form, setForm, onSubmit, saving, submitLabel }: {
     { key: 'contact', label: 'Contact' },
     { key: 'address', label: 'Address' },
     { key: 'sales',   label: 'Sales' },
+    ...(activeCustomFields.length > 0 ? [{ key: 'custom' as const, label: 'Custom Fields' }] : []),
   ] as const;
 
   return (
@@ -446,6 +493,25 @@ function LeadForm({ form, setForm, onSubmit, saving, submitLabel }: {
         </div>
       )}
 
+      {section === 'custom' && (
+        <div className="flex flex-col gap-3">
+          {activeCustomFields.map((cf) => (
+            <Field key={cf.fieldKey} label={`${cf.label}${cf.required ? ' *' : ''}`}>
+              <CustomFieldRenderer
+                field={cf}
+                value={form.customFields?.[cf.fieldKey]}
+                onChange={(val) => setCustomField(cf.fieldKey, val)}
+                templateFields={
+                  cf.fieldType === 'custom_form'
+                    ? formTemplates.find((t) => t._id === cf.formTemplateId)?.fields
+                    : undefined
+                }
+              />
+            </Field>
+          ))}
+        </div>
+      )}
+
       <button
         onClick={onSubmit}
         disabled={saving || !form.firstName?.trim()}
@@ -505,25 +571,13 @@ function InfoRow({ label, value }: { label: string; value?: string | number | nu
   );
 }
 
-const ACTION_COLORS: Record<string, string> = {
-  created:        'bg-emerald-100 text-emerald-700',
-  status_changed: 'bg-blue-100 text-blue-700',
-  updated:        'bg-gray-100 text-gray-600',
-  note_added:     'bg-yellow-100 text-yellow-700',
-  assigned:       'bg-purple-100 text-purple-700',
-  reassigned:     'bg-indigo-100 text-indigo-700',
-  converted:      'bg-emerald-100 text-emerald-700',
-  uploaded:       'bg-pink-100 text-pink-700',
-  deleted:        'bg-red-100 text-red-700',
-};
-
 const CONVERSION_TYPE_LABELS: Record<string, string> = {
   contact:     'Contact',
   opportunity: 'Opportunity',
   customer:    'Customer',
 };
 
-function ConvertTab({ lead }: { lead: any }) {
+function ConvertTab({ lead, stages }: { lead: any; stages: PipelineStage[] }) {
   const contactMut     = useLeadConvertToContact();
   const opportunityMut = useLeadConvertToOpportunity();
   const customerMut    = useLeadConvertToCustomer();
@@ -538,7 +592,12 @@ function ConvertTab({ lead }: { lead: any }) {
     }
   };
 
-  if (lead.status !== 'won') {
+  // Checks the current stage's `outcome` tag, not a hardcoded stage key — a
+  // tenant renaming/reconfiguring their "Won" stage must not silently break
+  // conversion eligibility (same bug class Deal's own stage-rename
+  // regression test guards against; see DealsPage.tsx).
+  const isWon = stages.find((s) => s.key === lead.status)?.outcome === 'won';
+  if (!isWon) {
     return (
       <div className="text-center py-10">
         <TrophyIcon className="h-10 w-10 text-gray-300 mx-auto mb-3" />
@@ -616,7 +675,8 @@ function LeadDetailPanel({
   const { data: fullLead } = useLeadQuery(listLead._id);
   const lead = fullLead ?? listLead;
   const stageMeta = stages.find((s) => s.key === lead.status);
-  const { data: timelineEvents = [], isLoading: tlLoading } = useEntityTimelineQuery('leads', lead._id);
+  const { data: customFields = [] } = useCustomFieldsQuery('leads');
+  const activeCustomFields = customFields.filter((cf) => cf.isActive);
   const qc = useQueryClient();
 
   return (
@@ -704,6 +764,16 @@ function LeadDetailPanel({
                 <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg p-3 whitespace-pre-wrap">{lead.notes}</p>
               </>
             )}
+            {activeCustomFields.length > 0 && (
+              <>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4">Custom Fields</p>
+                {activeCustomFields.map((cf) => {
+                  const val = lead.customFields?.[cf.fieldKey];
+                  const display = Array.isArray(val) ? val.join(', ') : (val && typeof val === 'object' ? JSON.stringify(val) : val);
+                  return <InfoRow key={cf.fieldKey} label={cf.label} value={display} />;
+                })}
+              </>
+            )}
           </div>
         )}
 
@@ -746,44 +816,11 @@ function LeadDetailPanel({
         )}
 
         {tab === 'timeline' && (
-          <div>
-            {tlLoading ? (
-              <div className="flex justify-center py-10">
-                <div className="flex gap-1.5">
-                  {[0,1,2].map((i) => <span key={i} className="h-2 w-2 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: `${i*0.15}s` }} />)}
-                </div>
-              </div>
-            ) : timelineEvents.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">
-                <ClockIcon className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                <p className="text-sm">No activity yet</p>
-              </div>
-            ) : (
-              <div className="relative pl-6 space-y-4">
-                <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
-                {timelineEvents.map((ev: any, i: number) => (
-                  <div key={ev._id ?? i} className="relative">
-                    <div className="absolute -left-6 top-1 h-3 w-3 rounded-full bg-white dark:bg-gray-900 border-2 border-brand-400" />
-                    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2.5">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${ACTION_COLORS[ev.action] ?? 'bg-gray-100 text-gray-600'}`}>
-                          {(ev.action ?? '').replace(/_/g, ' ')}
-                        </span>
-                        <span className="text-[10px] text-gray-400 ml-auto">
-                          {ev.createdAt ? new Date(ev.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-700 dark:text-gray-300">{ev.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <RecordTimeline entityModule="leads" entityId={lead._id} />
         )}
 
         {tab === 'convert' && (
-          <ConvertTab lead={lead} />
+          <ConvertTab lead={lead} stages={stages} />
         )}
       </div>
     </div>
@@ -797,6 +834,9 @@ export default function LeadsPage() {
   const [search,      setSearch]      = useState('');
   const [filterSrc,   setFilterSrc]   = useState('');
   const [filterRating,setFilterRating]= useState('');
+  const [customFieldFilterValues, setCustomFieldFilterValues] = useState<Record<string, string>>({});
+  const [sortBy,  setSortBy]  = useState('');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [panelMode,   setPanelMode]   = useState<'none'|'create'|'edit'|'detail'>('none');
   const [selectedLead,setSelectedLead]= useState<any | null>(null);
   const [form,        setForm]        = useState<any>({ ...EMPTY_FORM });
@@ -814,10 +854,29 @@ export default function LeadsPage() {
   const currentBranch = useBranchStore((s) => s.currentBranch);
   const queryClient = useQueryClient();
 
+  const { data: customFieldDefs = [] } = useCustomFieldsQuery('leads');
+  const activeCustomFields = customFieldDefs.filter((f) => f.isActive);
+  // Merged into the SAME optional-column mechanism as the built-in extras
+  // below — a custom field is just another FieldConfig, keyed
+  // `customFields.<fieldKey>` so getFieldValue()/the export/sort/filter
+  // wiring all resolve it the same way.
+  const customFieldColumns: FieldConfig[] = activeCustomFields.map((f) => ({
+    key: `customFields.${f.fieldKey}`, label: f.label, type: 'text',
+  }));
+  const allExtraColumns = [...LEAD_EXTRA_COLUMNS, ...customFieldColumns];
+  const allSortFields = [...LEAD_SORT_FIELDS, ...customFieldColumns.map((c) => ({ key: c.key, label: c.label }))];
+
+  const customFieldFilterConditions = Object.entries(customFieldFilterValues)
+    .filter(([, v]) => v.trim() !== '')
+    .map(([key, value]) => ({ field: key, operator: 'contains' as const, value }));
+
   const { data, isLoading } = useLeadsQuery({
     search:      search || undefined,
     source:      filterSrc    || undefined,
     rating:      filterRating || undefined,
+    sortBy:      sortBy || undefined,
+    sortDir,
+    customFieldFilters: customFieldFilterConditions.length > 0 ? JSON.stringify(customFieldFilterConditions) : undefined,
     limit:       500,
   });
   const leads = data?.items ?? [];
@@ -832,7 +891,7 @@ export default function LeadsPage() {
   // Optional extra table columns, controlled via Edit Columns — persisted
   // separately from the core rich columns, which always stay visible.
   const extraCols = extraVisibleKeys
-    .map((k) => LEAD_EXTRA_COLUMNS.find((f) => f.key === k))
+    .map((k) => allExtraColumns.find((f) => f.key === k))
     .filter(Boolean) as FieldConfig[];
   const handleApplyExtraColumns = (keys: string[]) => {
     setExtraVisibleKeys(keys);
@@ -982,21 +1041,49 @@ export default function LeadsPage() {
 
         {/* Filter bar */}
         {showFilters && (
-          <div className="flex items-center gap-3 px-5 py-2 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-            <select className="text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-400"
-              value={filterSrc} onChange={(e) => setFilterSrc(e.target.value)}>
-              <option value="">All Sources</option>
-              {SOURCES.map((s) => <option key={s} value={s}>{s.replace(/_/g,' ')}</option>)}
-            </select>
-            <select className="text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-400"
-              value={filterRating} onChange={(e) => setFilterRating(e.target.value)}>
-              <option value="">All Ratings</option>
-              {RATINGS.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
-            {(filterSrc || filterRating) && (
-              <button onClick={() => { setFilterSrc(''); setFilterRating(''); }} className="text-xs text-red-500 hover:text-red-700">
-                Clear filters
-              </button>
+          <div className="flex flex-col gap-2 px-5 py-2.5 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+            <div className="flex flex-wrap items-center gap-3">
+              <select className="text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-400"
+                value={filterSrc} onChange={(e) => setFilterSrc(e.target.value)}>
+                <option value="">All Sources</option>
+                {SOURCES.map((s) => <option key={s} value={s}>{s.replace(/_/g,' ')}</option>)}
+              </select>
+              <select className="text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-400"
+                value={filterRating} onChange={(e) => setFilterRating(e.target.value)}>
+                <option value="">All Ratings</option>
+                {RATINGS.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+              <span className="text-xs text-gray-400">Sort:</span>
+              <select className="text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-400"
+                value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                <option value="">Default</option>
+                {allSortFields.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+              </select>
+              {sortBy && (
+                <button onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
+                  className="text-xs px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+                  {sortDir === 'asc' ? '↑ Ascending' : '↓ Descending'}
+                </button>
+              )}
+              {(filterSrc || filterRating || sortBy || Object.values(customFieldFilterValues).some((v) => v.trim())) && (
+                <button onClick={() => { setFilterSrc(''); setFilterRating(''); setSortBy(''); setCustomFieldFilterValues({}); }} className="text-xs text-red-500 hover:text-red-700">
+                  Clear filters
+                </button>
+              )}
+            </div>
+            {activeCustomFields.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-gray-50 dark:border-gray-800">
+                <span className="text-xs text-gray-400">Custom fields:</span>
+                {activeCustomFields.map((f) => (
+                  <input
+                    key={f.fieldKey}
+                    placeholder={f.label}
+                    value={customFieldFilterValues[`customFields.${f.fieldKey}`] ?? ''}
+                    onChange={(e) => setCustomFieldFilterValues((prev) => ({ ...prev, [`customFields.${f.fieldKey}`]: e.target.value }))}
+                    className="text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1.5 w-32 focus:outline-none focus:ring-1 focus:ring-brand-400"
+                  />
+                ))}
+              </div>
             )}
           </div>
         )}
@@ -1091,7 +1178,7 @@ export default function LeadsPage() {
                           </td>
                           {extraCols.map((col) => (
                             <td key={col.key} className="px-4 py-3 text-xs text-gray-500">
-                              {fmtVal(lead[col.key], col.type)}
+                              {fmtVal(getFieldValue(lead, col.key), col.type)}
                             </td>
                           ))}
                           <td className="px-4 py-3 text-right">
@@ -1154,7 +1241,7 @@ export default function LeadsPage() {
 
       {columnEditorOpen && (
         <ColumnEditor
-          allFields={LEAD_EXTRA_COLUMNS}
+          allFields={allExtraColumns}
           visibleKeys={extraVisibleKeys}
           onApply={handleApplyExtraColumns}
           onClose={() => setColumnEditorOpen(false)}

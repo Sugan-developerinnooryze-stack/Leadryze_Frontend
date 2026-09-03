@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { DocumentDuplicateIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { useNavigate, useLocation } from 'react-router-dom';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
@@ -17,6 +17,7 @@ import { CompanyFilterBar } from '../../../components/native-crm/CompanyFilterBa
 import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-settings.queries';
 import { buildPrefill } from '../../../modules/native-crm/shared/buildPrefill';
 import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
+import { useCustomerNameMap } from '../../../modules/native-crm/shared/useCustomerNameMap';
 
 const STEP_LABEL: Record<string, string> = { workorder: 'WO', invoice: 'Invoice' };
 const STEP_PATH:  Record<string, string> = {
@@ -29,28 +30,6 @@ const RECURRING_LABEL: Record<string, string> = {
   bimonthly: 'Bi-Monthly', quarter: 'Quarterly', halfyear: 'Half-Yearly', year: 'Yearly', custom: 'Custom',
 };
 
-const COLUMNS: FSColumnDef[] = [
-  { key: 'contractId',  label: 'ID' },
-  { key: 'title',       label: 'Title' },
-  { key: 'customerId',  label: 'Customer' },
-  { key: 'serviceRangeSummary', label: 'Service Range', render: (r) =>
-    r.serviceRangeSummary || (r.recurringUnit ? RECURRING_LABEL[r.recurringUnit] : 'â€"') },
-  { key: 'serviceBalance', label: 'Service Balance', render: (r) => {
-    const b = r.serviceBalance;
-    if (!b) return 'â€"';
-    return (
-      <span title={`Total ${b.total} · Completed ${b.completed} · Upcoming ${b.upcoming} · Overdue ${b.overdue} · Cancelled ${b.cancelled}`}
-        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-brand-50 text-brand-700">
-        {b.remaining} / {b.total}
-      </span>
-    );
-  }},
-  { key: 'startDate',   label: 'Start', render: (r) => r.startDate ? new Date(r.startDate).toLocaleDateString() : 'â€"' },
-  { key: 'endDate',     label: 'End',   render: (r) => r.endDate   ? new Date(r.endDate).toLocaleDateString()   : 'â€"' },
-  { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `$${Number(r.servicesAmountWithTax).toFixed(2)}` : 'â€"' },
-  { key: 'status',   label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
-  { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
-];
 
 const STATUS_OPTIONS = ['draft', 'pending', 'active', 'suspended', 'completed', 'expired', 'cancelled'];
 
@@ -71,6 +50,33 @@ export default function ContractsPage() {
   const statusOptions = pipelineStages.length > 0
     ? [...pipelineStages].sort((a, b) => a.order - b.order).map((s) => s.key)
     : STATUS_OPTIONS;
+
+  const customerNames = useCustomerNameMap();
+  const columns: FSColumnDef[] = useMemo(() => [
+    { key: 'contractId',  label: 'ID' },
+    { key: 'title',       label: 'Title' },
+    { key: 'customerName', label: 'Customer',
+      render: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '—',
+      exportValue: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '' },
+    { key: 'customerId',  label: 'Customer ID' },
+    { key: 'serviceRangeSummary', label: 'Service Range', render: (r) =>
+      r.serviceRangeSummary || (r.recurringUnit ? RECURRING_LABEL[r.recurringUnit] : 'â€"') },
+    { key: 'serviceBalance', label: 'Service Balance', render: (r) => {
+      const b = r.serviceBalance;
+      if (!b) return 'â€"';
+      return (
+        <span title={`Total ${b.total} · Completed ${b.completed} · Upcoming ${b.upcoming} · Overdue ${b.overdue} · Cancelled ${b.cancelled}`}
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-brand-50 text-brand-700">
+          {b.remaining} / {b.total}
+        </span>
+      );
+    }},
+    { key: 'startDate',   label: 'Start', render: (r) => r.startDate ? new Date(r.startDate).toLocaleDateString() : 'â€"' },
+    { key: 'endDate',     label: 'End',   render: (r) => r.endDate   ? new Date(r.endDate).toLocaleDateString()   : 'â€"' },
+    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `$${Number(r.servicesAmountWithTax).toFixed(2)}` : 'â€"' },
+    { key: 'status',   label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
+    { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
+  ], [customerNames]);
 
   useEffect(() => {
     const state = location.state as any;
@@ -140,7 +146,7 @@ export default function ContractsPage() {
       </div>
 
       <FSTable
-        columns={COLUMNS}
+        columns={columns}
         data={items}
         loading={isLoading}
         errorStatus={(error as any)?.response?.status}

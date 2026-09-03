@@ -60,6 +60,8 @@ const NotificationSettingsPage = lazy(() => import('./pages/native-crm/settings/
 const PipelineSettingsPage     = lazy(() => import('./pages/native-crm/settings/PipelineSettingsPage'));
 const ConfigurationHubPage     = lazy(() => import('./pages/native-crm/settings/ConfigurationHubPage'));
 const AutomationRulesPage      = lazy(() => import('./pages/native-crm/settings/AutomationRulesPage'));
+const AutomationFlowsPage      = lazy(() => import('./pages/native-crm/settings/AutomationFlowsPage'));
+const AutomationFlowBuilderPage = lazy(() => import('./pages/native-crm/settings/AutomationFlowBuilderPage'));
 const ImportExportPage         = lazy(() => import('./pages/native-crm/settings/ImportExportPage'));
 const WidgetSettingsPage       = lazy(() => import('./pages/native-crm/settings/WidgetSettingsPage'));
 const VoicePlaygroundPage      = lazy(() => import('./pages/native-crm/settings/VoicePlaygroundPage'));
@@ -190,6 +192,8 @@ export default function App() {
           <Route path="native-crm/vehicles"             element={S(VehiclesPage)} />
           <Route path="native-crm/configuration"          element={S(ConfigurationHubPage)} />
           <Route path="native-crm/settings/automations"    element={S(AutomationRulesPage)} />
+          <Route path="native-crm/settings/automation-flows"     element={S(AutomationFlowsPage)} />
+          <Route path="native-crm/settings/automation-flows/:id" element={S(AutomationFlowBuilderPage)} />
           <Route path="native-crm/settings/import-export"  element={S(ImportExportPage)} />
           <Route path="native-crm/settings"             element={S(FSSettingsPage)} />
           <Route path="native-crm/settings/notifications" element={S(NotificationSettingsPage)} />

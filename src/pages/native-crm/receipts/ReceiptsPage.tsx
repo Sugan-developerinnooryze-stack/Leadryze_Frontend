@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useMemo } from 'react';
 import { ReceiptRefundIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import FSDrawer from '../../../modules/native-crm/shared/FSDrawer';
@@ -13,6 +13,7 @@ import {
   useReceiptUpdate,
   useReceiptDelete,
 } from '../../../modules/native-crm/queries/receipts.queries';
+import { useCustomerNameMap } from '../../../modules/native-crm/shared/useCustomerNameMap';
 
 const FIELDS: FSFieldDef[] = [
   { key: 'branchId', label: 'Company', type: 'branch-select' },
@@ -25,16 +26,6 @@ const FIELDS: FSFieldDef[] = [
   { key: 'notes',         label: 'Notes',           type: 'textarea' },
 ];
 
-const COLUMNS: FSColumnDef[] = [
-  { key: 'receiptId',     label: 'ID' },
-  { key: 'invoiceId',     label: 'Invoice' },
-  { key: 'customerId',    label: 'Customer' },
-  { key: 'amount',        label: 'Amount',  render: (r) => r.amount != null ? `$${Number(r.amount).toFixed(2)}` : 'â€”' },
-  { key: 'paymentMethod', label: 'Method',  render: (r) => r.paymentMethod?.replace(/_/g, ' ') ?? 'â€”' },
-  { key: 'paymentDate',   label: 'Date',    render: (r) => r.paymentDate ? new Date(r.paymentDate).toLocaleDateString() : 'â€”' },
-  { key: 'status',        label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'completed'} /> },
-  { key: 'branchId', label: 'Company', render: (r: any) => <CompanyBadge branchId={r.branchId} /> },
-];
 
 const STATUS_OPTIONS = ['pending', 'completed', 'refunded'];
 
@@ -54,6 +45,21 @@ export default function ReceiptsPage() {
   const createMutation = useReceiptCreate();
   const updateMutation = useReceiptUpdate();
   const deleteMutation = useReceiptDelete();
+
+  const customerNames = useCustomerNameMap();
+  const columns: FSColumnDef[] = useMemo(() => [
+    { key: 'receiptId',     label: 'ID' },
+    { key: 'invoiceId',     label: 'Invoice' },
+    { key: 'customerName',  label: 'Customer',
+      render: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '—',
+      exportValue: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '' },
+    { key: 'customerId',    label: 'Customer ID' },
+    { key: 'amount',        label: 'Amount',  render: (r) => r.amount != null ? `$${Number(r.amount).toFixed(2)}` : 'â€”' },
+    { key: 'paymentMethod', label: 'Method',  render: (r) => r.paymentMethod?.replace(/_/g, ' ') ?? 'â€”' },
+    { key: 'paymentDate',   label: 'Date',    render: (r) => r.paymentDate ? new Date(r.paymentDate).toLocaleDateString() : 'â€”' },
+    { key: 'status',        label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'completed'} /> },
+    { key: 'branchId', label: 'Company', render: (r: any) => <CompanyBadge branchId={r.branchId} /> },
+  ], [customerNames]);
 
   return (
     <div className="flex flex-col h-full">
@@ -104,7 +110,7 @@ export default function ReceiptsPage() {
       </div>
 
       <FSTable
-        columns={COLUMNS}
+        columns={columns}
         data={items}
         loading={isLoading}
         errorStatus={(error as any)?.response?.status}

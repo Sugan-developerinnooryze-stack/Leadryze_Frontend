@@ -18,6 +18,7 @@ import ShareMenuButton from '../../../modules/native-crm/shared/ShareMenuButton'
 import FSShareModal from '../../../modules/native-crm/shared/FSShareModal';
 import { canViewPII } from '../../../modules/native-crm/shared/piiAccess';
 import ActivityFeedPanel from '../../../modules/native-crm/shared/ActivityFeedPanel';
+import RecordTimeline from '../../../modules/native-crm/shared/RecordTimeline';
 import { useAuthStore } from '../../../stores/auth.store';
 import api from '../../../services/api';
 
@@ -655,6 +656,11 @@ export default function ContractViewPage() {
           relatedId={item._id}
           relatedLabel={item.contractId}
         />
+
+        <div className="mt-6">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Activity Timeline</p>
+          <RecordTimeline entityModule="contract" entityId={item._id} />
+        </div>
       </div>
 
       {shareModalTab && (

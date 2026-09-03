@@ -8,7 +8,18 @@ export type BuiltInAutomationModule = 'lead' | 'deal' | 'task' | 'ticket' | 'quo
 /** Tenant-built Custom Modules share this same automation engine via a
  * `custom:<slug>` module value. */
 export type AutomationModule = BuiltInAutomationModule | `custom:${string}`;
-export type AutomationActionType = 'send_email' | 'send_sms' | 'send_whatsapp' | 'create_linked_record' | 'assign_staff' | 'assign_team';
+// 'assign_staff'/'assign_team' are dead — Simple Mode's own UI (below)
+// still references them, but the backend's real AutomationActionType
+// (automation-rule.model.ts) has never included them, so submitting either
+// fails server-side Zod validation. Left as-is (not a foundation for
+// Advanced Mode's real 'assign_record' below) — fixing Simple Mode's own
+// dead UI is a separate, out-of-scope cleanup.
+export type AutomationActionType =
+  | 'send_email' | 'send_sms' | 'send_whatsapp' | 'create_linked_record' | 'assign_staff' | 'assign_team'
+  // Advanced Mode only (automation-flow.model.ts) — Simple Mode's own
+  // backend Zod/Mongoose enums stay hardcoded at the 4 real values above,
+  // so these are inert if a Simple Mode rule somehow carried one.
+  | 'update_record' | 'assign_record' | 'change_status' | 'add_note' | 'webhook_call';
 export type AutomationRecipientStrategy = 'record_contact' | 'assigned_user';
 // 'webhook' isn't exposed in this UI yet (a separate, unrelated trigger type
 // — no form built for it either) — only 'scheduled' is added here.
@@ -61,6 +72,10 @@ export interface AutomationRule {
    * Without this, a still-matching record (e.g. one whose fields a
    * notify-only rule never changes) re-fires every single tick forever. */
   scheduleStampField?: string;
+  /** Phase 6 branch scoping — Branch document ids (this tenant's own).
+   * Absent/empty = unscoped, matches every branch (default, unchanged
+   * behavior). Not valid on a webhook trigger (rejected at save time). */
+  branchIds?: string[];
   actionType:        AutomationActionType;
   /** Required only for send_email/send_sms. */
   templateId?:        string;
@@ -89,6 +104,13 @@ export interface TargetFieldDef {
   /** Present for select-type fields — lets a "Fixed value" mapping show a
    * real dropdown of valid choices instead of a free-text box. */
   options?: { value: string; label: string }[];
+  /** True for the one field per module that IS its pipeline stage — drives
+   * the Change Status action's stage-picker. */
+  isStageField?: boolean;
+  /** True for the one field per module that is its real owner/assignee FK
+   * — drives the Assign Record action's staff-picker. Absent for a module
+   * with no assignee concept (Ticket/Quotation/Invoice). */
+  isAssigneeField?: boolean;
 }
 
 /** Serves both the "copy from" (source module) and "write to" (target

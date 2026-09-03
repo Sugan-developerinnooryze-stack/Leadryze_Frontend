@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Rnd } from 'react-rnd';
 import {
   BoltIcon, PencilSquareIcon, PlusIcon, TrashIcon, XMarkIcon,
-  ArrowRightIcon, ListBulletIcon, Squares2X2Icon,
+  ArrowRightIcon, ListBulletIcon, Squares2X2Icon, ShareIcon,
 } from '@heroicons/react/24/outline';
 import {
   useAutomationRulesQuery, useCreateAutomationRule, useUpdateAutomationRule, useDeleteAutomationRule,
@@ -13,8 +14,9 @@ import {
 import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import { useCustomModulesQuery } from '../../../modules/native-crm/queries/custom-modules.queries';
 import { useTeamsListQuery } from '../../../modules/native-crm/queries/teams.queries';
+import BranchScopePicker from './BranchScopePicker';
 
-const BUILT_IN_MODULES: { key: AutomationModule; label: string }[] = [
+export const BUILT_IN_MODULES: { key: AutomationModule; label: string }[] = [
   { key: 'lead',       label: 'Leads' },
   { key: 'deal',       label: 'Deals' },
   { key: 'task',       label: 'Tasks' },
@@ -31,7 +33,7 @@ const BUILT_IN_MODULES: { key: AutomationModule; label: string }[] = [
  * trigger a rule off. Do NOT reuse this for anything that doesn't require a
  * stage (record_created triggers, create_linked_record targets, label
  * lookups) — those apply equally to every custom module, pipeline or not. */
-function useStageCapableModules(): { key: AutomationModule; label: string }[] {
+export function useStageCapableModules(): { key: AutomationModule; label: string }[] {
   const { data: customModules = [] } = useCustomModulesQuery();
   const withPipeline = customModules.filter((m) => m.pipelineFieldKey);
   return [
@@ -46,7 +48,7 @@ function useStageCapableModules(): { key: AutomationModule; label: string }[] {
  * create_linked_record target picker, the rules list's module filter, and
  * friendly-label lookups (so a module never silently falls back to showing
  * its raw custom:<slug> key just because it has no pipeline configured). */
-function useEveryModule(): { key: AutomationModule; label: string }[] {
+export function useEveryModule(): { key: AutomationModule; label: string }[] {
   const { data: customModules = [] } = useCustomModulesQuery();
   return [
     ...BUILT_IN_MODULES,
@@ -59,7 +61,7 @@ const RECIPIENT_LABELS: Record<AutomationRecipientStrategy, string> = {
   assigned_user:  'Assigned staff',
 };
 
-const CONDITION_OPERATORS: { value: ConditionOperator; label: string }[] = [
+export const CONDITION_OPERATORS: { value: ConditionOperator; label: string }[] = [
   { value: '=',             label: 'is' },
   { value: '!=',            label: 'is not' },
   { value: '>',             label: '>' },
@@ -108,6 +110,7 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
   const [scheduleModule, setScheduleModule] = useState<AutomationModule | ''>(rule?.scheduleModule ?? '');
   const [scheduleFilter, setScheduleFilter] = useState<FlowCondition[]>(rule?.scheduleFilter ?? []);
   const [scheduleStampField, setScheduleStampField] = useState(rule?.scheduleStampField ?? '');
+  const [branchIds, setBranchIds] = useState<string[] | undefined>(rule?.branchIds);
   const [enabled, setEnabled]   = useState(rule?.enabled ?? true);
   const [error, setError]       = useState('');
   const [saving, setSaving]     = useState(false);
@@ -170,6 +173,12 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
         name: name.trim(), triggerType,
         triggerStage: triggerType === 'status_changed' || triggerType === 'record_updated' ? (triggerStage || undefined) : undefined,
         triggerField: triggerType === 'record_updated' ? triggerField : undefined,
+        // This form's own triggerType union has no 'webhook' member at all
+        // (not a selectable option below — see the Trigger <select>), so
+        // branchIds is always safe to submit as-is here; the "not valid on
+        // webhook" rule is still enforced server-side for any rule created
+        // some other way.
+        branchIds,
         ...(isScheduled
           ? {
               scheduleCron: scheduleCron.trim(),
@@ -382,6 +391,8 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
                 This rule fires whenever a {triggerModuleOptions.find((m) => m.key === module)?.label ?? 'record'} is deleted — no further setup needed here.
               </p>
             )}
+
+            <BranchScopePicker branchIds={branchIds} onChange={setBranchIds} />
 
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Action</label>
@@ -1016,6 +1027,7 @@ function RuleCanvasView({ rules, moduleLabel, onEdit }: {
 }
 
 export default function AutomationRulesPage() {
+  const navigate = useNavigate();
   const [moduleFilter, setModuleFilter] = useState<AutomationModule | ''>('');
   const [view, setView] = useState<'list' | 'canvas'>('list');
   const [formOpen, setFormOpen] = useState(false);
@@ -1059,6 +1071,13 @@ export default function AutomationRulesPage() {
             <Squares2X2Icon className="h-3.5 w-3.5" /> Canvas
           </button>
         </div>
+        <button
+          onClick={() => navigate('/native-crm/settings/automation-flows')}
+          title="Advanced Mode — branching, delays, approvals, sub-flows"
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shrink-0"
+        >
+          <ShareIcon className="h-3.5 w-3.5" /> Advanced Mode
+        </button>
         <button
           onClick={() => setFormOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"

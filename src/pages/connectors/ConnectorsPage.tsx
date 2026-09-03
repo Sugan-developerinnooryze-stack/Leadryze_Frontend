@@ -117,6 +117,36 @@ export default function ConnectorsPage() {
 
   useEffect(() => { fetchConnectors(); }, [user?.tenantId]);
 
+  // Picks up the redirect back from connector-oauth.controller.ts's
+  // handleOAuthCallback (backend) after a Zoho/HubSpot "Connect" round
+  // trip — shows the result as a toast, then strips the query params so a
+  // page refresh doesn't re-show the same toast.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthResult = params.get('oauth');
+    if (!oauthResult) return;
+    const type = params.get('type');
+    const label = type ? (CRM_META[type]?.label ?? type) : 'Connector';
+    if (oauthResult === 'success') {
+      toast.success(`${label} connected!`);
+      fetchConnectors();
+    } else {
+      toast.error(`${label} connection failed: ${params.get('reason') || 'unknown error'}`);
+    }
+    window.history.replaceState({}, '', window.location.pathname);
+  }, []);
+
+  const connectViaOAuth = async (type: string) => {
+    try {
+      const res = await api.get(`/api/v1/connectors/${type}/oauth/authorize`);
+      const authorizeUrl = res.data.data?.authorizeUrl;
+      if (!authorizeUrl) throw new Error('No authorize URL returned');
+      window.location.href = authorizeUrl;
+    } catch {
+      toast.error('Could not start the connection — please try again');
+    }
+  };
+
   const openModal = (type: string) => {
     const meta = CRM_META[type];
     const defaults: Record<string, string> = {};
@@ -307,6 +337,28 @@ export default function ConnectorsPage() {
               <label className="label">Connection Name</label>
               <input className="input" value={connName} onChange={(e) => setConnName(e.target.value)} required />
             </div>
+
+            {/* Real OAuth "Connect" button — the browser round-trips through
+                the provider's own consent screen and back, no copy-pasting
+                a code or token by hand. Salesforce isn't offered here: it
+                already uses a working Client Credentials flow with no
+                browser redirect involved. */}
+            {(modalType === 'zoho' || modalType === 'hubspot') && (
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => connectViaOAuth(modalType)}
+                  className="btn-primary w-full text-sm"
+                >
+                  Connect with {CRM_META[modalType].label}
+                </button>
+                <div className="flex items-center gap-2 text-xs text-gray-400">
+                  <div className="flex-1 border-t border-gray-200" />
+                  or paste credentials manually
+                  <div className="flex-1 border-t border-gray-200" />
+                </div>
+              </div>
+            )}
 
             {/* Zoho: paste JSON shortcut */}
             {modalType === 'zoho' && (

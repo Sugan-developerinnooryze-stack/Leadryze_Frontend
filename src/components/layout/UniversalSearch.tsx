@@ -104,6 +104,17 @@ export default function UniversalSearch() {
       navigate(`/crm/${encodeURIComponent(r.module)}`);
       return;
     }
+    // Field Service modules + Custom Module records — both indexed via
+    // native-crm/shared/search-index.ts, neither has a "connector" concept
+    // (no activeChannels filter to set), so both return before that logic.
+    if (r.channel === 'native-crm') {
+      navigate(`/native-crm/${encodeURIComponent(r.module)}`);
+      return;
+    }
+    if (r.channel === 'custom-module') {
+      navigate(`/native-crm/custom/${encodeURIComponent(r.module)}`);
+      return;
+    }
     useSourceFilterStore.getState().setActiveChannels([r.channel]);
     const mod = r.module.toLowerCase();
     if (mod === 'contacts' || mod === 'leads') {

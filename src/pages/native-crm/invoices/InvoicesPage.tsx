@@ -15,6 +15,7 @@ import {
 import { CompanyBadge } from '../../../components/native-crm/CompanyBadge';
 import { CompanyFilterBar } from '../../../components/native-crm/CompanyFilterBar';
 import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
+import { useCustomerNameMap } from '../../../modules/native-crm/shared/useCustomerNameMap';
 
 const FIELDS: FSFieldDef[] = [
   { key: 'branchId',      label: 'Company',           type: 'branch-select' },
@@ -31,19 +32,6 @@ const FIELDS: FSFieldDef[] = [
   { key: 'notes',         label: 'Notes',             type: 'textarea' },
 ];
 
-const COLUMNS: FSColumnDef[] = [
-  { key: 'invoiceId',  label: 'ID' },
-  { key: 'customerId', label: 'Customer' },
-  { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `$${Number(r.servicesAmountWithTax).toFixed(2)}` : 'â€"' },
-  { key: 'dueDate',    label: 'Due Date', render: (r) => r.dueDate ? new Date(r.dueDate).toLocaleDateString() : 'â€"' },
-  { key: 'paid',       label: 'Paid',     render: (r) => (
-    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${r.paid ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-      {r.paid ? 'Yes' : 'No'}
-    </span>
-  )},
-  { key: 'status',    label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
-  { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
-];
 
 const STATUS_OPTIONS = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
 
@@ -66,6 +54,24 @@ export default function InvoicesPage() {
     () => FIELDS.map((f) => (f.key === 'status' ? { ...f, options: statusOptions } : f)),
     [statusOptions],
   );
+
+  const customerNames = useCustomerNameMap();
+  const columns: FSColumnDef[] = useMemo(() => [
+    { key: 'invoiceId',  label: 'ID' },
+    { key: 'customerName', label: 'Customer',
+      render: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '—',
+      exportValue: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '' },
+    { key: 'customerId', label: 'Customer ID' },
+    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `$${Number(r.servicesAmountWithTax).toFixed(2)}` : 'â€"' },
+    { key: 'dueDate',    label: 'Due Date', render: (r) => r.dueDate ? new Date(r.dueDate).toLocaleDateString() : 'â€"' },
+    { key: 'paid',       label: 'Paid',     render: (r) => (
+      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${r.paid ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+        {r.paid ? 'Yes' : 'No'}
+      </span>
+    )},
+    { key: 'status',    label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
+    { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
+  ], [customerNames]);
 
   useEffect(() => {
     const state = location.state as any;
@@ -135,7 +141,7 @@ export default function InvoicesPage() {
       </div>
 
       <FSTable
-        columns={COLUMNS}
+        columns={columns}
         data={items}
         loading={isLoading}
         errorStatus={(error as any)?.response?.status}

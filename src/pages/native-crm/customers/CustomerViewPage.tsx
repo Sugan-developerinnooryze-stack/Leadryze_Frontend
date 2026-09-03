@@ -3,10 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeftIcon, UsersIcon, DocumentTextIcon,
   WrenchScrewdriverIcon, DocumentCheckIcon, CurrencyDollarIcon, BanknotesIcon,
-  KeyIcon, ClockIcon,
+  KeyIcon, ClockIcon, RectangleStackIcon,
 } from '@heroicons/react/24/outline';
 import CredentialsPanel from '../../../modules/native-crm/shared/CredentialsPanel';
 import ActivityFeedPanel from '../../../modules/native-crm/shared/ActivityFeedPanel';
+import RecordTimeline from '../../../modules/native-crm/shared/RecordTimeline';
 import { renderFieldValue } from '../../../modules/native-crm/shared/fieldValueRenderer';
 import { useCustomerQuery } from '../../../modules/native-crm/queries/customers.queries';
 import { useQuotationsListQuery } from '../../../modules/native-crm/queries/quotations.queries';
@@ -26,6 +27,7 @@ const TABS = [
   { id: 'invoices',   label: 'Invoices',   icon: CurrencyDollarIcon },
   { id: 'receipts',   label: 'Receipts',   icon: BanknotesIcon },
   { id: 'activity',   label: 'Activity',   icon: ClockIcon },
+  { id: 'timeline',   label: 'Timeline',   icon: RectangleStackIcon },
   { id: 'credentials', label: 'Credentials', icon: KeyIcon },
 ];
 
@@ -267,6 +269,10 @@ export default function CustomerViewPage() {
               relatedId={item._id}
               relatedLabel={`${item.customerId} — ${item.name}`}
             />
+          )}
+
+          {activeTab === 'timeline' && (
+            <RecordTimeline entityModule="customer" entityId={item._id} />
           )}
 
           {activeTab === 'credentials' && id && (

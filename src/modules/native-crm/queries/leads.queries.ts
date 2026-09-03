@@ -14,6 +14,12 @@ interface LeadFilters {
   priority?:   string;
   leadOwner?:  string;
   isConverted?: boolean;
+  /** Built-in field name, or `customFields.<key>` for a tenant custom field. */
+  sortBy?:     string;
+  sortDir?:    'asc' | 'desc';
+  /** JSON-encoded FlowCondition[] — each condition's `field` as
+   * `customFields.<key>`, same convention the automation engines use. */
+  customFieldFilters?: string;
 }
 
 interface Meta { total: number; page: number; totalPages: number; }

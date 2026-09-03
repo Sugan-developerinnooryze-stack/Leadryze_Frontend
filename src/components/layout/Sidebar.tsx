@@ -51,8 +51,8 @@ import {
   WrenchScrewdriverIcon,
   AdjustmentsHorizontalIcon,
   ShieldCheckIcon,
-//  BellAlertIcon,
-  //ArrowsRightLeftIcon,
+  BellAlertIcon,
+  ArrowsRightLeftIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth.store';
@@ -94,14 +94,40 @@ const FIELD_SERVICE_MODULES = [
 // ConfigurationHubPage, the rest deep-link straight to each area.
 const CONFIGURATION_ITEMS = [
   { key: 'configuration',              label: 'Configuration Hub', icon: Cog6ToothIcon,             color: '#475569' },
-  //{ key: 'settings/pipelines',         label: 'Pipeline & Stages', icon: Squares2X2Icon,             color: '#8b5cf6' },
+  { key: 'settings/pipelines',         label: 'Pipeline & Stages', icon: Squares2X2Icon,             color: '#8b5cf6' },
   { key: 'custom-fields',              label: 'Custom Fields',     icon: AdjustmentsHorizontalIcon,  color: '#7c3aed' },
   { key: 'custom-modules',             label: 'Custom Modules',    icon: TableCellsIcon,             color: '#0d9488' },
   { key: 'settings',                   label: 'FS Settings',       icon: WrenchScrewdriverIcon,      color: '#64748b' },
-  //{ key: 'settings/notifications',     label: 'Notifications',     icon: BellAlertIcon,              color: '#0ea5e9' },
-  //{ key: 'settings/automations',       label: 'Automations',       icon: BoltIcon,                   color: '#f59e0b' },
-  //{ key: 'settings/import-export',     label: 'Import & Export',   icon: ArrowsRightLeftIcon,        color: '#16a34a' },
+  { key: 'settings/notifications',     label: 'Notifications',     icon: BellAlertIcon,              color: '#0ea5e9' },
+  { key: 'settings/automations',       label: 'Automations',       icon: BoltIcon,                   color: '#f59e0b' },
+  { key: 'settings/import-export',     label: 'Import & Export',   icon: ArrowsRightLeftIcon,        color: '#16a34a' },
 ] as const;
+
+// Maps each Native CRM / Field Service sidebar entry to the exact
+// requirePermission() key already enforced on that module's own routes
+// (see rbac.seed.ts) — so a role without view access neither sees the nav
+// item nor its record count, instead of showing a link that would just 403.
+// Entries with no dedicated permission key today (supervisors, calendar,
+// native-logs, template-designer) are intentionally left out of these maps —
+// canNav() treats a missing/empty key as always-visible, same as before.
+const NATIVE_MODULE_PERM: Record<string, string> = {
+  contacts: 'native_crm.contacts.view', companies: 'native_crm.companies.view',
+  tasks:    'native_crm.tasks.view',    tickets:   'native_crm.tickets.view',
+  calls:    'native_crm.calls.view',    meetings:  'native_crm.meetings.view',
+};
+
+const FIELD_SERVICE_MODULE_PERM: Record<string, string> = {
+  leads: 'native_crm.leads.view', deals: 'native_crm.deals.view',
+  categories: 'fs.categories.view', services:   'fs.services.view',
+  teams:      'fs.teams.view',      staffs:     'fs.staffs.view',
+  customers:  'fs.customers.view',  sites:      'fs.sites.view',
+  parts:      'fs.parts.view',      quotations: 'fs.quotations.view',
+  workorders: 'fs.workorders.view', contracts:  'fs.contracts.view',
+  invoices:   'fs.invoices.view',   receipts:   'fs.receipts.view',
+  expenses:   'fs.expenses.view',   activities: 'fs.activities.view',
+  products:   'fs.products.view',   assets:     'fs.assets.view',
+  vehicles:   'fs.vehicles.view',
+};
 
 type HeroIcon = FC<SVGProps<SVGSVGElement> & { className?: string }>;
 
@@ -483,7 +509,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
             {nativeCrmOpen && (
               <div className="mt-1 space-y-0.5">
-                {NATIVE_MODULES.map(({ key, label, icon: ModIcon, color }) => {
+                {NATIVE_MODULES.filter(({ key }) => canNav(NATIVE_MODULE_PERM[key])).map(({ key, label, icon: ModIcon, color }) => {
                   const path     = `/crm/${key}`;
                   const isActive = location.pathname === path;
                   const count    = nativeCounts[key] ?? 0;
@@ -528,7 +554,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
           {fieldServiceOpen && (
             <div className="mt-1 space-y-0.5">
-              {FIELD_SERVICE_MODULES.map(({ key, label, icon: ModIcon, color }) => {
+              {FIELD_SERVICE_MODULES.filter(({ key }) => canNav(FIELD_SERVICE_MODULE_PERM[key])).map(({ key, label, icon: ModIcon, color }) => {
                 const path     = `/native-crm/${key}`;
                 const isActive = location.pathname === path;
                 const count    = fsCounts[key] ?? 0;

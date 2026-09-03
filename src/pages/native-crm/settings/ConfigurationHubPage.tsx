@@ -2,12 +2,12 @@ import { useNavigate } from 'react-router-dom';
 import {
   Squares2X2Icon, AdjustmentsHorizontalIcon, TableCellsIcon, Cog6ToothIcon,
 
-  //BellAlertIcon,
+  // BellAlertIcon,
   //  BoltIcon,
   //  ArrowsRightLeftIcon,
   ArrowRightIcon,
       ChatBubbleLeftRightIcon,
-      MicrophoneIcon,
+      // MicrophoneIcon,
       // ShieldCheckIcon,
       // LifebuoyIcon,
 } from '@heroicons/react/24/outline';
@@ -23,11 +23,11 @@ interface HubCard {
 }
 
 const CARDS: HubCard[] = [
-  {
-    key: 'pipelines', title: 'Pipelines & Stages',
-    description: 'Configure each module’s own stage list — Leads, Deals, Tasks, Tickets, Quotations, Work Orders, Contracts, Invoices.',
-    icon: Squares2X2Icon, color: '#8b5cf6', path: '/native-crm/settings/pipelines',
-  },
+  // {
+  //   key: 'pipelines', title: 'Pipelines & Stages',
+  //   description: 'Configure each module’s own stage list — Leads, Deals, Tasks, Tickets, Quotations, Work Orders, Contracts, Invoices.',
+  //   icon: Squares2X2Icon, color: '#8b5cf6', path: '/native-crm/settings/pipelines',
+  // },
   {
     key: 'custom-fields', title: 'Custom Fields',
     description: 'Add extra fields to any built-in module without a code change.',
@@ -68,11 +68,11 @@ const CARDS: HubCard[] = [
     description: 'Embed a 24/7 AI sales agent on your own website — it captures and assigns leads automatically.',
     icon: ChatBubbleLeftRightIcon, color: '#2563eb', path: '/native-crm/settings/widget',
   },
-  {
-    key: 'voice-playground', title: 'Voice Playground',
-    description: 'Test speech-to-text and text-to-speech for a tenant without a live embedded widget.',
-    icon: MicrophoneIcon, color: '#0891b2', path: '/native-crm/settings/voice-playground',
-  },
+  // {
+  //   key: 'voice-playground', title: 'Voice Playground',
+  //   description: 'Test speech-to-text and text-to-speech for a tenant without a live embedded widget.',
+  //   icon: MicrophoneIcon, color: '#0891b2', path: '/native-crm/settings/voice-playground',
+  // },
   // {
   //   key: 'data-scope', title: 'Data Visibility',
   //   description: 'Per module, decide whether each Supervisor only sees their own team’s records, or everyone’s.',
