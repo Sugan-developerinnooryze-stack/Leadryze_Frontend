@@ -92,7 +92,7 @@ export interface Tenant {
   name: string;
   widget?: TenantWidgetConfig;
   branding?: { primaryColor?: string; companyName?: string; logoUrl?: string; contactEmail?: string; contactPhone?: string; address?: string };
-  aiConfig?: { toolModelPreset?: ToolModelPreset | null; autoConvertLeadOnMeetingCompleted?: boolean };
+  aiConfig?: { agentName?: string; toolModelPreset?: ToolModelPreset | null; autoConvertLeadOnMeetingCompleted?: boolean };
   dataScopeConfig?: Record<string, boolean>;
 }
 
@@ -139,7 +139,7 @@ export function useUpdateTenantBranding(id: string) {
 export function useUpdateTenantAIConfig(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (aiConfig: { toolModelPreset?: ToolModelPreset | null; autoConvertLeadOnMeetingCompleted?: boolean }) =>
+    mutationFn: (aiConfig: { agentName?: string; toolModelPreset?: ToolModelPreset | null; autoConvertLeadOnMeetingCompleted?: boolean }) =>
       api.put(`${BASE}/${id}`, { aiConfig }).then((r) => r.data.data as Tenant),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY(id) }),
   });

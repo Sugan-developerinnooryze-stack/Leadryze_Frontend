@@ -299,6 +299,9 @@ export default function WidgetSettingsPage() {
   const [contactPhone, setContactPhone] = useState('');
   const [contactAddress, setContactAddress] = useState('');
   const [contactMessage, setContactMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [widgetName, setWidgetName] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [identityMessage, setIdentityMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [teamId, setTeamId]             = useState('');
   const [websiteUrl, setWebsiteUrl]     = useState('');
   const [template, setTemplate]         = useState<Template>('modern');
@@ -440,6 +443,8 @@ export default function WidgetSettingsPage() {
     setContactEmail(tenant?.branding?.contactEmail ?? '');
     setContactPhone(tenant?.branding?.contactPhone ?? '');
     setContactAddress(tenant?.branding?.address ?? '');
+    setWidgetName(tenant?.aiConfig?.agentName ?? '');
+    setCompanyName(tenant?.branding?.companyName ?? '');
   }, [tenant]);
 
   useEffect(() => {
@@ -538,6 +543,19 @@ export default function WidgetSettingsPage() {
       setContactMessage({ type: 'ok', text: 'Contact info saved.' });
     } catch (err: any) {
       setContactMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
+    }
+  };
+
+  const handleWidgetIdentitySave = async () => {
+    setIdentityMessage(null);
+    try {
+      await Promise.all([
+        brandingMutation.mutateAsync({ companyName: companyName.trim() }),
+        aiConfigMutation.mutateAsync({ agentName: widgetName.trim() }),
+      ]);
+      setIdentityMessage({ type: 'ok', text: 'Widget identity saved.' });
+    } catch (err: any) {
+      setIdentityMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
     }
   };
 
@@ -971,6 +989,36 @@ export default function WidgetSettingsPage() {
                   <input type="checkbox" checked={autoSendLeadEmails} onChange={(e) => setAutoSendLeadEmails(e.target.checked)} className="h-3.5 w-3.5" />
                   Automatically email a visitor + your assigned team member when the chatbot captures a new lead
                 </label>
+              </div>
+
+              <div className="border-t border-gray-100 pt-4">
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Widget Identity</label>
+                <p className="mb-2 text-[11px] text-gray-400">
+                  What visitors see in the chat panel's header on your website — the bold assistant name on top, and your company name underneath it.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] text-gray-500 mb-1">Widget Name</label>
+                    <input value={widgetName} onChange={(e) => setWidgetName(e.target.value)} className={input} placeholder="LeadBot" />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-gray-500 mb-1">Company Name</label>
+                    <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} className={input} placeholder="Your Company Inc." />
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleWidgetIdentitySave}
+                    disabled={brandingMutation.isPending || aiConfigMutation.isPending}
+                    className="px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 disabled:opacity-50"
+                  >
+                    {(brandingMutation.isPending || aiConfigMutation.isPending) ? 'Saving...' : 'Save Widget Identity'}
+                  </button>
+                  {identityMessage && (
+                    <span className={`text-xs ${identityMessage.type === 'ok' ? 'text-green-600' : 'text-red-600'}`}>{identityMessage.text}</span>
+                  )}
+                </div>
               </div>
 
               <div className="border-t border-gray-100 pt-4">
