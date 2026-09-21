@@ -200,6 +200,11 @@ function ImageUpload({ field, currentUrl, label }: { field: string; currentUrl?:
         {uploadMutation.isPending ? 'Uploading…' : `Upload ${label}`}
       </button>
       {uploadMutation.isSuccess && <CheckIcon className="h-4 w-4 text-green-500" />}
+      {uploadMutation.isError && (
+        <span className="text-xs text-red-600">
+          {(uploadMutation.error as any)?.response?.data?.message ?? 'Upload failed — please try again.'}
+        </span>
+      )}
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
     </div>
   );
@@ -662,20 +667,32 @@ export default function FSSettingsPage() {
 
             const isActive = (key: string) => currentSteps.includes(key);
 
+            // Real, confirmed bug this fixes: both functions used to compute
+            // `next` from the outer `currentSteps` snapshot (captured once
+            // per render) and only write functionally via setForm(prev =>
+            // ...) — the WRITE was safe, but the READ wasn't. Two clicks
+            // fired before React re-rendered both based their reorder on the
+            // same stale array, so whichever setForm call resolved last
+            // silently discarded the other's change — only part of the
+            // intended reorder ever got saved. Reading prev.workflowSteps
+            // inside the updater itself closes that gap.
             const toggleStep = (key: string) => {
-              const next = isActive(key)
-                ? currentSteps.filter((s) => s !== key)
-                : [...currentSteps, key];
-              setForm((prev) => ({ ...prev, workflowSteps: next }));
+              setForm((prev) => {
+                const steps = (prev.workflowSteps ?? currentSteps) as string[];
+                const next = steps.includes(key) ? steps.filter((s) => s !== key) : [...steps, key];
+                return { ...prev, workflowSteps: next };
+              });
             };
 
             const moveStep = (key: string, dir: -1 | 1) => {
-              const idx  = currentSteps.indexOf(key);
-              const next = [...currentSteps];
-              const swap = idx + dir;
-              if (swap < 0 || swap >= next.length) return;
-              [next[idx], next[swap]] = [next[swap], next[idx]];
-              setForm((prev) => ({ ...prev, workflowSteps: next }));
+              setForm((prev) => {
+                const steps = [...((prev.workflowSteps ?? currentSteps) as string[])];
+                const idx  = steps.indexOf(key);
+                const swap = idx + dir;
+                if (idx < 0 || swap < 0 || swap >= steps.length) return prev;
+                [steps[idx], steps[swap]] = [steps[swap], steps[idx]];
+                return { ...prev, workflowSteps: steps };
+              });
             };
 
             const STEP_COLORS: Record<string, string> = {

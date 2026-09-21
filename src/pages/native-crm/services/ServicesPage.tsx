@@ -19,13 +19,14 @@ const FIELDS: FSFieldDef[] = [
   { key: 'name',        label: 'Service Name', type: 'text',     required: true },
   { key: 'description', label: 'Description',  type: 'textarea' },
   { key: 'price',       label: 'Price',        type: 'currency', placeholder: '0.00' },
+  { key: 'unit',        label: 'Unit',         type: 'text',     placeholder: 'e.g. hour, sq.ft, visit' },
   { key: 'status',      label: 'Status',       type: 'select',   options: ['active', 'inactive'] },
 ];
 
 const COLUMNS: FSColumnDef[] = [
   { key: 'serviceId',  label: 'ID' },
   { key: 'name',       label: 'Name' },
-  { key: 'price',      label: 'Price',  render: (r) => r.price != null ? `$${Number(r.price).toFixed(2)}` : 'â€”' },
+  { key: 'price',      label: 'Price',  render: (r) => r.price != null ? `$${Number(r.price).toFixed(2)}` : '—' },
   { key: 'unit',       label: 'Unit' },
   { key: 'status',     label: 'Status', render: (r) => <FSStatusBadge value={r.status ?? 'active'} /> },
   { key: 'branchId', label: 'Company', render: (r: any) => <CompanyBadge branchId={r.branchId} /> },
@@ -67,7 +68,7 @@ export default function ServicesPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search servicesâ€¦"
+            placeholder="Search services…"
             className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
         </div>
@@ -108,12 +109,12 @@ export default function ServicesPage() {
         onDelete={setDelTarget}
         moduleKey="services"
         emptyIcon={WrenchScrewdriverIcon}
-        emptyLabel="No services yet â€” create your first one"
+        emptyLabel="No services yet — create your first one"
       />
 
       {drawer.open && (
         <FSDrawer
-          title={drawer.record ? 'Edit Service' : 'New Service'}
+          title={drawer.record?._id ? 'Edit Service' : 'New Service'}
           fields={FIELDS}
           record={drawer.record}
           onClose={() => setDrawer({ open: false, record: null })}

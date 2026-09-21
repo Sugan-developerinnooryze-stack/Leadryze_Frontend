@@ -16,7 +16,7 @@ export const config: ModulePageConfig = {
       options: ['low', 'medium', 'high'] },
     { key: 'taskStatus', label: 'Status',      type: 'select', tableCol: true,
       options: ['todo', 'in_progress', 'done', 'cancelled'] },
-    { key: 'assignedTo', label: 'Assigned To', type: 'text',   tableCol: true },
+    { key: 'assignedTo', label: 'Assigned To', type: 'staffSelect', tableCol: true },
     { key: 'notes',      label: 'Notes',       type: 'textarea' },
   ],
 };

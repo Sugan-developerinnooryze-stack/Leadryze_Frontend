@@ -18,8 +18,8 @@ const FIELDS: FSFieldDef[] = [
   { key: 'title',       label: 'Title',          type: 'text',     required: true },
   { key: 'category',    label: 'Category',       type: 'text',     placeholder: 'e.g. Fuel, Materials, Labour' },
   { key: 'amount',      label: 'Amount',         type: 'currency', required: true },
-  { key: 'date',        label: 'Date',           type: 'text',     placeholder: 'YYYY-MM-DD' },
-  { key: 'paidBy',      label: 'Paid By',        type: 'text',     placeholder: 'Staff name or ID' },
+  { key: 'date',        label: 'Date',           type: 'date' },
+  { key: 'paidBy',      label: 'Paid By',        type: 'lookup',   lookupModule: 'staffs', lookupValueField: 'staffId', lookupLabelField: 'fullName' },
   { key: 'workOrderId', label: 'Work Order ID',  type: 'text',     placeholder: 'Link to work order' },
   { key: 'notes',       label: 'Notes',          type: 'textarea' },
   { key: 'status',      label: 'Status',         type: 'select',   options: ['pending', 'approved', 'rejected'] },
@@ -34,10 +34,10 @@ const STATUS_COLORS: Record<string, string> = {
 const COLUMNS: FSColumnDef[] = [
   { key: 'expenseId',   label: 'ID' },
   { key: 'title',       label: 'Title' },
-  { key: 'category',    label: 'Category', render: (r) => r.category ?? 'â€”' },
-  { key: 'amount',      label: 'Amount',   render: (r) => r.amount != null ? `$${Number(r.amount).toFixed(2)}` : 'â€”' },
-  { key: 'paidBy',      label: 'Paid By',  render: (r) => r.paidBy ?? 'â€”' },
-  { key: 'date',        label: 'Date',     render: (r) => r.date ? new Date(r.date).toLocaleDateString() : 'â€”' },
+  { key: 'category',    label: 'Category', render: (r) => r.category ?? '—' },
+  { key: 'amount',      label: 'Amount',   render: (r) => r.amount != null ? `$${Number(r.amount).toFixed(2)}` : '—' },
+  { key: 'paidBy',      label: 'Paid By',  render: (r) => r.paidBy ?? '—' },
+  { key: 'date',        label: 'Date',     render: (r) => r.date ? new Date(r.date).toLocaleDateString() : '—' },
   {
     key: 'status',
     label: 'Status',
@@ -86,7 +86,7 @@ export default function ExpensesPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search expensesâ€¦"
+            placeholder="Search expenses…"
             className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
         </div>
@@ -128,12 +128,12 @@ export default function ExpensesPage() {
         onDelete={setDelTarget}
         moduleKey="expenses"
         emptyIcon={CreditCardIcon}
-        emptyLabel="No expenses yet â€” create your first one"
+        emptyLabel="No expenses yet — create your first one"
       />
 
       {drawer.open && (
         <FSDrawer
-          title={drawer.record ? 'Edit Expense' : 'New Expense'}
+          title={drawer.record?._id ? 'Edit Expense' : 'New Expense'}
           fields={FIELDS}
           record={drawer.record}
           onClose={() => setDrawer({ open: false, record: null })}

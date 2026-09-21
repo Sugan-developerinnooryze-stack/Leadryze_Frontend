@@ -135,7 +135,7 @@ export default function TeamsPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search teamsâ€¦"
+            placeholder="Search teams…"
             className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
         </div>
@@ -182,12 +182,12 @@ export default function TeamsPage() {
         onDelete={setDelTarget}
         moduleKey="teams"
         emptyIcon={UserGroupIcon}
-        emptyLabel="No teams yet â€” create your first one"
+        emptyLabel="No teams yet — create your first one"
       />
 
       {drawer.open && (
         <FSDrawer
-          title={drawer.record ? 'Edit Team' : 'New Team'}
+          title={drawer.record?._id ? 'Edit Team' : 'New Team'}
           fields={FIELDS}
           record={drawer.record}
           onClose={() => setDrawer({ open: false, record: null })}

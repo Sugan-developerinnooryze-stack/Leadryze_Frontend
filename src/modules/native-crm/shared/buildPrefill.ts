@@ -4,6 +4,7 @@ export type DocType = 'quotation' | 'contract' | 'workorder' | 'invoice';
 export function buildPrefill(source: any, from: DocType, to: DocType): Record<string, any> {
   const base: Record<string, any> = {
     customerId:    source.customerId,
+    address:       source.address       ?? '',
     services:      source.services      ?? [],
     parts:         source.parts         ?? [],
     discount:      source.discount      ?? 0,

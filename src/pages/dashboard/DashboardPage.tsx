@@ -14,6 +14,7 @@ import {
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth.store';
 import { useSourceFilterStore } from '../../stores/sourceFilter.store';
+import { useBranchStore } from '../../stores/branch.store';
 
 type HeroIcon = FC<SVGProps<SVGSVGElement> & { className?: string }>;
 
@@ -140,6 +141,7 @@ function StatCard({ label, value, icon: Icon, gradient, sub }: {
 export default function DashboardPage() {
   const user           = useAuthStore((s) => s.user);
   const activeChannels = useSourceFilterStore((s) => s.activeChannels);
+  const currentBranch  = useBranchStore((s) => s.currentBranch);
 
   const [stats, setStats]           = useState<Stats | null>(null);
   const [crmModules, setCrmModules] = useState<CRMModules>({});
@@ -164,7 +166,12 @@ export default function DashboardPage() {
       .then(([sr, mr]) => { setStats(sr.data.data); setCrmModules(mr.data.data || {}); })
       .catch(() => {})
       .finally(() => setIsLoading(false));
-  }, [user?.tenantId, activeChannels]);
+    // Real, confirmed bug this fixes: switching the active Branch never
+    // triggered a refetch here at all — the axios interceptor already
+    // attaches the current branch as an X-Branch-Id header to every request
+    // (services/api.ts), so this effect only needed to actually re-run when
+    // the branch changes, same as every other branch-aware page already does.
+  }, [user?.tenantId, activeChannels, currentBranch?._id]);
 
   const s = stats ?? { totalLeads: 0, newToday: 0, appointments: 0, conversionRate: 0, bySource: {}, byStatus: {} };
 

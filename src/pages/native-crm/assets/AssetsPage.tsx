@@ -18,9 +18,9 @@ const FIELDS: FSFieldDef[] = [
   { key: 'name',           label: 'Asset Name',      type: 'text',     required: true },
   { key: 'category',       label: 'Category',        type: 'text' },
   { key: 'serialNumber',   label: 'Serial Number',   type: 'text' },
-  { key: 'purchaseDate',   label: 'Purchase Date',   type: 'text',     placeholder: 'YYYY-MM-DD' },
-  { key: 'warrantyExpiry', label: 'Warranty Expiry', type: 'text',     placeholder: 'YYYY-MM-DD' },
-  { key: 'assignedTo',     label: 'Assigned To',     type: 'text',     placeholder: 'Staff name or ID' },
+  { key: 'purchaseDate',   label: 'Purchase Date',   type: 'date' },
+  { key: 'warrantyExpiry', label: 'Warranty Expiry', type: 'date' },
+  { key: 'assignedTo',     label: 'Assigned To',     type: 'lookup',   lookupModule: 'staffs', lookupValueField: 'staffId', lookupLabelField: 'fullName' },
   { key: 'currentSite',    label: 'Current Site',    type: 'text',     placeholder: 'Site ID' },
   { key: 'condition',      label: 'Condition',       type: 'select',   options: ['new', 'good', 'fair', 'poor'] },
   { key: 'notes',          label: 'Notes',           type: 'textarea' },
@@ -44,11 +44,11 @@ const CONDITION_COLORS: Record<string, string> = {
 const COLUMNS: FSColumnDef[] = [
   { key: 'assetId',      label: 'ID' },
   { key: 'name',         label: 'Name' },
-  { key: 'category',     label: 'Category',  render: (r) => r.category ?? 'â€”' },
-  { key: 'serialNumber', label: 'Serial #',  render: (r) => r.serialNumber ?? 'â€”' },
+  { key: 'category',     label: 'Category',  render: (r) => r.category ?? '—' },
+  { key: 'serialNumber', label: 'Serial #',  render: (r) => r.serialNumber ?? '—' },
   { key: 'condition',    label: 'Condition', render: (r) => r.condition ? (
     <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${CONDITION_COLORS[r.condition] ?? 'bg-gray-100 text-gray-500'}`}>{r.condition}</span>
-  ) : 'â€”' },
+  ) : '—' },
   {
     key: 'status',
     label: 'Status',
@@ -97,7 +97,7 @@ export default function AssetsPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search assetsâ€¦"
+            placeholder="Search assets…"
             className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
         </div>
@@ -140,12 +140,12 @@ export default function AssetsPage() {
         onDelete={setDelTarget}
         moduleKey="assets"
         emptyIcon={WrenchScrewdriverIcon}
-        emptyLabel="No assets yet â€” create your first one"
+        emptyLabel="No assets yet — create your first one"
       />
 
       {drawer.open && (
         <FSDrawer
-          title={drawer.record ? 'Edit Asset' : 'New Asset'}
+          title={drawer.record?._id ? 'Edit Asset' : 'New Asset'}
           fields={FIELDS}
           record={drawer.record}
           onClose={() => setDrawer({ open: false, record: null })}

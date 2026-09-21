@@ -8,14 +8,14 @@ import {
   LockClosedIcon, XMarkIcon, PlusIcon, GlobeAltIcon, DocumentArrowUpIcon,
   PhotoIcon, TrashIcon, Cog6ToothIcon, CalendarDaysIcon, UserGroupIcon,
   CpuChipIcon, SwatchIcon, Square3Stack3DIcon, KeyIcon, InformationCircleIcon,
-  MicrophoneIcon, CircleStackIcon,
+  MicrophoneIcon, CircleStackIcon, ChartBarIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../../stores/auth.store';
 import { useTeamsListQuery, useTeamUpdate } from '../../../modules/native-crm/queries/teams.queries';
 import {
   useTenantQuery, useUpdateTenantWidget, useRegenerateWidgetKey,
   useTriggerWebsiteCrawl, useCrawlStatus, useUploadWidgetLogo, useRemoveWidgetLogo,
-  useUpdateTenantAIConfig, useUpdateTenantBranding,
+  useUpdateTenantAIConfig, useUpdateTenantBranding, useTenantAiUsageQuery,
   type TenantWidgetConfig, type ToolModelPreset, type VoiceProvider, type TenantVoicePreset,
 } from '../../../modules/native-crm/queries/tenant.queries';
 import { useCatalogSources, useImportCatalog } from '../../../modules/native-crm/queries/catalog.queries';
@@ -98,6 +98,7 @@ const NAV_SECTIONS: Array<{ id: string; label: string; icon: React.ComponentType
   { id: 'section-booking',     label: 'Booking Hours',     icon: CalendarDaysIcon },
   { id: 'section-departments', label: 'Departments',       icon: UserGroupIcon },
   { id: 'section-tool-model',  label: 'Tool Model',        icon: CpuChipIcon },
+  { id: 'section-ai-usage',    label: 'AI Usage & Limits', icon: ChartBarIcon },
   { id: 'section-voice',       label: 'Voice',             icon: MicrophoneIcon },
   { id: 'section-appearance',  label: 'Appearance',        icon: SwatchIcon },
   { id: 'section-website',     label: 'Website Content',   icon: GlobeAltIcon },
@@ -272,6 +273,7 @@ export default function WidgetSettingsPage() {
   const updateMutation = useUpdateTenantWidget(tenantId);
   const brandingMutation = useUpdateTenantBranding(tenantId);
   const aiConfigMutation = useUpdateTenantAIConfig(tenantId);
+  const { data: aiUsage } = useTenantAiUsageQuery(tenantId);
   const regenMutation  = useRegenerateWidgetKey(tenantId);
   const crawlMutation  = useTriggerWebsiteCrawl();
   const qc = useQueryClient();
@@ -308,6 +310,10 @@ export default function WidgetSettingsPage() {
   const [toolModelPreset, setToolModelPreset] = useState<ToolModelPreset | ''>('');
   const [toolModelMessage, setToolModelMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [autoConvertLeadOnMeetingCompleted, setAutoConvertLeadOnMeetingCompleted] = useState(false);
+  const [customTokenLimit, setCustomTokenLimit] = useState('');
+  const [warningThresholdPercent, setWarningThresholdPercent] = useState('80');
+  const [criticalThresholdPercent, setCriticalThresholdPercent] = useState('95');
+  const [aiUsageMessage, setAiUsageMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [bookingEnabled, setBookingEnabled]   = useState(false);
   const [bookingTimezone, setBookingTimezone] = useState('UTC');
   const [bookingSlotMinutes, setBookingSlotMinutes]     = useState(30);
@@ -440,6 +446,9 @@ export default function WidgetSettingsPage() {
     }
     setToolModelPreset(tenant?.aiConfig?.toolModelPreset ?? '');
     setAutoConvertLeadOnMeetingCompleted(tenant?.aiConfig?.autoConvertLeadOnMeetingCompleted ?? false);
+    setCustomTokenLimit(tenant?.aiConfig?.monthlyTokenLimit != null ? String(tenant.aiConfig.monthlyTokenLimit) : '');
+    setWarningThresholdPercent(String(tenant?.aiConfig?.tokenWarningThresholdPercent ?? 80));
+    setCriticalThresholdPercent(String(tenant?.aiConfig?.tokenCriticalThresholdPercent ?? 95));
     setContactEmail(tenant?.branding?.contactEmail ?? '');
     setContactPhone(tenant?.branding?.contactPhone ?? '');
     setContactAddress(tenant?.branding?.address ?? '');
@@ -566,6 +575,28 @@ export default function WidgetSettingsPage() {
       setToolModelMessage({ type: 'ok', text: 'Settings saved.' });
     } catch (err: any) {
       setToolModelMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
+    }
+  };
+
+  const handleAiUsageSave = async () => {
+    setAiUsageMessage(null);
+    const warning  = Number(warningThresholdPercent);
+    const critical = Number(criticalThresholdPercent);
+    if (warning <= 0 || warning >= 100 || critical <= 0 || critical > 100 || warning >= critical) {
+      setAiUsageMessage({ type: 'err', text: 'Thresholds must be between 1-100%, with warning set below critical.' });
+      return;
+    }
+    try {
+      await aiConfigMutation.mutateAsync({
+        // Blank input clears the override back to the plan default (matches
+        // toolModelPreset's own "null clears back to default" convention).
+        monthlyTokenLimit: customTokenLimit.trim() ? Number(customTokenLimit) : null,
+        tokenWarningThresholdPercent: warning,
+        tokenCriticalThresholdPercent: critical,
+      });
+      setAiUsageMessage({ type: 'ok', text: 'AI usage limits saved.' });
+    } catch (err: any) {
+      setAiUsageMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
     }
   };
 
@@ -1379,6 +1410,102 @@ export default function WidgetSettingsPage() {
                 className="px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
               >
                 {aiConfigMutation.isPending ? 'Saving…' : 'Save Settings'}
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <SectionHeader
+              id="section-ai-usage"
+              icon={ChartBarIcon}
+              iconClassName="bg-violet-50 text-violet-600"
+              title="AI Usage & Limits"
+              description="How much of this widget's monthly AI budget has been used, and where the limit is set — the fallback message visitors see once it's reached."
+              right={aiUsage && (
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 ${
+                  aiUsage.status === 'exceeded' ? 'bg-red-100 text-red-700'
+                  : aiUsage.status === 'critical' ? 'bg-orange-100 text-orange-700'
+                  : aiUsage.status === 'warning' ? 'bg-amber-100 text-amber-700'
+                  : 'bg-emerald-100 text-emerald-700'
+                }`}>
+                  {aiUsage.status === 'exceeded' ? 'Limit reached'
+                    : aiUsage.status === 'critical' ? 'Critical'
+                    : aiUsage.status === 'warning' ? 'Warning'
+                    : 'Normal'}
+                </span>
+              )}
+            />
+            <div className="px-6 py-5 space-y-5">
+              {aiUsage && (
+                <div>
+                  <div className="flex items-baseline justify-between mb-1.5">
+                    <span className="text-sm font-medium text-gray-800">
+                      {aiUsage.tokensUsedThisMonth.toLocaleString()} / {aiUsage.monthlyTokenLimit.toLocaleString()} tokens
+                    </span>
+                    <span className="text-xs text-gray-400">{aiUsage.percentUsed}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        aiUsage.status === 'exceeded' ? 'bg-red-500'
+                        : aiUsage.status === 'critical' ? 'bg-orange-500'
+                        : aiUsage.status === 'warning' ? 'bg-amber-500'
+                        : 'bg-emerald-500'
+                      }`}
+                      style={{ width: `${Math.min(100, aiUsage.percentUsed)}%` }}
+                    />
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-gray-400">
+                    {aiUsage.tokensRemaining.toLocaleString()} tokens remaining this month · plan default is {aiUsage.planDefaultTokenLimit.toLocaleString()} ({aiUsage.plan})
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Monthly Token Limit</label>
+                  <input
+                    type="number" min={0} className={input} value={customTokenLimit}
+                    onChange={(e) => setCustomTokenLimit(e.target.value)}
+                    placeholder={aiUsage ? String(aiUsage.planDefaultTokenLimit) : 'Plan default'}
+                  />
+                  <p className="mt-1 text-[11px] text-gray-400">Blank = use the plan default shown above.</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Warning Threshold %</label>
+                  <input
+                    type="number" min={1} max={99} className={input} value={warningThresholdPercent}
+                    onChange={(e) => setWarningThresholdPercent(e.target.value)}
+                  />
+                  <p className="mt-1 text-[11px] text-gray-400">Admin-facing only — never affects what visitors see.</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Critical Threshold %</label>
+                  <input
+                    type="number" min={1} max={100} className={input} value={criticalThresholdPercent}
+                    onChange={(e) => setCriticalThresholdPercent(e.target.value)}
+                  />
+                  <p className="mt-1 text-[11px] text-gray-400">The fallback ("please leave your contact info") only ever starts at 100%.</p>
+                </div>
+              </div>
+
+              {aiUsageMessage && (
+                <div className={`text-sm px-4 py-2.5 rounded-lg border ${
+                  aiUsageMessage.type === 'ok'
+                    ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                    : 'bg-red-50 border-red-100 text-red-600'
+                }`}>
+                  {aiUsageMessage.text}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleAiUsageSave}
+                disabled={aiConfigMutation.isPending}
+                className="px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+              >
+                {aiConfigMutation.isPending ? 'Saving…' : 'Save Changes'}
               </button>
             </div>
           </div>

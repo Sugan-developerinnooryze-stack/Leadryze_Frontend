@@ -20,8 +20,8 @@ const FIELDS: FSFieldDef[] = [
   { key: 'description',   label: 'Description',    type: 'textarea' },
   { key: 'relatedModule', label: 'Related To',     type: 'select',   options: ['customer', 'workorder', 'quotation', 'contract', 'invoice'] },
   { key: 'relatedId',     label: 'Related ID',     type: 'text',     placeholder: 'e.g. tenant-wo-5' },
-  { key: 'assignedTo',    label: 'Assigned To',    type: 'text',     placeholder: 'Staff name or ID' },
-  { key: 'scheduledAt',   label: 'Scheduled Date', type: 'text',     placeholder: 'YYYY-MM-DD' },
+  { key: 'assignedTo',    label: 'Assigned To',    type: 'lookup',   lookupModule: 'staffs', lookupValueField: 'staffId', lookupLabelField: 'fullName' },
+  { key: 'scheduledAt',   label: 'Scheduled Date', type: 'date' },
   { key: 'status',        label: 'Status',         type: 'select',   options: ['pending', 'completed', 'cancelled'] },
 ];
 
@@ -51,9 +51,9 @@ const COLUMNS: FSColumnDef[] = [
     ),
   },
   { key: 'subject',      label: 'Subject' },
-  { key: 'relatedModule', label: 'Related To', render: (r) => r.relatedModule ? `${r.relatedModule} / ${r.relatedId ?? ''}` : 'â€”' },
-  { key: 'assignedTo',   label: 'Assigned To', render: (r) => r.assignedTo ?? 'â€”' },
-  { key: 'scheduledAt',  label: 'Scheduled',   render: (r) => r.scheduledAt ? new Date(r.scheduledAt).toLocaleDateString() : 'â€”' },
+  { key: 'relatedModule', label: 'Related To', render: (r) => r.relatedModule ? `${r.relatedModule} / ${r.relatedId ?? ''}` : '—' },
+  { key: 'assignedTo',   label: 'Assigned To', render: (r) => r.assignedTo ?? '—' },
+  { key: 'scheduledAt',  label: 'Scheduled',   render: (r) => r.scheduledAt ? new Date(r.scheduledAt).toLocaleDateString() : '—' },
   {
     key: 'status',
     label: 'Status',
@@ -102,7 +102,7 @@ export default function ActivitiesPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search activitiesâ€¦"
+            placeholder="Search activities…"
             className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
         </div>
@@ -144,12 +144,12 @@ export default function ActivitiesPage() {
         onDelete={setDelTarget}
         moduleKey="activities"
         emptyIcon={BoltIcon}
-        emptyLabel="No activities yet â€” log your first one"
+        emptyLabel="No activities yet — log your first one"
       />
 
       {drawer.open && (
         <FSDrawer
-          title={drawer.record ? 'Edit Activity' : 'New Activity'}
+          title={drawer.record?._id ? 'Edit Activity' : 'New Activity'}
           fields={FIELDS}
           record={drawer.record}
           onClose={() => setDrawer({ open: false, record: null })}

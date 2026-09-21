@@ -80,7 +80,7 @@ export default function CustomersPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search customersâ€¦"
+            placeholder="Search customers…"
             className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
         </div>
@@ -127,12 +127,12 @@ export default function CustomersPage() {
         )}
         moduleKey="customers"
         emptyIcon={UsersIcon}
-        emptyLabel="No customers yet â€” create your first one"
+        emptyLabel="No customers yet — create your first one"
       />
 
       {drawer.open && (
         <FSDrawer
-          title={drawer.record ? 'Edit Customer' : 'New Customer'}
+          title={drawer.record?._id ? 'Edit Customer' : 'New Customer'}
           fields={FIELDS}
           record={drawer.record}
           onClose={() => setDrawer({ open: false, record: null })}

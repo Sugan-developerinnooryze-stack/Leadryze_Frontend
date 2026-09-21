@@ -17,11 +17,11 @@ import { useCustomerNameMap } from '../../../modules/native-crm/shared/useCustom
 
 const FIELDS: FSFieldDef[] = [
   { key: 'branchId', label: 'Company', type: 'branch-select' },
-  { key: 'invoiceId',     label: 'Invoice ID',      type: 'text',     required: true, placeholder: 'Invoice reference' },
-  { key: 'customerId',    label: 'Customer ID',     type: 'text',     required: true, placeholder: 'Customer reference' },
+  { key: 'invoiceId',     label: 'Invoice',         type: 'lookup',   required: true, lookupModule: 'invoices', lookupValueField: 'invoiceId', lookupLabelField: 'invoiceId' },
+  { key: 'customerId',    label: 'Customer',        type: 'lookup',   required: true, lookupModule: 'customers', lookupValueField: 'customerId', lookupLabelField: 'name' },
   { key: 'amount',        label: 'Amount',          type: 'currency', required: true, placeholder: '0.00' },
   { key: 'paymentMethod', label: 'Payment Method',  type: 'select',   options: ['cash', 'bank_transfer', 'card', 'cheque', 'online'] },
-  { key: 'paymentDate',   label: 'Payment Date',    type: 'text',     placeholder: 'YYYY-MM-DD' },
+  { key: 'paymentDate',   label: 'Payment Date',    type: 'date' },
   { key: 'status',        label: 'Status',          type: 'select',   options: ['pending', 'completed', 'refunded'] },
   { key: 'notes',         label: 'Notes',           type: 'textarea' },
 ];
@@ -54,9 +54,9 @@ export default function ReceiptsPage() {
       render: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '—',
       exportValue: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '' },
     { key: 'customerId',    label: 'Customer ID' },
-    { key: 'amount',        label: 'Amount',  render: (r) => r.amount != null ? `$${Number(r.amount).toFixed(2)}` : 'â€”' },
-    { key: 'paymentMethod', label: 'Method',  render: (r) => r.paymentMethod?.replace(/_/g, ' ') ?? 'â€”' },
-    { key: 'paymentDate',   label: 'Date',    render: (r) => r.paymentDate ? new Date(r.paymentDate).toLocaleDateString() : 'â€”' },
+    { key: 'amount',        label: 'Amount',  render: (r) => r.amount != null ? `$${Number(r.amount).toFixed(2)}` : '—' },
+    { key: 'paymentMethod', label: 'Method',  render: (r) => r.paymentMethod?.replace(/_/g, ' ') ?? '—' },
+    { key: 'paymentDate',   label: 'Date',    render: (r) => r.paymentDate ? new Date(r.paymentDate).toLocaleDateString() : '—' },
     { key: 'status',        label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'completed'} /> },
     { key: 'branchId', label: 'Company', render: (r: any) => <CompanyBadge branchId={r.branchId} /> },
   ], [customerNames]);
@@ -80,7 +80,7 @@ export default function ReceiptsPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search receiptsâ€¦"
+            placeholder="Search receipts…"
             className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
         </div>
@@ -122,12 +122,12 @@ export default function ReceiptsPage() {
         onDelete={setDelTarget}
         moduleKey="receipts"
         emptyIcon={ReceiptRefundIcon}
-        emptyLabel="No receipts yet â€” create your first one"
+        emptyLabel="No receipts yet — create your first one"
       />
 
       {drawer.open && (
         <FSDrawer
-          title={drawer.record ? 'Edit Receipt' : 'New Receipt'}
+          title={drawer.record?._id ? 'Edit Receipt' : 'New Receipt'}
           fields={FIELDS}
           record={drawer.record}
           onClose={() => setDrawer({ open: false, record: null })}

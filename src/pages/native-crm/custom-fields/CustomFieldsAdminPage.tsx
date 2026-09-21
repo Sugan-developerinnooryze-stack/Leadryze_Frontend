@@ -9,6 +9,7 @@ import {
   type NativeCustomField,
 } from '../../../modules/native-crm/queries/custom-fields.queries';
 import { useCustomFormTemplatesQuery } from '../../../modules/native-crm/queries/custom-form-templates.queries';
+import { useCustomModulesQuery } from '../../../modules/native-crm/queries/custom-modules.queries';
 
 const FS_MODULES = [
   'leads', 'deals', 'tasks', 'tickets',
@@ -77,6 +78,19 @@ export default function CustomFieldsAdminPage() {
   const updateMutation = useCustomFieldUpdate();
   const deleteMutation = useCustomFieldDelete();
 
+  // Real, confirmed bug this fixes: this page's module list was a fully
+  // static array — a newly created Custom Module never appeared here, so
+  // there was no way to configure custom fields on it at all. Same dynamic
+  // merge pattern PipelineSettingsPage.tsx already uses for its own module
+  // list, and the same `custom:<slug>` key convention it already applies —
+  // custom-field.model.ts's `module` field is free-text, so it already
+  // accepts this without any backend change.
+  const { data: customModules = [] } = useCustomModulesQuery();
+  const moduleOptions = [
+    ...FS_MODULES.map((m) => ({ key: m, label: m.charAt(0).toUpperCase() + m.slice(1) })),
+    ...customModules.map((m) => ({ key: `custom:${m.slug}`, label: m.name })),
+  ];
+
   const set = (key: keyof FormState) => (val: any) => setForm((prev) => ({ ...prev, [key]: val }));
 
   const openCreate = () => {
@@ -141,17 +155,17 @@ export default function CustomFieldsAdminPage() {
             <p className="text-xs text-gray-500 mt-1">Configure additional data fields per module</p>
           </div>
           <nav className="p-3 space-y-1">
-            {FS_MODULES.map((m) => (
+            {moduleOptions.map(({ key, label }) => (
               <button
-                key={m}
-                onClick={() => { setSelectedModule(m); setShowForm(false); }}
+                key={key}
+                onClick={() => { setSelectedModule(key); setShowForm(false); }}
                 className={`w-full text-left px-3 py-2.5 text-sm rounded-lg transition-all ${
-                  selectedModule === m
+                  selectedModule === key
                     ? 'bg-brand-50 text-brand-700 font-semibold shadow-sm'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium'
                 }`}
               >
-                {m.charAt(0).toUpperCase() + m.slice(1)}
+                {label}
               </button>
             ))}
           </nav>
@@ -161,8 +175,8 @@ export default function CustomFieldsAdminPage() {
         <div className="flex-1 flex flex-col min-w-0 bg-gray-50">
           <div className="bg-white border-b border-gray-200 px-8 py-5 flex items-center justify-between shrink-0">
             <div>
-              <h1 className="text-xl font-bold text-gray-900 capitalize">{selectedModule} Fields</h1>
-              <p className="text-sm text-gray-500 mt-0.5">Manage custom fields for the {selectedModule} module</p>
+              <h1 className="text-xl font-bold text-gray-900">{moduleOptions.find((m) => m.key === selectedModule)?.label ?? selectedModule} Fields</h1>
+              <p className="text-sm text-gray-500 mt-0.5">Manage custom fields for the {moduleOptions.find((m) => m.key === selectedModule)?.label ?? selectedModule} module</p>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -184,7 +198,7 @@ export default function CustomFieldsAdminPage() {
 
           <div className="flex-1 flex overflow-hidden">
             {/* Field List */}
-            <div className="flex-1 overflow-y-auto p-8">
+            <div className="flex-1 min-w-0 overflow-y-auto p-8">
               {isLoading ? (
                 <div className="flex items-center justify-center h-32">
                   <div className="flex gap-2">{[0,1,2].map(i => <span key={i} className="h-2.5 w-2.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}</div>
@@ -195,7 +209,7 @@ export default function CustomFieldsAdminPage() {
                     <AdjustmentsHorizontalIcon className="h-8 w-8 text-gray-400" />
                   </div>
                   <h3 className="text-base font-semibold text-gray-900 mb-1">No custom fields</h3>
-                  <p className="text-sm text-gray-500 mb-4 max-w-sm mx-auto">You haven't defined any custom fields for the {selectedModule} module yet.</p>
+                  <p className="text-sm text-gray-500 mb-4 max-w-sm mx-auto">You haven't defined any custom fields for the {moduleOptions.find((m) => m.key === selectedModule)?.label ?? selectedModule} module yet.</p>
                   <button onClick={openCreate} className="text-brand-600 font-medium text-sm hover:text-brand-700 transition-colors bg-brand-50 px-4 py-2 rounded-lg">Create First Field</button>
                 </div>
               ) : (
@@ -256,7 +270,7 @@ export default function CustomFieldsAdminPage() {
             {/* Side panel form */}
             {showForm && (
               <div className="w-96 border-l border-gray-200 bg-white flex flex-col overflow-y-auto shrink-0 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)]">
-                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gray-50/50 sticky top-0 z-10">
+                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gray-50 sticky top-0 z-10">
                   <h3 className="text-base font-bold text-gray-900">{editId ? 'Edit Field' : 'New Field'}</h3>
                   <button onClick={() => setShowForm(false)} className="p-1.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
                     <XMarkIcon className="h-5 w-5" />
@@ -266,8 +280,8 @@ export default function CustomFieldsAdminPage() {
                 <div className="p-6 space-y-5">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">Module</label>
-                    <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 font-medium capitalize">
-                      {form.module}
+                    <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 font-medium">
+                      {moduleOptions.find((m) => m.key === form.module)?.label ?? form.module}
                     </div>
                   </div>
 

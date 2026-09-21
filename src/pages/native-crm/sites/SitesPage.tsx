@@ -32,7 +32,7 @@ const FIELDS: FSFieldDef[] = [
 const COLUMNS: FSColumnDef[] = [
   { key: 'siteId',        label: 'ID' },
   { key: 'name',          label: 'Site Name' },
-  { key: 'customerId',    label: 'Customer', render: (r) => r.customerId?.name ?? 'â€"' },
+  { key: 'customerId',    label: 'Customer', render: (r) => r.customerId?.name ?? '—' },
   { key: 'address',       label: 'Address' },
   { key: 'city',          label: 'City' },
   { key: 'contactPerson', label: 'Contact' },
@@ -76,7 +76,7 @@ export default function SitesPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search sitesâ€¦"
+            placeholder="Search sites…"
             className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
         </div>
@@ -117,12 +117,12 @@ export default function SitesPage() {
         onDelete={setDelTarget}
         moduleKey="sites"
         emptyIcon={MapPinIcon}
-        emptyLabel="No sites yet â€” create your first one"
+        emptyLabel="No sites yet — create your first one"
       />
 
       {drawer.open && (
         <FSDrawer
-          title={drawer.record ? 'Edit Site' : 'New Site'}
+          title={drawer.record?._id ? 'Edit Site' : 'New Site'}
           fields={FIELDS}
           record={drawer.record}
           onClose={() => setDrawer({ open: false, record: null })}

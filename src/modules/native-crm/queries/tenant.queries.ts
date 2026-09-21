@@ -92,7 +92,10 @@ export interface Tenant {
   name: string;
   widget?: TenantWidgetConfig;
   branding?: { primaryColor?: string; companyName?: string; logoUrl?: string; contactEmail?: string; contactPhone?: string; address?: string };
-  aiConfig?: { agentName?: string; toolModelPreset?: ToolModelPreset | null; autoConvertLeadOnMeetingCompleted?: boolean };
+  aiConfig?: {
+    agentName?: string; toolModelPreset?: ToolModelPreset | null; autoConvertLeadOnMeetingCompleted?: boolean;
+    monthlyTokenLimit?: number; tokenWarningThresholdPercent?: number; tokenCriticalThresholdPercent?: number;
+  };
   dataScopeConfig?: Record<string, boolean>;
 }
 
@@ -139,9 +142,43 @@ export function useUpdateTenantBranding(id: string) {
 export function useUpdateTenantAIConfig(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (aiConfig: { agentName?: string; toolModelPreset?: ToolModelPreset | null; autoConvertLeadOnMeetingCompleted?: boolean }) =>
+    mutationFn: (aiConfig: {
+      agentName?: string; toolModelPreset?: ToolModelPreset | null; autoConvertLeadOnMeetingCompleted?: boolean;
+      monthlyTokenLimit?: number | null; tokenWarningThresholdPercent?: number; tokenCriticalThresholdPercent?: number;
+    }) =>
       api.put(`${BASE}/${id}`, { aiConfig }).then((r) => r.data.data as Tenant),
+    // Prefix match — also invalidates the ai-usage query below (['tenants', id, 'ai-usage']),
+    // so saving a new limit refreshes the usage view immediately.
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY(id) }),
+  });
+}
+
+export interface TenantAiUsage {
+  plan: string;
+  planDefaultTokenLimit: number;
+  customTokenLimit: number | null;
+  monthlyTokenLimit: number;
+  tokensUsedThisMonth: number;
+  tokensRemaining: number;
+  percentUsed: number;
+  status: 'normal' | 'warning' | 'critical' | 'exceeded';
+  warningThresholdPercent: number;
+  criticalThresholdPercent: number;
+  monthlyVoiceMinutesLimit: number;
+  voiceMinutesUsedThisMonth: number;
+}
+
+/** Backs the "AI Usage & Limits" settings section — a self-service view of
+ * exactly what admin.routes.ts's SUPER_ADMIN-only GET /admin/ai-usage shows
+ * across every tenant, scoped to just this one. Polled every 60s while the
+ * section is mounted so the progress bar reflects live traffic without
+ * needing a manual refresh. */
+export function useTenantAiUsageQuery(id: string) {
+  return useQuery({
+    queryKey: [...KEY(id), 'ai-usage'],
+    queryFn: () => api.get(`${BASE}/${id}/ai-usage`).then((r) => r.data.data as TenantAiUsage),
+    enabled: !!id,
+    refetchInterval: 60_000,
   });
 }
 

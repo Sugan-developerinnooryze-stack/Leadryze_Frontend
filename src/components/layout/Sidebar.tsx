@@ -280,18 +280,32 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
   useEffect(() => {
     if (!token) return;
-    api.get('/api/v1/crm/modules')
-      .then((r: { data: { data: CRMModules } }) => setCrmModules(r.data.data || {}))
-      .catch(() => {});
-    api.get('/api/v1/native-crm/stats')
-      .then((r: { data: { data: Record<string, number> } }) => setNativeCounts(r.data.data || {}))
-      .catch(() => {});
-    api.get('/api/v1/native-crm/fs-counts')
-      .then((r: { data: { data: Record<string, number> } }) => setFsCounts(r.data.data || {}))
-      .catch(() => {});
-    api.get('/api/v1/custom-modules')
-      .then((r: { data: { data: any[] } }) => setCustomModules(r.data.data || []))
-      .catch(() => {});
+    const loadCounts = () => {
+      api.get('/api/v1/crm/modules')
+        .then((r: { data: { data: CRMModules } }) => setCrmModules(r.data.data || {}))
+        .catch(() => {});
+      api.get('/api/v1/native-crm/stats')
+        .then((r: { data: { data: Record<string, number> } }) => setNativeCounts(r.data.data || {}))
+        .catch(() => {});
+      api.get('/api/v1/native-crm/fs-counts')
+        .then((r: { data: { data: Record<string, number> } }) => setFsCounts(r.data.data || {}))
+        .catch(() => {});
+      api.get('/api/v1/custom-modules')
+        .then((r: { data: { data: any[] } }) => setCustomModules(r.data.data || []))
+        .catch(() => {});
+    };
+    loadCounts();
+    // Real, confirmed bug this fixes: these counts previously only refetched
+    // on navigation (route change) — creating/converting/deleting a record
+    // while STAYING on the same page (e.g. the Leads list, or a quick-add
+    // panel) left every sidebar badge frozen at its pre-action value for the
+    // rest of the session, silently diverging from the page's own live
+    // React-Query-backed stats. A short poll is a low-risk fix that doesn't
+    // require wiring sidebar-count invalidation into every mutation hook in
+    // the app — badges self-correct within a few seconds instead of staying
+    // stale indefinitely.
+    const interval = setInterval(loadCounts, 15000);
+    return () => clearInterval(interval);
   }, [token, location.pathname]);
 
   const allVisibleModules: CRMModules = Object.fromEntries(

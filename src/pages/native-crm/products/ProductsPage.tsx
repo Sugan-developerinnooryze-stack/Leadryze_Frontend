@@ -35,9 +35,9 @@ const STATUS_COLORS: Record<string, string> = {
 const COLUMNS: FSColumnDef[] = [
   { key: 'productId',    label: 'ID' },
   { key: 'name',         label: 'Name' },
-  { key: 'sku',          label: 'SKU',   render: (r) => r.sku ?? 'â€”' },
-  { key: 'category',     label: 'Category', render: (r) => r.category ?? 'â€”' },
-  { key: 'sellingPrice', label: 'Price', render: (r) => r.sellingPrice != null ? `$${Number(r.sellingPrice).toFixed(2)}` : 'â€”' },
+  { key: 'sku',          label: 'SKU',   render: (r) => r.sku ?? '—' },
+  { key: 'category',     label: 'Category', render: (r) => r.category ?? '—' },
+  { key: 'sellingPrice', label: 'Price', render: (r) => r.sellingPrice != null ? `$${Number(r.sellingPrice).toFixed(2)}` : '—' },
   { key: 'stock',        label: 'Stock', render: (r) => r.stock ?? 0 },
   {
     key: 'status',
@@ -87,7 +87,7 @@ export default function ProductsPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search productsâ€¦"
+            placeholder="Search products…"
             className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
         </div>
@@ -128,12 +128,12 @@ export default function ProductsPage() {
         onDelete={setDelTarget}
         moduleKey="products"
         emptyIcon={CubeIcon}
-        emptyLabel="No products yet â€” create your first one"
+        emptyLabel="No products yet — create your first one"
       />
 
       {drawer.open && (
         <FSDrawer
-          title={drawer.record ? 'Edit Product' : 'New Product'}
+          title={drawer.record?._id ? 'Edit Product' : 'New Product'}
           fields={FIELDS}
           record={drawer.record}
           onClose={() => setDrawer({ open: false, record: null })}

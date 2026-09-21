@@ -20,7 +20,7 @@ export interface FSFieldDef {
   placeholder?:         string;
   filterOnly?:          boolean;
 
-  lookupModule?:        'customers' | 'sites' | 'teams' | 'staffs' | 'services' | 'categories' | 'workorders' | 'quotations' | 'users';
+  lookupModule?:        'customers' | 'sites' | 'teams' | 'staffs' | 'services' | 'categories' | 'workorders' | 'quotations' | 'invoices' | 'users';
   lookupValueField?:    string;
   lookupLabelField?:    string;
   cascadeParentField?:  string;

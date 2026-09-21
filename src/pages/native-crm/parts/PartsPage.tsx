@@ -29,8 +29,8 @@ const COLUMNS: FSColumnDef[] = [
   { key: 'partId',     label: 'ID' },
   { key: 'name',       label: 'Part Name' },
   { key: 'partNumber', label: 'Part No.' },
-  { key: 'price',      label: 'Price',    render: (r) => r.price != null ? `$${Number(r.price).toFixed(2)}` : 'â€”' },
-  { key: 'quantity',   label: 'Qty',      render: (r) => r.quantity ?? 'â€”' },
+  { key: 'price',      label: 'Price',    render: (r) => r.price != null ? `$${Number(r.price).toFixed(2)}` : '—' },
+  { key: 'quantity',   label: 'Qty',      render: (r) => r.quantity ?? '—' },
   { key: 'status',     label: 'Status',   render: (r) => <FSStatusBadge value={r.status ?? 'active'} /> },
   { key: 'branchId', label: 'Company', render: (r: any) => <CompanyBadge branchId={r.branchId} /> },
 ];
@@ -71,7 +71,7 @@ export default function PartsPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search partsâ€¦"
+            placeholder="Search parts…"
             className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
         </div>
@@ -112,12 +112,12 @@ export default function PartsPage() {
         onDelete={setDelTarget}
         moduleKey="parts"
         emptyIcon={CubeIcon}
-        emptyLabel="No parts yet â€” create your first one"
+        emptyLabel="No parts yet — create your first one"
       />
 
       {drawer.open && (
         <FSDrawer
-          title={drawer.record ? 'Edit Part' : 'New Part'}
+          title={drawer.record?._id ? 'Edit Part' : 'New Part'}
           fields={FIELDS}
           record={drawer.record}
           onClose={() => setDrawer({ open: false, record: null })}

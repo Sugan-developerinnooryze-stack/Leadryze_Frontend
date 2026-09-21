@@ -62,8 +62,8 @@ export default function InvoicesPage() {
       render: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '—',
       exportValue: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '' },
     { key: 'customerId', label: 'Customer ID' },
-    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `$${Number(r.servicesAmountWithTax).toFixed(2)}` : 'â€"' },
-    { key: 'dueDate',    label: 'Due Date', render: (r) => r.dueDate ? new Date(r.dueDate).toLocaleDateString() : 'â€"' },
+    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `$${Number(r.servicesAmountWithTax).toFixed(2)}` : '—' },
+    { key: 'dueDate',    label: 'Due Date', render: (r) => r.dueDate ? new Date(r.dueDate).toLocaleDateString() : '—' },
     { key: 'paid',       label: 'Paid',     render: (r) => (
       <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${r.paid ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
         {r.paid ? 'Yes' : 'No'}
@@ -111,7 +111,7 @@ export default function InvoicesPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search invoicesâ€¦"
+            placeholder="Search invoices…"
             className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
         </div>
@@ -159,7 +159,7 @@ export default function InvoicesPage() {
 
       {drawer.open && (
         <FSDrawer
-          title={drawer.record ? 'Edit Invoice' : 'New Invoice'}
+          title={drawer.record?._id ? 'Edit Invoice' : 'New Invoice'}
           fields={fields}
           record={drawer.record}
           onClose={() => setDrawer({ open: false, record: null })}

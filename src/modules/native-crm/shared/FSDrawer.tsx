@@ -16,6 +16,7 @@ import { useCategoriesListQuery } from '../queries/categories.queries';
 import { useServicesListQuery   } from '../queries/services.queries';
 import { useWorkordersListQuery } from '../queries/workorders.queries';
 import { useQuotationsListQuery } from '../queries/quotations.queries';
+import { useInvoicesListQuery   } from '../queries/invoices.queries';
 import { useUsersListQuery      } from '../queries/users.queries';
 import { useFSSettingsQuery     } from '../queries/fs-settings.queries';
 import api from '../../../services/api';
@@ -68,6 +69,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
   const { data: categoriesData } = useCategoriesListQuery({ page: 1, limit: 500 });
   const { data: workordersData } = useWorkordersListQuery({ page: 1, limit: 500 });
   const { data: quotationsData } = useQuotationsListQuery({ page: 1, limit: 500 });
+  const { data: invoicesData   } = useInvoicesListQuery  ({ page: 1, limit: 500 });
   const { data: usersData      } = useUsersListQuery({ limit: 200 });
 
   // Cascaded — refetch automatically when parent _id changes
@@ -84,6 +86,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
     categories: categoriesData?.items ?? [],
     workorders: workordersData?.items ?? [],
     quotations: quotationsData?.items ?? [],
+    invoices:   invoicesData?.items   ?? [],
     users:      usersData?.items      ?? [],
   };
 
@@ -508,9 +511,15 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
                 const staffId = opt.staffId ?? opt._id?.toString();
                 const avail   = isStaffField && !hardBlock ? staffBusyMap[staffId] : undefined;
                 const lbl     = `${baseLbl}${availabilityShort(avail)}`;
+                // Disambiguate options sharing a label (e.g. two "Team A"s) by
+                // showing their human-readable code alongside the name — but
+                // never the raw Mongo _id, which is meaningless to a user and
+                // was leaking into every "_id"-keyed lookup's label (Teams,
+                // Sites, Categories, Invoices, Quotations, WorkOrders alike).
+                const showVal = field.lookupValueField !== '_id' && val && val !== baseLbl;
                 return (
                   <option key={opt._id} value={val}>
-                    {lbl}{val && val !== baseLbl ? ` (${val})` : ''}
+                    {lbl}{showVal ? ` (${val})` : ''}
                   </option>
                 );
               })}
@@ -953,7 +962,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
               )}
-              {saving ? 'Saving…' : record ? 'Save Changes' : 'Create'}
+              {saving ? 'Saving…' : record?._id ? 'Save Changes' : 'Create'}
             </button>
           </div>
         </form>

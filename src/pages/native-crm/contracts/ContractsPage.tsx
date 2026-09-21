@@ -60,10 +60,10 @@ export default function ContractsPage() {
       exportValue: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '' },
     { key: 'customerId',  label: 'Customer ID' },
     { key: 'serviceRangeSummary', label: 'Service Range', render: (r) =>
-      r.serviceRangeSummary || (r.recurringUnit ? RECURRING_LABEL[r.recurringUnit] : 'â€"') },
+      r.serviceRangeSummary || (r.recurringUnit ? RECURRING_LABEL[r.recurringUnit] : '—') },
     { key: 'serviceBalance', label: 'Service Balance', render: (r) => {
       const b = r.serviceBalance;
-      if (!b) return 'â€"';
+      if (!b) return '—';
       return (
         <span title={`Total ${b.total} · Completed ${b.completed} · Upcoming ${b.upcoming} · Overdue ${b.overdue} · Cancelled ${b.cancelled}`}
           className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-brand-50 text-brand-700">
@@ -71,9 +71,9 @@ export default function ContractsPage() {
         </span>
       );
     }},
-    { key: 'startDate',   label: 'Start', render: (r) => r.startDate ? new Date(r.startDate).toLocaleDateString() : 'â€"' },
-    { key: 'endDate',     label: 'End',   render: (r) => r.endDate   ? new Date(r.endDate).toLocaleDateString()   : 'â€"' },
-    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `$${Number(r.servicesAmountWithTax).toFixed(2)}` : 'â€"' },
+    { key: 'startDate',   label: 'Start', render: (r) => r.startDate ? new Date(r.startDate).toLocaleDateString() : '—' },
+    { key: 'endDate',     label: 'End',   render: (r) => r.endDate   ? new Date(r.endDate).toLocaleDateString()   : '—' },
+    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `$${Number(r.servicesAmountWithTax).toFixed(2)}` : '—' },
     { key: 'status',   label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
     { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
   ], [customerNames]);
@@ -116,7 +116,7 @@ export default function ContractsPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search contractsâ€¦"
+            placeholder="Search contracts…"
             className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
         </div>

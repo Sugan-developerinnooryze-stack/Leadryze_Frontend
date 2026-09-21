@@ -109,6 +109,17 @@ export default function RecordDrawer({
           payload[field.key] = `${v}:00.000Z`;
         } else if (field.isArray && typeof v === 'string') {
           payload[field.key] = v.split(',').map((s) => s.trim()).filter(Boolean);
+        } else if (
+          v === '' &&
+          ['select', 'number', 'currency', 'date', 'datetime', 'staffSelect', 'teamSelect', 'categorySelect'].includes(field.type)
+        ) {
+          // An unfilled optional select/number/date field lands in `form` as
+          // '' (its React-controlled empty state) — the backend's Zod schemas
+          // use `.optional()`, which only accepts `undefined`, not ''. Sending
+          // '' verbatim fails validation with a 400 that this same function's
+          // catch block used to flatten into a generic, unhelpful "Save
+          // failed" for every field on the form, not just the empty one.
+          delete payload[field.key];
         }
       }
       if (activeCustomFields.length > 0) payload.customFields = customForm;
@@ -128,8 +139,17 @@ export default function RecordDrawer({
       onSaved();
       if (addAnother) { setForm(initForm()); setCustomForm(initCustomForm()); setRelation({}); setErrors({}); }
       else onClose();
-    } catch {
-      setErrors({ _global: 'Save failed. Please try again.' });
+    } catch (err: unknown) {
+      // Surface the real validation reason instead of a blanket "Save
+      // failed" — a Zod 400 (e.g. `errors: {direction: ["Invalid enum
+      // value..."]}`) previously vanished entirely, leaving no way to tell
+      // an actual bad-field error apart from a network failure.
+      const res = (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response;
+      const fieldErrors = res?.data?.errors;
+      const detail = fieldErrors
+        ? Object.entries(fieldErrors).map(([k, msgs]) => `${k}: ${msgs?.[0] ?? 'invalid'}`).join('; ')
+        : undefined;
+      setErrors({ _global: detail ?? res?.data?.message ?? 'Save failed. Please try again.' });
     } finally { setSaving(false); }
   };
 

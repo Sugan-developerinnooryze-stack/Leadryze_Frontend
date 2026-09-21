@@ -6,7 +6,7 @@ import {
   PlusIcon, TrashIcon, PencilIcon, CheckIcon, XMarkIcon,
   ChatBubbleLeftRightIcon, ClockIcon, ChevronDownIcon, ChevronUpIcon,
   UserGroupIcon, ShieldCheckIcon, KeyIcon, LockClosedIcon,
-  EyeIcon, EyeSlashIcon,
+  EyeIcon, EyeSlashIcon, ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import { SUPPORTED_LANGUAGES } from '../../modules/native-crm/shared/languages';
 
@@ -418,6 +418,14 @@ function UsersPanel() {
     } catch { toast.error('Failed to deactivate user'); }
   };
 
+  const reactivate = async (id: string) => {
+    try {
+      await api.put(`/api/v1/users/${id}`, { isActive: true });
+      toast.success('User reactivated');
+      await load();
+    } catch { toast.error('Failed to reactivate user'); }
+  };
+
   const doResetPwd = async () => {
     if (!resetPwd || resetPwd.length < 8) { toast.error('Password must be at least 8 characters'); return; }
     if (resetPwd !== resetConfirmPwd) { toast.error('Passwords do not match'); return; }
@@ -560,10 +568,15 @@ function UsersPanel() {
                 >
                   <KeyIcon className="h-3.5 w-3.5" /> Reset PW
                 </button>
-                {u.isActive && (
+                {u.isActive ? (
                   <button onClick={() => deactivate(u._id)}
                     className="flex-1 flex items-center justify-center gap-1.5 text-xs py-2 border border-red-200 rounded-lg text-red-500 hover:bg-red-50 transition-colors">
                     <TrashIcon className="h-3.5 w-3.5" /> Deactivate
+                  </button>
+                ) : (
+                  <button onClick={() => reactivate(u._id)}
+                    className="flex-1 flex items-center justify-center gap-1.5 text-xs py-2 border border-emerald-200 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors">
+                    <ArrowPathIcon className="h-3.5 w-3.5" /> Reactivate
                   </button>
                 )}
               </div>

@@ -38,10 +38,10 @@ const STATUS_COLORS: Record<string, string> = {
 const COLUMNS: FSColumnDef[] = [
   { key: 'vehicleId',          label: 'ID' },
   { key: 'name',               label: 'Name' },
-  { key: 'registrationNumber', label: 'Rego',      render: (r) => r.registrationNumber ?? 'â€”' },
-  { key: 'make',               label: 'Make/Model',render: (r) => [r.make, r.vehicleModel].filter(Boolean).join(' ') || 'â€”' },
-  { key: 'assignedDriver',     label: 'Driver',    render: (r) => r.assignedDriver ?? 'â€”' },
-  { key: 'fuelType',           label: 'Fuel',      render: (r) => r.fuelType ?? 'â€”' },
+  { key: 'registrationNumber', label: 'Rego',      render: (r) => r.registrationNumber ?? '—' },
+  { key: 'make',               label: 'Make/Model',render: (r) => [r.make, r.vehicleModel].filter(Boolean).join(' ') || '—' },
+  { key: 'assignedDriver',     label: 'Driver',    render: (r) => r.assignedDriver ?? '—' },
+  { key: 'fuelType',           label: 'Fuel',      render: (r) => r.fuelType ?? '—' },
   {
     key: 'status',
     label: 'Status',
@@ -90,7 +90,7 @@ export default function VehiclesPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search vehiclesâ€¦"
+            placeholder="Search vehicles…"
             className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
         </div>
@@ -133,12 +133,12 @@ export default function VehiclesPage() {
         onDelete={setDelTarget}
         moduleKey="vehicles"
         emptyIcon={TruckIcon}
-        emptyLabel="No vehicles yet â€” create your first one"
+        emptyLabel="No vehicles yet — create your first one"
       />
 
       {drawer.open && (
         <FSDrawer
-          title={drawer.record ? 'Edit Vehicle' : 'New Vehicle'}
+          title={drawer.record?._id ? 'Edit Vehicle' : 'New Vehicle'}
           fields={FIELDS}
           record={drawer.record}
           onClose={() => setDrawer({ open: false, record: null })}

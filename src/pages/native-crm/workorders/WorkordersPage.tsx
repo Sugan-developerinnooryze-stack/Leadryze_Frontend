@@ -78,14 +78,14 @@ export default function WorkordersPage() {
       exportValue: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '' },
     { key: 'customerId',    label: 'Customer ID' },
     { key: 'scheduledDate', label: 'Scheduled', render: (r) => {
-      if (!r.scheduledDate) return 'â€"';
+      if (!r.scheduledDate) return '—';
       const d = new Date(r.scheduledDate);
       const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0;
       return hasTime ? d.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : d.toLocaleDateString();
     }},
     { key: 'staffIds', label: 'Staff', render: (r) => {
       const ids: string[] = r.staffIds?.length ? r.staffIds : (r.staffId ? [r.staffId] : []);
-      return ids.length ? ids.join(', ') : 'â€"';
+      return ids.length ? ids.join(', ') : '—';
     }},
     { key: 'durationHours', label: 'Duration', render: (r) => formatDuration(r.durationHours) },
     { key: 'priority',      label: 'Priority',  render: (r) => {
@@ -135,7 +135,7 @@ export default function WorkordersPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search work ordersâ€¦"
+            placeholder="Search work orders…"
             className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
           />
         </div>
