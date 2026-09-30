@@ -26,11 +26,11 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-blue-100 py-12 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-brand-600">LeadRyze AI</h1>
-          <p className="text-gray-500 mt-2">Create your account — it's free</p>
+          <h1 className="text-3xl font-bold text-ryze-600 dark:text-ryze-400">LeadRyze AI</h1>
+          <p className="text-text-muted mt-2">Create your account — it's free</p>
         </div>
 
         <div className="card">
@@ -55,7 +55,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="label" htmlFor="company">Company Name <span className="text-gray-400">(optional)</span></label>
+              <label className="label" htmlFor="company">Company Name <span className="text-text-muted">(optional)</span></label>
               <input id="company" type="text" className="input" value={companyName}
                 placeholder="Your company or workspace name"
                 onChange={(e) => setCompany(e.target.value)} />
@@ -76,13 +76,13 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setShowPwd((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
                   tabIndex={-1}
                 >
                   {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              <p className="text-xs text-gray-400 mt-1">Min. 8 characters, 1 uppercase letter, 1 number</p>
+              <p className="text-xs text-text-muted mt-1">Min. 8 characters, 1 uppercase letter, 1 number</p>
             </div>
 
             <div>
@@ -93,7 +93,7 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setShowConfirm((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
                   tabIndex={-1}
                 >
                   {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -106,13 +106,13 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-5">
+          <p className="text-center text-sm text-text-muted mt-5">
             Already have an account?{' '}
-            <Link to="/login" className="text-brand-600 hover:underline font-medium">Sign in</Link>
+            <Link to="/login" className="text-ryze-600 dark:text-ryze-400 hover:underline font-medium">Sign in</Link>
           </p>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-4">
+        <p className="text-center text-xs text-text-muted mt-4">
           A verification email will be sent to confirm your address.
         </p>
       </div>

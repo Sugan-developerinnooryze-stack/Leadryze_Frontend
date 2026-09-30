@@ -77,32 +77,32 @@ export default function VariablePicker({ module, targetRef, value, onChange, cla
       <button
         type="button"
         onClick={() => setIsOpen((o) => !o)}
-        className={className ?? 'text-xs font-medium text-brand-600 hover:text-brand-700 px-2 py-1 border border-brand-200 rounded-md bg-brand-50 hover:bg-brand-100 transition-colors'}
+        className={className ?? 'text-xs font-medium text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 px-2 py-1 border border-ryze-200 dark:border-ryze-800 rounded-md bg-ryze-600/10 hover:bg-ryze-600/15 transition-colors'}
       >
         {'{{ }}'} Insert variable
       </button>
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-[0_4px_20px_-4px_rgba(0,0,0,0.15)]">
+        <div className="absolute z-50 mt-1 w-64 bg-surface border border-border rounded-md shadow-[0_4px_20px_-4px_rgba(0,0,0,0.15)]">
           <input
             type="text"
             autoFocus
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Filter variables…"
-            className="w-full px-3 py-2 text-xs border-b border-gray-100 rounded-t-md focus:outline-none"
+            className="w-full px-3 py-2 text-xs border-b border-border rounded-t-md focus:outline-none bg-background text-text-primary"
           />
           <ul className="max-h-56 overflow-y-auto py-1">
             {options.length === 0 && (
-              <li className="px-3 py-2 text-xs text-gray-400">No matching variables</li>
+              <li className="px-3 py-2 text-xs text-text-muted">No matching variables</li>
             )}
             {options.map((o) => (
               <li
                 key={o.key}
                 onMouseDown={(e) => { e.preventDefault(); insertToken(o.key); }}
-                className="px-3 py-1.5 text-xs cursor-pointer hover:bg-brand-50 hover:text-brand-700"
+                className="px-3 py-1.5 text-xs cursor-pointer hover:bg-ryze-600/10 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300"
               >
-                <span className="font-mono text-[11px] text-gray-700">{`{{${o.key}}}`}</span>
-                <span className="block text-gray-400">{o.label}</span>
+                <span className="font-mono text-[11px] text-text-primary">{`{{${o.key}}}`}</span>
+                <span className="block text-text-muted">{o.label}</span>
               </li>
             ))}
           </ul>

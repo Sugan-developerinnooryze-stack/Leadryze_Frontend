@@ -1,338 +1,246 @@
-import React, { useRef, useEffect } from 'react';
+import type React from 'react';
+import type { FC, SVGProps } from 'react';
 import { motion } from 'framer-motion';
-import {
-  MessageSquareIcon,
-  UsersIcon,
-  ZapIcon,
-  CalendarIcon,
-  MailIcon,
-  DatabaseIcon,
-} from 'lucide-react';
+import { UserRoundPlus, Zap, TrendingUp } from 'lucide-react';
+import { ThemeToggle } from '../ui/ThemeToggle';
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 
-// ── Canvas Particle Network ──────────────────────────────────────────────────
-function ParticleCanvas() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+type HeroIcon = FC<SVGProps<SVGSVGElement>>;
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+const EASE = [0.22, 1, 0.36, 1] as const;
 
-    let animId: number;
+const BRAND_SIZES = {
+  lg: { icon: 'w-14 h-14 rounded-[16px]', word: 'text-[1.85rem]', tag: 'text-[11px] mt-1.5 tracking-[0.16em]', gap: 'gap-3.5' },
+  md: { icon: 'w-11 h-11 rounded-[13px]', word: 'text-[1.5rem]',  tag: 'text-[10px] mt-1 tracking-[0.14em]',  gap: 'gap-3' },
+  sm: { icon: 'w-10 h-10 rounded-xl',     word: 'text-xl',        tag: 'text-[9px] mt-0.5 tracking-[0.12em]', gap: 'gap-2.5' },
+} as const;
 
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    const N = 72;
-    interface Particle { x: number; y: number; vx: number; vy: number; r: number }
-    const particles: Particle[] = Array.from({ length: N }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.35,
-      vy: (Math.random() - 0.5) * 0.35,
-      r: Math.random() * 1.4 + 0.5,
-    }));
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      for (const p of particles) {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-      }
-
-      for (let i = 0; i < N; i++) {
-        for (let j = i + 1; j < N; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 130) {
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(30,111,255,${(1 - dist / 130) * 0.14})`;
-            ctx.lineWidth = 0.8;
-            ctx.stroke();
-          }
-        }
-      }
-
-      for (const p of particles) {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0,200,232,0.35)';
-        ctx.fill();
-      }
-
-      animId = requestAnimationFrame(draw);
-    };
-
-    draw();
-
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener('resize', resize);
-    };
-  }, []);
-
+/** The brand wordmark — `lg` for this file's own hero header, `md` for
+ * every auth card's centered top logo (Login/AdminLogin/ForcedChangePassword
+ * — also the only one visible once the hero pane hides below `lg`), `sm`
+ * held in reserve for any future tighter context. Always in the display
+ * face reserved for this page (see tailwind.config.ts) so it reads as a
+ * real headline element, not body-sized UI text. */
+export function Brand({ size = 'lg' }: { size?: keyof typeof BRAND_SIZES }) {
+  const s = BRAND_SIZES[size];
   return (
-    <canvas
-      ref={canvasRef}
-      className="fixed inset-0 z-0 pointer-events-none"
-    />
+    <div className={`flex items-center ${s.gap}`}>
+      <div className={`${s.icon} overflow-hidden shrink-0 shadow-[0_8px_20px_rgba(0,158,181,0.22)]`}>
+        <img src="/logo.png" alt="LeadRyze AI" className="w-full h-full object-contain" />
+      </div>
+      <div>
+        <h1 className={`font-display ${s.word} font-extrabold tracking-[-0.02em] leading-none`}>
+          <span className="text-text-primary">Lead</span>
+          <span className="text-ryze-600 dark:text-ryze-400">Ryze</span>
+          <span className="text-ryze-500"> AI</span>
+        </h1>
+        <p className={`${s.tag} font-semibold text-text-muted uppercase leading-none`}>
+          Smart CRM. Smarter Conversations.
+        </p>
+      </div>
+    </div>
   );
 }
 
-// ── Orbital Module Card ──────────────────────────────────────────────────────
-const CX = 150;
-const CY = 150;
-
-const OrbitalCard = ({
-  label,
-  angle,
-  radius = 118,
-  delay,
-}: {
-  label: string;
-  angle: number;
-  radius?: number;
-  delay: number;
-}) => {
-  const rad = angle * (Math.PI / 180);
-  const x = CX + Math.cos(rad) * radius;
-  const y = CY + Math.sin(rad) * radius;
-
+function LanguagePill() {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5, delay, type: 'spring', stiffness: 60 }}
-      className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-      style={{ left: x, top: y }}
-    >
-      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0a1226]/88 backdrop-blur-xl border border-[rgba(30,111,255,0.2)] text-[10px] font-bold tracking-widest text-[rgba(180,210,255,0.75)] uppercase cursor-default transition-all hover:border-[rgba(0,200,232,0.45)] hover:text-[#00C8E8] whitespace-nowrap"
-        style={{ backdropFilter: 'blur(12px)' }}>
-        <span className="w-[5px] h-[5px] rounded-full bg-[#1E6FFF] shadow-[0_0_5px_#1E6FFF] animate-pulse flex-shrink-0" />
-        {label}
-      </div>
-    </motion.div>
+    <div className="flex items-center gap-1.5 h-10 px-3.5 rounded-full bg-surface/70 border border-border text-[12px] font-medium text-text-muted select-none">
+      <span aria-hidden>🌐</span> English
+    </div>
   );
-};
+}
 
-// ── Feature Card ─────────────────────────────────────────────────────────────
-const FeatureCard = ({ icon: Icon, title, desc }: { icon: React.ElementType; title: string; desc: string }) => (
-  <motion.div
-    whileHover={{ x: 3, borderColor: 'rgba(0,200,232,0.28)', backgroundColor: 'rgba(30,111,255,0.07)' }}
-    className="flex items-center gap-3 px-3 py-[0.55rem] rounded-[11px] border border-[rgba(30,111,255,0.09)] bg-[rgba(9,16,32,0.55)] backdrop-blur-sm cursor-default transition-all"
-  >
-    <div className="w-[30px] h-[30px] flex-shrink-0 rounded-lg bg-[linear-gradient(135deg,rgba(30,111,255,0.18),rgba(0,200,232,0.08))] border border-[rgba(30,111,255,0.18)] flex items-center justify-center text-brand-400">
-      <Icon className="w-4 h-4" />
-    </div>
-    <div className="min-w-0">
-      <div className="text-[0.73rem] font-bold text-white leading-tight">{title}</div>
-      <div className="text-[0.6rem] text-[#4E6A96] truncate">{desc}</div>
-    </div>
-  </motion.div>
-);
-
-// ── Stat Column ───────────────────────────────────────────────────────────────
-const StatCol = ({ value, label }: { value: string; label: string }) => (
-  <div className="bg-[rgba(9,16,32,0.55)] border border-[rgba(30,111,255,0.09)] rounded-[10px] px-2 py-[0.65rem] text-center backdrop-blur-sm hover:border-[rgba(0,200,232,0.22)] transition-colors">
-    <div className="text-[1.15rem] font-black tracking-[-0.03em] bg-gradient-to-r from-white to-[#00C8E8] bg-clip-text text-transparent leading-tight">
-      {value}
-    </div>
-    <div className="text-[0.58rem] font-semibold text-[#4E6A96] uppercase tracking-[0.06em] mt-0.5">
-      {label}
-    </div>
-  </div>
-);
-
-// ── Main Layout ───────────────────────────────────────────────────────────────
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+/** Per-character entrance — each letter springs in from scale:0/opacity:0
+ * up to its natural size, staggered left to right (the requested Framer
+ * Motion "scale-in text" pattern). A one-shot mount animation, not a loop.
+ * `startIndex` lets multiple SplitText calls on the same line continue one
+ * shared stagger sequence instead of each restarting its own count at 0.
+ * Skipped entirely under prefers-reduced-motion — plain static spans. */
+function SplitText({
+  text, startIndex = 0, className, reducedMotion,
+}: { text: string; startIndex?: number; className?: string; reducedMotion: boolean }) {
   return (
-    <div className="min-h-screen bg-[#060B1A] flex overflow-hidden selection:bg-brand-500/30 font-sans">
-      {/* Particle canvas background */}
-      <ParticleCanvas />
+    <>
+      {text.split('').map((ch, i) => (
+        reducedMotion ? (
+          <span key={i} className={`inline-block ${className ?? ''}`}>
+          {ch === ' ' ? ' ' : ch}
+          </span>
+        ) : (
+          <motion.span
+            key={i}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: (startIndex + i) * 0.035, type: 'spring', stiffness: 150, damping: 12 }}
+            className={`inline-block ${className ?? ''}`}
+          >
+            {ch === ' ' ? ' ' : ch}
+          </motion.span>
+        )
+      ))}
+    </>
+  );
+}
 
-      {/* Ambient gradient blobs */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_50%,rgba(30,111,255,0.1)_0%,transparent_55%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_80%,rgba(107,63,232,0.07)_0%,transparent_45%)]" />
-      </div>
+function PlatformBadge() {
+  return (
+    <div className="inline-flex items-center gap-1.5 w-fit px-3 py-1 rounded-full bg-ryze-50 dark:bg-ryze-500/10 border border-ryze-200 dark:border-ryze-500/25 text-ryze-700 dark:text-ryze-400 text-[11px] font-bold uppercase tracking-[0.03em]">
+      <span className="w-1.5 h-1.5 rounded-full bg-ryze-500" />
+      All-in-One CRM &amp; Automation Platform
+    </div>
+  );
+}
 
-      {/* ── Left Pane 60% ──────────────────────────────────────────────── */}
-      <div className="hidden lg:flex w-[60%] flex-col relative z-10 p-8 gap-4 border-r border-[rgba(30,111,255,0.1)]">
+interface FeatureHighlight { icon: HeroIcon; title: string; desc: string }
+const FEATURES: FeatureHighlight[] = [
+  { icon: UserRoundPlus, title: 'More Leads',    desc: 'Capture and manage\nfrom every channel' },
+  { icon: Zap,           title: 'Save Time',     desc: 'Automate repetitive\ntasks with AI' },
+  { icon: TrendingUp,    title: 'Grow Revenue',  desc: 'Turn opportunities\ninto loyal customers' },
+];
 
-        {/* Left edge right-border glow */}
-        <div className="absolute right-0 top-[15%] bottom-[15%] w-px bg-gradient-to-b from-transparent via-[rgba(30,111,255,0.2)] to-transparent pointer-events-none" />
-
-        {/* Top bar */}
-        <div className="flex items-center justify-between flex-shrink-0">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 shadow-[0_0_22px_rgba(30,111,255,0.5),0_0_44px_rgba(0,200,232,0.18)]">
-              <img src="/logo.png" alt="LeadRyze" className="w-full h-full object-contain" />
-            </div>
-            <div>
-              <h1 className="text-[0.95rem] font-extrabold tracking-[-0.02em] text-white">
-                Lead<em className="not-italic text-[#00C8E8]">Ryze</em> AI
-              </h1>
-              <p className="text-[0.6rem] font-medium text-[#4E6A96] uppercase tracking-[0.04em] mt-0.5">
-                Smart CRM. Smarter Conversations.
-              </p>
-            </div>
+function FeatureHighlights() {
+  return (
+    <div className="flex items-start divide-x divide-border">
+      {FEATURES.map(({ icon: Icon, title, desc }, i) => (
+        <div key={title} className={`flex items-start gap-2.5 flex-1 min-w-0 ${i === 0 ? 'pr-4' : 'px-4'}`}>
+          <div className="w-11 h-11 rounded-[14px] bg-ryze-50 dark:bg-ryze-500/10 flex items-center justify-center shrink-0 shadow-[0_8px_20px_rgba(0,158,181,0.08)]">
+            <Icon className="w-[18px] h-[18px] text-ryze-600 dark:text-ryze-400" strokeWidth={1.8} />
           </div>
-
-          {/* Security badge */}
-          <div className="flex items-center gap-2 px-4 py-[0.32rem] rounded-full border border-[rgba(0,200,232,0.25)] bg-[rgba(0,200,232,0.05)] text-[#00C8E8] text-[0.65rem] font-bold uppercase tracking-[0.06em] backdrop-blur-md">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#00C8E8] shadow-[0_0_6px_#00C8E8] animate-pulse" />
-            Enterprise Grade Security
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold text-text-primary leading-tight">{title}</p>
+            <p className="text-[11px] text-text-muted leading-snug mt-0.5 whitespace-pre-line">{desc}</p>
           </div>
         </div>
+      ))}
+    </div>
+  );
+}
 
-        {/* Hero text */}
-        <div className="flex-shrink-0">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const reducedMotion = usePrefersReducedMotion();
+
+  return (
+    <div className="min-h-screen bg-background bg-[url('/auth-bg.png')] bg-cover bg-center bg-no-repeat dark:bg-none flex overflow-x-hidden">
+      {/* Atmospheric teal glow — dark mode only. Light mode gets its
+         atmosphere from the real background photo above instead; layering
+         this glow on top of it there just muddied the image. */}
+      <div
+        aria-hidden
+        className="fixed inset-0 pointer-events-none hidden dark:block"
+        style={{ background: 'radial-gradient(circle at 72% 42%, rgba(0,158,181,0.10), transparent 55%)' }}
+      />
+
+      {/* ── Left hero pane — hidden below lg, matches the reference's 56/44 split ── */}
+      <div className="hidden lg:flex lg:w-[56%] flex-col relative z-10 px-10 xl:px-14 py-9 gap-7 overflow-y-auto">
+        <motion.header
+          initial={reducedMotion ? undefined : { opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: EASE }}
+          className="shrink-0"
+        >
+          <Brand />
+        </motion.header>
+
+        <div className="shrink-0">
+          <motion.div
+            initial={reducedMotion ? undefined : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-[clamp(1.55rem,2.1vw,2.4rem)] font-black leading-[1.12] tracking-[-0.04em] text-white"
-            style={{ textWrap: 'balance' } as React.CSSProperties}
+            transition={{ duration: 0.5, delay: 0.08, ease: EASE }}
           >
-            Power Your Business<br />
-            <span className="bg-[linear-gradient(100deg,#1E6FFF_0%,#00C8E8_45%,#6B3FE8_100%)] bg-[length:200%_auto] bg-clip-text text-transparent animate-[gshift_5s_ease-in-out_infinite]">
-              with AI &amp; Automation
-            </span>
-          </motion.h2>
+            <PlatformBadge />
+          </motion.div>
+
+          {/* Headline + handwritten tagline sit in the same flex row so the
+             tagline naturally lands in the open space beside the headline
+             on wide viewports, and drops below it on narrower ones — a
+             flex-wrap layout instead of guessing at absolute-position
+             coordinates that would only hold at one exact viewport width. */}
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+            <h2
+              className="font-display text-[clamp(2.8rem,4.6vw,4.7rem)] font-extrabold leading-[1.01] tracking-[-0.03em] text-text-primary shrink-0"
+              style={{ textWrap: 'balance' } as React.CSSProperties}
+            >
+              <SplitText text="Grow Faster" reducedMotion={reducedMotion} />
+              <br />
+              <SplitText text="with " startIndex={11} reducedMotion={reducedMotion} />
+              <span className="relative inline-block">
+                <SplitText
+                  text="LeadRyze AI" startIndex={16} reducedMotion={reducedMotion}
+                  className="bg-clip-text text-transparent bg-gradient-to-r from-ryze-700 via-ryze-500 to-ryze-400"
+                />
+                <svg
+                  className="absolute left-0 -bottom-2 w-full h-3 text-ryze-400/70"
+                  viewBox="0 0 320 12" preserveAspectRatio="none" fill="none" aria-hidden
+                >
+                  <path d="M2 8.5C60 2 140 2 160 6C180 10 260 10 318 4" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+              </span>
+            </h2>
+
+            {/* Handwritten accent callout — the original headline copy,
+               demoted to a small tagline beside the new one. */}
+            <motion.div
+              initial={reducedMotion ? undefined : { opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.45, ease: EASE }}
+              className="hidden md:flex items-center gap-2 -rotate-2 md:ml-6"
+            >
+              <svg className="w-7 h-6 text-ryze-400 shrink-0 -scale-x-100" viewBox="0 0 40 32" fill="none" aria-hidden>
+                <path d="M35 4C28 4 14 10 8 22M8 22L14 18M8 22L11 28" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <p className="font-script text-[26px] leading-none text-ryze-500">
+                Turn Conversations<br />into Business Growth
+              </p>
+            </motion.div>
+          </div>
+
           <motion.p
-            initial={{ opacity: 0, y: 16 }}
+            initial={reducedMotion ? undefined : { opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mt-2 text-[0.78rem] text-[#4E6A96] leading-[1.7] max-w-sm"
+            transition={{ duration: 0.55, delay: 0.2, ease: EASE }}
+            className="mt-4 text-[16px] leading-[1.55] text-text-muted max-w-[560px]"
           >
             Manage customers, automate workflows, connect every CRM, and build intelligent business automation using AI.
           </motion.p>
         </div>
 
-        {/* Main row: orbital + features */}
-        <div className="flex items-center gap-6 flex-1 min-h-0">
+        <motion.div
+          initial={reducedMotion ? undefined : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.28, ease: EASE }}
+          className="shrink-0"
+        >
+          <FeatureHighlights />
+        </motion.div>
 
-          {/* Orbital Core */}
-          <div className="relative flex-shrink-0" style={{ width: 300, height: 300 }}>
-            {/* SVG connection lines to module cards */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 300 300">
-              {[
-                { angle: -90 },
-                { angle: -30 },
-                { angle: 30 },
-                { angle: 90 },
-                { angle: 150 },
-                { angle: 210 },
-              ].map(({ angle }, i) => {
-                const rad = angle * (Math.PI / 180);
-                const r = 118;
-                const x2 = CX + Math.cos(rad) * r;
-                const y2 = CY + Math.sin(rad) * r;
-                return (
-                  <line
-                    key={i}
-                    x1={CX} y1={CY} x2={x2} y2={y2}
-                    stroke="rgba(30,111,255,0.12)" strokeWidth="1"
-                  />
-                );
-              })}
-            </svg>
-
-            {/* Spinning rings — centered at 50%/50% + translate in rspin keyframe */}
-            <div className="absolute inset-0">
-              <div className="absolute rounded-full border border-[rgba(30,111,255,0.08)]"
-                style={{ width: 290, height: 290, top: '50%', left: '50%', animation: 'rspin 50s linear infinite' }} />
-              <div className="absolute rounded-full border border-[rgba(0,200,232,0.11)]"
-                style={{ width: 220, height: 220, top: '50%', left: '50%', animation: 'rspin 28s linear infinite reverse' }} />
-              <div className="absolute rounded-full border border-[rgba(30,111,255,0.15)]"
-                style={{ width: 148, height: 148, top: '50%', left: '50%', animation: 'rspin 18s linear infinite' }} />
-            </div>
-
-            {/* Central hex core — centered absolutely */}
-            <motion.div
-              animate={{
-                filter: [
-                  'drop-shadow(0 0 12px rgba(30,111,255,0.5)) drop-shadow(0 0 28px rgba(0,200,232,0.15))',
-                  'drop-shadow(0 0 22px rgba(30,111,255,0.7)) drop-shadow(0 0 50px rgba(0,200,232,0.25))',
-                  'drop-shadow(0 0 12px rgba(30,111,255,0.5)) drop-shadow(0 0 28px rgba(0,200,232,0.15))',
-                ],
-              }}
-              transition={{ duration: 3.5, repeat: Infinity }}
-              className="absolute z-20 w-[84px] h-[84px] flex items-center justify-center"
-              style={{
-                top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-                clipPath: 'polygon(50% 0%,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%)',
-                background: 'linear-gradient(135deg,rgba(30,111,255,0.25),rgba(0,200,232,0.15))',
-              }}
-            >
-              {/* Inner fill */}
-              <div className="absolute inset-1 flex items-center justify-center"
-                style={{
-                  clipPath: 'polygon(50% 0%,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%)',
-                  background: 'linear-gradient(135deg,#0D1A36,#0C1529)',
-                }}
-              >
-                <img src="/logo.png" alt="iR" className="w-10 h-10 object-contain" />
-              </div>
-            </motion.div>
-
-            {/* Module satellite labels */}
-            <OrbitalCard label="CRM" angle={-90} delay={0.2} />
-            <OrbitalCard label="AI Chatbot" angle={-30} delay={0.3} />
-            <OrbitalCard label="Automation" angle={30} delay={0.4} />
-            <OrbitalCard label="WhatsApp" angle={90} delay={0.5} />
-            <OrbitalCard label="Databases" angle={150} delay={0.6} />
-            <OrbitalCard label="Calendar" angle={210} delay={0.7} />
-          </div>
-
-          {/* Feature Cards */}
-          <div className="flex-1 flex flex-col gap-2 min-w-0">
-            <FeatureCard icon={MessageSquareIcon} title="AI Chatbot" desc="24/7 intelligent customer conversations" />
-            <FeatureCard icon={UsersIcon} title="CRM Pipeline" desc="Manage leads and customers" />
-            <FeatureCard icon={ZapIcon} title="Workflow Automation" desc="Automate repetitive work" />
-            <FeatureCard icon={CalendarIcon} title="Calendar & Meetings" desc="AI-powered scheduling" />
-            <FeatureCard icon={MailIcon} title="Email & WhatsApp" desc="Multi-channel communication" />
-            <FeatureCard icon={DatabaseIcon} title="50+ Integrations" desc="Connect your entire stack" />
-          </div>
-        </div>
-
-        {/* Stats Bar */}
-        <div className="grid grid-cols-4 gap-2 flex-shrink-0">
-          <StatCol value="10K+" label="Businesses" />
-          <StatCol value="1M+" label="AI Conversations" />
-          <StatCol value="99.99%" label="Uptime" />
-          <StatCol value="50+" label="Integrations" />
-        </div>
-
+        <motion.div
+          initial={reducedMotion ? undefined : { opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.36, ease: EASE }}
+          className="flex-1 flex items-center justify-center min-h-0 py-4"
+        >
+          <img
+            src="/dashboard-preview.png"
+            alt="LeadRyze AI dashboard preview with AI Chatbot, WhatsApp, Automation, and Integrations"
+            className="w-full max-w-[920px] h-auto select-none pointer-events-none"
+            draggable={false}
+          />
+        </motion.div>
       </div>
 
-      {/* ── Right Pane 40% ─────────────────────────────────────────────── */}
-      <div className="w-full lg:w-[40%] flex flex-col items-center justify-center p-8 relative z-10">
+      {/* ── Right authentication pane ── */}
+      <div className="w-full lg:w-[44%] flex flex-col items-center justify-center relative z-10 px-6 py-10 min-h-screen">
+        <div className="absolute top-6 right-6 flex items-center gap-2 z-20">
+          <LanguagePill />
+          <ThemeToggle />
+        </div>
+
+        {/* No separate mobile-only brand mark here — every card (Login/
+           AdminLogin/ForcedChangePassword) now renders its own Brand at the
+           top, which is the only one visible once the hero pane hides below
+           lg, and just doubles up with it on desktop otherwise. */}
         {children}
       </div>
-
-      {/* Keyframe styles */}
-      <style>{`
-        @keyframes rspin {
-          from { transform: translate(-50%,-50%) rotate(0deg); }
-          to   { transform: translate(-50%,-50%) rotate(360deg); }
-        }
-        @keyframes gshift {
-          0%,100% { background-position: 0% 50%; }
-          50%      { background-position: 100% 50%; }
-        }
-      `}</style>
     </div>
   );
 }

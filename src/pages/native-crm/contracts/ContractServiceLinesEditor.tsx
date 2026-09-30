@@ -44,7 +44,7 @@ export const FREQUENCY_LABELS: Record<string, string> = Object.fromEntries(
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-const inp = 'rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent';
+const inp = 'rounded-lg bg-surface border border-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400 focus:border-transparent';
 
 export function lineTotal(l: ContractServiceLine): number {
   const gross = (parseFloat(String(l.amount)) || 0) * (parseFloat(String(l.count)) || 1);
@@ -78,7 +78,7 @@ export default function ContractServiceLinesEditor({ value, onChange, availableS
   return (
     <div className="space-y-3">
       {lines.length === 0 && (
-        <p className="text-xs text-gray-400 border border-dashed border-gray-200 rounded-lg px-4 py-6 text-center">
+        <p className="text-xs text-text-muted border border-dashed border-border rounded-lg px-4 py-6 text-center">
           No services yet — click "Add Service" below. Each service gets its own frequency.
         </p>
       )}
@@ -87,10 +87,10 @@ export default function ContractServiceLinesEditor({ value, onChange, availableS
         const rule = line.scheduleRule ?? { frequency: 'once' };
         const dur = splitHours(parseFloat(String(line.durationHours)) || 0);
         return (
-          <div key={i} className="border border-gray-200 rounded-xl p-4 space-y-3 bg-gray-50/40">
+          <div key={i} className="border border-border rounded-xl p-4 space-y-3 bg-background/40">
             {/* Row 1: service pick + name + remove */}
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-gray-400 w-5">{i + 1}.</span>
+              <span className="text-xs font-bold text-text-muted w-5">{i + 1}.</span>
               <select
                 className={`${inp} w-44`}
                 value=""
@@ -111,7 +111,7 @@ export default function ContractServiceLinesEditor({ value, onChange, availableS
                 onChange={(e) => patch(i, { name: e.target.value })}
               />
               <button type="button" onClick={() => removeLine(i)}
-                className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0">
+                className="p-2 rounded-lg text-text-muted hover:text-red-600 hover:bg-red-50 transition-colors shrink-0">
                 <TrashIcon className="h-4 w-4" />
               </button>
             </div>
@@ -119,27 +119,27 @@ export default function ContractServiceLinesEditor({ value, onChange, availableS
             {/* Row 2: qty / price / tax / discount / duration */}
             <div className="grid grid-cols-5 gap-2">
               <div>
-                <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Qty</label>
+                <label className="block text-[10px] font-semibold text-text-muted uppercase mb-1">Qty</label>
                 <input type="number" min={1} className={`${inp} w-full`} value={line.count}
                   onChange={(e) => patch(i, { count: e.target.value })} />
               </div>
               <div>
-                <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Unit Price</label>
+                <label className="block text-[10px] font-semibold text-text-muted uppercase mb-1">Unit Price</label>
                 <input type="number" min={0} step="0.01" className={`${inp} w-full`} value={line.amount}
                   onChange={(e) => patch(i, { amount: e.target.value })} />
               </div>
               <div>
-                <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Tax %</label>
+                <label className="block text-[10px] font-semibold text-text-muted uppercase mb-1">Tax %</label>
                 <input type="number" min={0} step="0.01" className={`${inp} w-full`} value={line.taxPercent ?? ''}
                   onChange={(e) => patch(i, { taxPercent: e.target.value })} />
               </div>
               <div>
-                <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Discount %</label>
+                <label className="block text-[10px] font-semibold text-text-muted uppercase mb-1">Discount %</label>
                 <input type="number" min={0} step="0.01" className={`${inp} w-full`} value={line.discountPercent ?? ''}
                   onChange={(e) => patch(i, { discountPercent: e.target.value })} />
               </div>
               <div>
-                <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Duration / visit</label>
+                <label className="block text-[10px] font-semibold text-text-muted uppercase mb-1">Duration / visit</label>
                 <div className="flex gap-1">
                   <select className={`${inp} flex-1`} value={dur.hrs}
                     onChange={(e) => patch(i, { durationHours: joinHours(parseInt(e.target.value, 10), dur.mins) || '' })}>
@@ -154,9 +154,9 @@ export default function ContractServiceLinesEditor({ value, onChange, availableS
             </div>
 
             {/* Row 3: frequency rule */}
-            <div className="flex flex-wrap items-end gap-3 bg-white border border-brand-100 rounded-lg px-3 py-2.5">
+            <div className="flex flex-wrap items-end gap-3 bg-surface border border-ryze-100 dark:border-ryze-900 rounded-lg px-3 py-2.5">
               <div>
-                <label className="block text-[10px] font-semibold text-brand-500 uppercase mb-1">Frequency</label>
+                <label className="block text-[10px] font-semibold text-ryze-500 uppercase mb-1">Frequency</label>
                 <select
                   className={`${inp} w-56`}
                   value={rule.frequency}
@@ -170,7 +170,7 @@ export default function ContractServiceLinesEditor({ value, onChange, availableS
 
               {(rule.frequency === 'weekly' || rule.frequency === 'fortnightly') && (
                 <div>
-                  <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Days of week</label>
+                  <label className="block text-[10px] font-semibold text-text-muted uppercase mb-1">Days of week</label>
                   <div className="flex gap-1">
                     {WEEKDAYS.map((wd, idx) => {
                       const on = rule.weekdays?.includes(idx) ?? false;
@@ -181,7 +181,7 @@ export default function ContractServiceLinesEditor({ value, onChange, availableS
                             patchRule(i, { weekdays: on ? cur.filter((d) => d !== idx) : [...cur, idx] });
                           }}
                           className={`px-2 py-1 rounded-md text-xs font-medium border transition-colors ${
-                            on ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                            on ? 'bg-ryze-600 text-white border-ryze-600' : 'bg-surface text-text-muted border-border hover:border-border'
                           }`}>
                           {wd}
                         </button>
@@ -193,7 +193,7 @@ export default function ContractServiceLinesEditor({ value, onChange, availableS
 
               {['monthly', 'bimonthly', 'quarterly', 'halfyearly', 'yearly'].includes(rule.frequency) && (
                 <div>
-                  <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Day of month</label>
+                  <label className="block text-[10px] font-semibold text-text-muted uppercase mb-1">Day of month</label>
                   <select
                     className={`${inp} w-36`}
                     value={String(rule.dayOfMonth ?? '')}
@@ -213,7 +213,7 @@ export default function ContractServiceLinesEditor({ value, onChange, availableS
 
               {rule.frequency === 'custom_interval' && (
                 <div>
-                  <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Every N days</label>
+                  <label className="block text-[10px] font-semibold text-text-muted uppercase mb-1">Every N days</label>
                   <input type="number" min={1} className={`${inp} w-28`} value={rule.everyNDays ?? ''}
                     placeholder="e.g. 17"
                     onChange={(e) => patchRule(i, { everyNDays: parseInt(e.target.value, 10) || undefined })} />
@@ -222,13 +222,13 @@ export default function ContractServiceLinesEditor({ value, onChange, availableS
 
               {rule.frequency === 'custom_dates' && (
                 <div className="flex-1 min-w-[260px]">
-                  <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Specific dates</label>
+                  <label className="block text-[10px] font-semibold text-text-muted uppercase mb-1">Specific dates</label>
                   <div className="flex flex-wrap gap-1.5 items-center">
                     {(rule.dates ?? []).map((d, di) => (
-                      <span key={di} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-brand-50 text-brand-700 text-xs border border-brand-200">
+                      <span key={di} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-ryze-600/10 text-ryze-700 dark:text-ryze-400 text-xs border border-ryze-200 dark:border-ryze-800">
                         {d}
                         <button type="button" onClick={() => patchRule(i, { dates: (rule.dates ?? []).filter((_, x) => x !== di) })}
-                          className="text-brand-400 hover:text-red-500">×</button>
+                          className="text-ryze-400 hover:text-red-500">×</button>
                       </span>
                     ))}
                     <input type="date" className={`${inp}`}
@@ -243,8 +243,8 @@ export default function ContractServiceLinesEditor({ value, onChange, availableS
               )}
 
               <div className="ml-auto text-right">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase mb-0.5">Line total / visit</p>
-                <p className="text-sm font-semibold text-gray-800">{lineTotal(line).toFixed(2)}</p>
+                <p className="text-[10px] font-semibold text-text-muted uppercase mb-0.5">Line total / visit</p>
+                <p className="text-sm font-semibold text-text-primary">{lineTotal(line).toFixed(2)}</p>
               </div>
             </div>
 
@@ -269,12 +269,12 @@ export default function ContractServiceLinesEditor({ value, onChange, availableS
 
       <div className="flex items-center justify-between">
         <button type="button" onClick={addLine}
-          className="flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700">
+          className="flex items-center gap-1.5 text-sm font-medium text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300">
           <PlusIcon className="h-4 w-4" /> Add Service
         </button>
         {lines.length > 0 && (
-          <p className="text-sm text-gray-500">
-            Per-visit total: <span className="font-semibold text-gray-800">{grand.toFixed(2)}</span>
+          <p className="text-sm text-text-muted">
+            Per-visit total: <span className="font-semibold text-text-primary">{grand.toFixed(2)}</span>
           </p>
         )}
       </div>

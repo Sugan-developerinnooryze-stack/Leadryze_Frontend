@@ -26,8 +26,8 @@ interface Props {
   onUnlocked?: () => void;
 }
 
-const inp  = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent';
-const lbl  = 'block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide';
+const inp  = 'w-full rounded-lg bg-surface border border-border px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400 focus:border-transparent';
+const lbl  = 'block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide';
 
 const CONTRACT_TYPES = ['amc', 'maintenance', 'rental', 'warranty', 'preventive', 'corrective', 'installation', 'inspection', 'custom'];
 const PRIORITIES     = ['low', 'medium', 'high', 'critical'];
@@ -36,7 +36,7 @@ const STATUSES       = ['draft', 'pending', 'active', 'suspended', 'completed', 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="pt-5 first:pt-0">
-      <p className="text-xs font-bold text-brand-500 uppercase tracking-wider mb-3 pb-1.5 border-b border-gray-100">{title}</p>
+      <p className="text-xs font-bold text-ryze-500 uppercase tracking-wider mb-3 pb-1.5 border-b border-border">{title}</p>
       {children}
     </div>
   );
@@ -280,22 +280,22 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
   return (
     <>
       <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40" onClick={onClose} />
-      <div className={`fixed right-0 top-0 h-full w-full max-w-[56vw] min-w-[640px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-out ${visible ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed right-0 top-0 h-full w-full max-w-[56vw] min-w-[640px] bg-surface shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-out ${visible ? 'translate-x-0' : 'translate-x-full'}`}>
         {/* Header */}
-        <div className="flex items-center justify-between px-7 py-5 border-b border-gray-100 shrink-0">
+        <div className="flex items-center justify-between px-7 py-5 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-1 h-8 rounded-full bg-brand-500 shrink-0" />
+            <div className="w-1 h-8 rounded-full bg-ryze-600/100 shrink-0" />
             <div>
-              <h2 className="text-base font-semibold text-gray-900 leading-tight">
+              <h2 className="text-base font-semibold text-text-primary leading-tight">
                 {isEdit ? 'Edit Contract' : 'New Contract'}
               </h2>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-text-muted mt-0.5">
                 Each service can have its own frequency — the schedule is generated automatically.
               </p>
             </div>
           </div>
           <button type="button" onClick={onClose}
-            className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+            className="p-2 rounded-xl text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
@@ -337,7 +337,7 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
                   {errors.customerId && <p className="mt-1 text-xs text-red-500">{errors.customerId}</p>}
                 </div>
                 {selectedCustomer && (
-                  <div className="col-span-2 text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2 flex flex-wrap gap-x-5 gap-y-1">
+                  <div className="col-span-2 text-xs text-text-muted bg-background rounded-lg px-3 py-2 flex flex-wrap gap-x-5 gap-y-1">
                     {selectedCustomer.email && <span><strong>Email:</strong> {selectedCustomer.email}</span>}
                     {selectedCustomer.phone && <span><strong>Phone:</strong> {selectedCustomer.phone}</span>}
                     {selectedCustomer.address && <span><strong>Address:</strong> {selectedCustomer.address}</span>}
@@ -398,13 +398,13 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
                 </div>
                 <div>
                   <label className={lbl}>End Date</label>
-                  <input type="date" className={`${inp} ${form.noEndDate ? 'bg-gray-50 text-gray-400' : ''}`}
+                  <input type="date" className={`${inp} ${form.noEndDate ? 'bg-background text-text-muted' : ''}`}
                     disabled={!!form.noEndDate}
                     value={form.endDate ?? ''} onChange={(e) => set('endDate', e.target.value)} />
                   {errors.endDate && <p className="mt-1 text-xs text-red-500">{errors.endDate}</p>}
-                  <label className="mt-1.5 flex items-center gap-2 cursor-pointer text-xs text-gray-500">
+                  <label className="mt-1.5 flex items-center gap-2 cursor-pointer text-xs text-text-muted">
                     <input type="checkbox" checked={!!form.noEndDate} onChange={(e) => set('noEndDate', e.target.checked)}
-                      className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-400" />
+                      className="h-3.5 w-3.5 rounded border-border text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400" />
                     No fixed term (auto-set 1 year from start)
                   </label>
                 </div>
@@ -442,7 +442,7 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
                 {previewError ? (
                   <p className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-lg px-4 py-3">{previewError}</p>
                 ) : preview ? (
-                  <div className="bg-brand-50/50 border border-brand-100 rounded-xl p-4 space-y-3">
+                  <div className="bg-ryze-600/10/50 border border-ryze-100 dark:border-ryze-900 rounded-xl p-4 space-y-3">
                     <div className="grid grid-cols-4 gap-3">
                       {[
                         ['Total Visits', String(preview.totalVisits)],
@@ -450,17 +450,17 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
                         ['Est. Revenue', preview.estimatedRevenue.toLocaleString()],
                         ['Est. Hours', `${preview.estimatedHours} hrs`],
                       ].map(([label, val]) => (
-                        <div key={label} className="bg-white rounded-lg border border-brand-100 px-3 py-2.5 text-center">
-                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{label}</p>
-                          <p className="text-lg font-bold text-brand-700 mt-0.5">{val}</p>
+                        <div key={label} className="bg-surface rounded-lg border border-ryze-100 dark:border-ryze-900 px-3 py-2.5 text-center">
+                          <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">{label}</p>
+                          <p className="text-lg font-bold text-ryze-700 dark:text-ryze-400 mt-0.5">{val}</p>
                         </div>
                       ))}
                     </div>
                     {preview.perMonth.length > 0 && (
                       <div className="flex flex-wrap gap-1.5">
                         {preview.perMonth.map((m) => (
-                          <span key={m.month} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-brand-100 text-xs text-gray-600">
-                            <CalendarDaysIcon className="h-3.5 w-3.5 text-brand-400" />
+                          <span key={m.month} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-surface border border-ryze-100 dark:border-ryze-900 text-xs text-text-muted">
+                            <CalendarDaysIcon className="h-3.5 w-3.5 text-ryze-400" />
                             {m.month} · <strong>{m.count}</strong>
                           </span>
                         ))}
@@ -468,7 +468,7 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
                     )}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-400">Calculating schedule…</p>
+                  <p className="text-xs text-text-muted">Calculating schedule…</p>
                 )}
               </Section>
             )}
@@ -485,22 +485,22 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
                 </div>
                 <div>
                   <label className={lbl}>Staff</label>
-                  <div className="border border-gray-300 rounded-lg max-h-40 overflow-y-auto p-2 space-y-1">
-                    {staffs.length === 0 && <p className="text-xs text-gray-400 px-2 py-1">No staff available</p>}
+                  <div className="border border-border rounded-lg max-h-40 overflow-y-auto p-2 space-y-1">
+                    {staffs.length === 0 && <p className="text-xs text-text-muted px-2 py-1">No staff available</p>}
                     {staffs.map((s: any) => {
                       const sid = s.staffId ?? s._id?.toString();
                       const checked = (form.staffIds ?? []).includes(sid);
                       const note = availabilityNote(staffBusyMap[sid]);
                       return (
-                        <label key={s._id} className="flex items-start gap-2 px-2 py-1 rounded hover:bg-gray-50 cursor-pointer">
+                        <label key={s._id} className="flex items-start gap-2 px-2 py-1 rounded hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer">
                           <input type="checkbox" checked={checked}
                             onChange={(e) => {
                               const cur: string[] = form.staffIds ?? [];
                               set('staffIds', e.target.checked ? [...cur, sid] : cur.filter((x) => x !== sid));
                             }}
-                            className="h-4 w-4 mt-0.5 rounded border-gray-300 text-brand-600 focus:ring-brand-400" />
+                            className="h-4 w-4 mt-0.5 rounded border-border text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400" />
                           <span className="flex-1 min-w-0">
-                            <span className="block text-sm text-gray-700">{`${s.firstName ?? ''} ${s.lastName ?? ''}`.trim()}</span>
+                            <span className="block text-sm text-text-primary">{`${s.firstName ?? ''} ${s.lastName ?? ''}`.trim()}</span>
                             {note && <span className="block text-[11px] text-red-500 leading-snug">🔴 {note}</span>}
                           </span>
                         </label>
@@ -579,13 +579,13 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
           </div>
 
           {/* Footer */}
-          <div className="px-7 py-5 border-t border-gray-100 flex items-center justify-center gap-3 shrink-0 bg-gray-50/60">
+          <div className="px-7 py-5 border-t border-border flex items-center justify-center gap-3 shrink-0 bg-black/[0.015] dark:bg-white/[0.02]">
             <button type="button" onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">
+              className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
               Cancel
             </button>
             <button type="submit" disabled={saving || (!!record?.isLocked && !isAdmin)}
-              className="px-6 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-60 transition-colors flex items-center gap-2 min-w-[140px] justify-center">
+              className="px-6 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-60 transition-colors flex items-center gap-2 min-w-[140px] justify-center">
               {saving && (
                 <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />

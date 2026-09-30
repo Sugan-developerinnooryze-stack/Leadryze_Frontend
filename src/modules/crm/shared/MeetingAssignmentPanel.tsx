@@ -17,10 +17,10 @@ interface TimelineEvent {
 }
 
 const ACTION_COLORS: Record<string, string> = {
-  created:    'bg-emerald-100 text-emerald-700',
-  assigned:   'bg-purple-100 text-purple-700',
-  reassigned: 'bg-indigo-100 text-indigo-700',
-  updated:    'bg-gray-100 text-gray-600',
+  created:    'bg-success-500/15 text-success-700 dark:text-success-500',
+  assigned:   'bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400',
+  reassigned: 'bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400',
+  updated:    'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted',
 };
 
 /** Meeting-specific "who is this assigned to, and can I change it" section —
@@ -89,28 +89,28 @@ export default function MeetingAssignmentPanel({ record, apiBase, onReassigned }
   };
 
   if (loading) {
-    return <p className="text-xs text-gray-400">Loading assignment info…</p>;
+    return <p className="text-xs text-text-muted">Loading assignment info…</p>;
   }
 
   return (
-    <div className="pt-2 border-t border-gray-100 space-y-3">
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Assignment</p>
+    <div className="pt-2 border-t border-border space-y-3">
+      <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Assignment</p>
 
       <div className="space-y-1 text-sm">
-        <div className="flex justify-between"><span className="text-gray-500">Assigned to</span><span className="font-medium text-gray-800">{(record.assignedStaffName as string) || 'Unassigned'}</span></div>
-        <div className="flex justify-between"><span className="text-gray-500">Team</span><span className="font-medium text-gray-800">{(record.teamName as string) || '—'}</span></div>
-        <div className="flex justify-between"><span className="text-gray-500">Supervisor</span><span className="font-medium text-gray-800">{supervisorName || '—'}</span></div>
-        <div className="flex justify-between"><span className="text-gray-500">Source</span><span className="font-medium text-gray-800 capitalize">{(record.source as string) || 'manual'}</span></div>
+        <div className="flex justify-between"><span className="text-text-muted">Assigned to</span><span className="font-medium text-text-primary">{(record.assignedStaffName as string) || 'Unassigned'}</span></div>
+        <div className="flex justify-between"><span className="text-text-muted">Team</span><span className="font-medium text-text-primary">{(record.teamName as string) || '—'}</span></div>
+        <div className="flex justify-between"><span className="text-text-muted">Supervisor</span><span className="font-medium text-text-primary">{supervisorName || '—'}</span></div>
+        <div className="flex justify-between"><span className="text-text-muted">Source</span><span className="font-medium text-text-primary capitalize">{(record.source as string) || 'manual'}</span></div>
       </div>
 
       {candidates && candidates.length > 0 && (
         <div className="space-y-2">
-          <label className="block text-xs font-medium text-gray-700">Reassign to</label>
+          <label className="block text-xs font-medium text-text-primary">Reassign to</label>
           <div className="flex gap-2">
             <select
               value={selected}
               onChange={(e) => { setSelected(e.target.value); setReassignError(null); }}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 bg-background text-text-primary"
             >
               <option value="">Select staff…</option>
               {candidates.map((c) => (
@@ -122,7 +122,7 @@ export default function MeetingAssignmentPanel({ record, apiBase, onReassigned }
             <button
               onClick={handleReassign}
               disabled={!selected || reassigning}
-              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors"
+              className="px-3 py-2 bg-ryze-600 hover:bg-ryze-700 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors"
             >
               {reassigning ? 'Saving…' : 'Reassign'}
             </button>
@@ -130,7 +130,7 @@ export default function MeetingAssignmentPanel({ record, apiBase, onReassigned }
           {reassignError ? (
             <p className="text-[11px] text-red-500">{reassignError}</p>
           ) : (
-            <p className="text-[11px] text-gray-400">
+            <p className="text-[11px] text-text-muted">
               Busy candidates are shown so you can pick them anyway — but if they already have a real meeting at this
               exact time, the reassignment will be blocked to prevent a double-booking.
             </p>
@@ -138,26 +138,26 @@ export default function MeetingAssignmentPanel({ record, apiBase, onReassigned }
         </div>
       )}
       {candidates && candidates.length === 0 && (
-        <p className="text-xs text-gray-400">No other active staff found to reassign to.</p>
+        <p className="text-xs text-text-muted">No other active staff found to reassign to.</p>
       )}
 
       <div>
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+          className="text-xs text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 font-medium"
         >
           {expanded ? 'Hide' : 'Show'} assignment history ({history.length})
         </button>
         {expanded && (
           <div className="mt-2 space-y-1.5 max-h-48 overflow-y-auto">
-            {history.length === 0 && <p className="text-xs text-gray-400">No history yet.</p>}
+            {history.length === 0 && <p className="text-xs text-text-muted">No history yet.</p>}
             {history.map((ev, i) => (
               <div key={ev._id ?? i} className="flex items-start gap-2 text-xs">
-                <span className={`px-1.5 py-0.5 rounded-full font-medium shrink-0 ${ACTION_COLORS[ev.action] ?? 'bg-gray-100 text-gray-600'}`}>
+                <span className={`px-1.5 py-0.5 rounded-full font-medium shrink-0 ${ACTION_COLORS[ev.action] ?? 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'}`}>
                   {ev.action.replace(/_/g, ' ')}
                 </span>
-                <span className="text-gray-600">{ev.description}</span>
-                <span className="ml-auto text-gray-400 shrink-0">
+                <span className="text-text-muted">{ev.description}</span>
+                <span className="ml-auto text-text-muted shrink-0">
                   {ev.createdAt ? new Date(ev.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : ''}
                 </span>
               </div>

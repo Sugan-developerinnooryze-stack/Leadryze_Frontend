@@ -23,6 +23,7 @@ export const config: ModulePageConfig = {
     { key: 'teamName',      label: 'Team',          type: 'text',     tableCol: true, hideInForm: true },
     { key: 'source',        label: 'Source',        type: 'select',   tableCol: true, hideInForm: true, options: ['manual', 'widget'] },
     { key: 'notes',         label: 'Notes',         type: 'textarea' },
+    { key: 'createdAt',     label: 'Created Date',  type: 'date' },
   ],
 };
 

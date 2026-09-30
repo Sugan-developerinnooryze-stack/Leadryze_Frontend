@@ -33,35 +33,35 @@ function SearchableSelect({ field, value, onChange, error }: Props) {
   const displayVal = value ? value.replace(/_/g, ' ') : '';
 
   const base =
-    'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-left flex items-center justify-between gap-2 ' +
-    (error ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white hover:border-gray-400');
+    'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 transition-colors text-left flex items-center justify-between gap-2 ' +
+    (error ? 'border-red-400 bg-red-50' : 'border-border bg-surface hover:border-border');
 
   return (
     <div ref={ref} className="relative">
       <button type="button" onClick={() => setOpen((v) => !v)} className={base}>
-        <span className={displayVal ? 'text-gray-900' : 'text-gray-400'}>
+        <span className={displayVal ? 'text-text-primary' : 'text-text-muted'}>
           {displayVal || `Select ${field.label}`}
         </span>
-        <ChevronDownIcon className={`h-4 w-4 text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDownIcon className={`h-4 w-4 text-text-muted shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
-        <div className="absolute top-full mt-1 left-0 right-0 z-30 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
-          <div className="p-2 border-b border-gray-100">
+        <div className="absolute top-full mt-1 left-0 right-0 z-30 bg-surface border border-border rounded-xl shadow-xl overflow-hidden">
+          <div className="p-2 border-b border-border">
             <input
               autoFocus
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search..."
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-1.5 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ryze-500 bg-background text-text-primary"
             />
           </div>
           <div className="max-h-52 overflow-y-auto py-1">
             <button
               type="button"
               onClick={() => { onChange(''); setOpen(false); setQuery(''); }}
-              className="w-full text-left px-4 py-2 text-sm text-gray-400 hover:bg-gray-50 transition-colors"
+              className="w-full text-left px-4 py-2 text-sm text-text-muted hover:bg-background transition-colors"
             >
               Select a stage
             </button>
@@ -72,15 +72,15 @@ function SearchableSelect({ field, value, onChange, error }: Props) {
                 onClick={() => { onChange(o); setOpen(false); setQuery(''); }}
                 className={`w-full text-left px-4 py-2 text-sm transition-colors capitalize ${
                   value === o
-                    ? 'bg-blue-50 text-blue-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-50'
+                    ? 'bg-ryze-600/10 text-ryze-700 dark:text-ryze-400 font-medium'
+                    : 'text-text-primary hover:bg-background'
                 }`}
               >
                 {o.replace(/_/g, ' ')}
               </button>
             ))}
             {filtered.length === 0 && (
-              <p className="px-4 py-3 text-sm text-gray-400 text-center">No options match</p>
+              <p className="px-4 py-3 text-sm text-text-muted text-center">No options match</p>
             )}
           </div>
         </div>
@@ -94,8 +94,8 @@ function StaffSelect({ value, onChange, error }: Omit<Props, 'field'>) {
   const { data } = useStaffsListQuery({ page: 1, limit: 1000 });
   const staff = data?.items ?? [];
   const base =
-    'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ' +
-    (error ? 'border-red-400 bg-red-50' : 'border-gray-300');
+    'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 transition-colors ' +
+    (error ? 'border-red-400 bg-red-50' : 'border-border bg-background text-text-primary');
   return (
     <select value={value} onChange={(e) => onChange(e.target.value)} className={base}>
       <option value="">Unassigned</option>
@@ -113,8 +113,8 @@ function TeamSelect({ value, onChange, error }: Omit<Props, 'field'>) {
   const { data } = useTeamsListQuery({ page: 1, limit: 1000 });
   const teams = data?.items ?? [];
   const base =
-    'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ' +
-    (error ? 'border-red-400 bg-red-50' : 'border-gray-300');
+    'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 transition-colors ' +
+    (error ? 'border-red-400 bg-red-50' : 'border-border bg-background text-text-primary');
   return (
     <select value={value} onChange={(e) => onChange(e.target.value)} className={base}>
       <option value="">No team</option>
@@ -130,8 +130,8 @@ function CategorySelect({ value, onChange, error }: Omit<Props, 'field'>) {
   const { data } = useCategoriesListQuery({ page: 1, limit: 1000 });
   const categories = data?.items ?? [];
   const base =
-    'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ' +
-    (error ? 'border-red-400 bg-red-50' : 'border-gray-300');
+    'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 transition-colors ' +
+    (error ? 'border-red-400 bg-red-50' : 'border-border bg-background text-text-primary');
   return (
     <select value={value} onChange={(e) => onChange(e.target.value)} className={base}>
       <option value="">No category</option>
@@ -145,8 +145,8 @@ function CategorySelect({ value, onChange, error }: Omit<Props, 'field'>) {
 /* ── CrmField ────────────────────────────────────────────────────── */
 export default function CrmField({ field, value, onChange, error }: Props) {
   const base =
-    'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ' +
-    (error ? 'border-red-400 bg-red-50' : 'border-gray-300');
+    'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 transition-colors ' +
+    (error ? 'border-red-400 bg-red-50' : 'border-border bg-background text-text-primary');
 
   let input: React.ReactNode;
 
@@ -197,7 +197,7 @@ export default function CrmField({ field, value, onChange, error }: Props) {
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+      <label className="block text-sm font-medium text-text-primary mb-1">
         {field.label}
         {field.required && <span className="text-red-500 ml-0.5">*</span>}
       </label>

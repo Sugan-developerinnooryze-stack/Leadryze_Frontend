@@ -140,13 +140,13 @@ export default function TemplatesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Templates</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Available variables: <code className="text-xs bg-gray-100 px-1 rounded">{'{{name}}'}</code>{' '}
-            <code className="text-xs bg-gray-100 px-1 rounded">{'{{company}}'}</code>{' '}
-            <code className="text-xs bg-gray-100 px-1 rounded">{'{{date}}'}</code>{' '}
-            <code className="text-xs bg-gray-100 px-1 rounded">{'{{time}}'}</code>{' '}
-            <code className="text-xs bg-gray-100 px-1 rounded">{'{{meeting}}'}</code>
+          <h1 className="text-2xl font-bold text-text-primary">Templates</h1>
+          <p className="text-sm text-text-muted mt-0.5">
+            Available variables: <code className="text-xs bg-black/[0.04] dark:bg-white/[0.06] px-1 rounded">{'{{name}}'}</code>{' '}
+            <code className="text-xs bg-black/[0.04] dark:bg-white/[0.06] px-1 rounded">{'{{company}}'}</code>{' '}
+            <code className="text-xs bg-black/[0.04] dark:bg-white/[0.06] px-1 rounded">{'{{date}}'}</code>{' '}
+            <code className="text-xs bg-black/[0.04] dark:bg-white/[0.06] px-1 rounded">{'{{time}}'}</code>{' '}
+            <code className="text-xs bg-black/[0.04] dark:bg-white/[0.06] px-1 rounded">{'{{meeting}}'}</code>
           </p>
         </div>
         <button className="btn-primary gap-2" onClick={() => setShowModal(true)}>
@@ -156,11 +156,11 @@ export default function TemplatesPage() {
 
       {isLoading ? (
         <div className="animate-pulse space-y-4">
-          {[...Array(4)].map((_, i) => <div key={i} className="card h-32 bg-gray-100" />)}
+          {[...Array(4)].map((_, i) => <div key={i} className="card h-32 bg-black/[0.04] dark:bg-white/[0.06]" />)}
         </div>
       ) : templates.length === 0 ? (
         <div className="card text-center py-16">
-          <p className="text-gray-400 mb-4">No templates yet.</p>
+          <p className="text-text-muted mb-4">No templates yet.</p>
           <button className="btn-primary gap-2" onClick={() => setShowModal(true)}>
             <PlusIcon className="h-4 w-4" /> Create your first template
           </button>
@@ -171,7 +171,7 @@ export default function TemplatesPage() {
             <div key={t._id} className="card">
               <div className="flex items-start justify-between mb-2">
                 <div>
-                  <h3 className="font-semibold text-gray-900">{t.name}</h3>
+                  <h3 className="font-semibold text-text-primary">{t.name}</h3>
                   <div className="flex gap-2 mt-1">
                     <span className="badge badge-blue capitalize">{t.category ? CATEGORY_LABELS[t.category] ?? t.category : '—'}</span>
                     <span className="badge badge-gray capitalize">{t.type}</span>
@@ -179,16 +179,16 @@ export default function TemplatesPage() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button onClick={() => copyBody(t.body)} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg" title="Copy">
+                  <button onClick={() => copyBody(t.body)} className="p-2 text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] rounded-lg" title="Copy">
                     <ClipboardDocumentIcon className="h-4 w-4" />
                   </button>
-                  <button onClick={() => deleteTemplate(t._id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Delete">
+                  <button onClick={() => deleteTemplate(t._id)} className="p-2 text-text-muted hover:text-red-600 hover:bg-red-50 rounded-lg" title="Delete">
                     <TrashIcon className="h-4 w-4" />
                   </button>
                 </div>
               </div>
-              {t.subject && <p className="text-sm font-medium text-gray-700 mb-1">Subject: {t.subject}</p>}
-              <p className="text-sm text-gray-600 line-clamp-3 whitespace-pre-wrap">{t.body}</p>
+              {t.subject && <p className="text-sm font-medium text-text-primary mb-1">Subject: {t.subject}</p>}
+              <p className="text-sm text-text-muted line-clamp-3 whitespace-pre-wrap">{t.body}</p>
               {t.variables.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-3">
                   {t.variables.map((v) => (
@@ -256,7 +256,7 @@ export default function TemplatesPage() {
             <div className="flex items-center justify-between mb-1">
               <label className="label mb-0">Message Body *</label>
               <div className="flex items-center gap-2">
-                <button type="button" onClick={applyHint} className="text-xs text-brand-600 hover:underline">
+                <button type="button" onClick={applyHint} className="text-xs text-ryze-600 dark:text-ryze-400 hover:underline">
                   Use sample for "{CATEGORY_LABELS[form.category] ?? form.category}"
                 </button>
                 <VariablePicker module="" targetRef={bodyRef} value={form.body} onChange={(v) => setForm((p) => ({ ...p, body: v }))} />
@@ -273,7 +273,7 @@ export default function TemplatesPage() {
             />
             {detectedVars.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
-                <span className="text-xs text-gray-500 mr-1">Variables detected:</span>
+                <span className="text-xs text-text-muted mr-1">Variables detected:</span>
                 {detectedVars.map((v) => (
                   <span key={v} className="badge badge-yellow text-xs">{`{{${v}}}`}</span>
                 ))}

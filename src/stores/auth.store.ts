@@ -3,6 +3,11 @@ import { persist } from 'zustand/middleware';
 import { authService } from '../services/auth.service';
 import api from '../services/api';
 
+export interface SidebarLayout {
+  items?:  Record<string, { order?: number; pinned?: boolean }>;
+  groups?: { crmData?: boolean; customModules?: boolean };
+}
+
 export interface User {
   _id: string;
   email: string;
@@ -13,6 +18,8 @@ export interface User {
   tenantId: string;
   emailVerified: boolean;
   clientId?: string;
+  mustChangePassword?: boolean;
+  sidebarLayout?: SidebarLayout;
 }
 
 interface AuthState {
@@ -22,11 +29,16 @@ interface AuthState {
   permissions: string[] | null; // null = full access (SUPER_ADMIN / TENANT_ADMIN); not persisted
   isLoading: boolean;
   login: (email: string, password: string) => Promise<User>;
+  loginWithClientId: (clientId: string, password: string) => Promise<User>;
   register: (data: { email: string; password: string; firstName: string; lastName: string; companyName?: string }) => Promise<string>;
   logout: () => void;
   refreshToken: () => Promise<void>;
   fetchMe: () => Promise<void>;
   refreshPermissions: () => Promise<void>;
+  /** Optimistic local update for the sidebar customization hook — applied
+   * immediately on drag/pin/reset, ahead of (and independent of) the
+   * debounced backend PUT in useSidebarLayout.ts. */
+  setSidebarLayout: (layout: SidebarLayout) => void;
 }
 
 function mapUser(raw: Record<string, unknown>): User {
@@ -40,6 +52,8 @@ function mapUser(raw: Record<string, unknown>): User {
     tenantId:      raw.tenantId as string,
     emailVerified: raw.emailVerified as boolean,
     clientId:      raw.clientId as string | undefined,
+    mustChangePassword: raw.mustChangePassword as boolean | undefined,
+    sidebarLayout: raw.sidebarLayout as SidebarLayout | undefined,
   };
 }
 
@@ -64,6 +78,26 @@ export const useAuthStore = create<AuthState>()(
             refreshTokenValue: refreshToken,
             // permissions: null → full access (SUPER_ADMIN / TENANT_ADMIN without roleId)
             // permissions: string[] → DB-backed role permissions
+            permissions:       permissions ?? null,
+            isLoading:         false,
+          });
+          return user;
+        } catch (err) {
+          set({ isLoading: false });
+          throw err;
+        }
+      },
+
+      loginWithClientId: async (clientId, password) => {
+        set({ isLoading: true });
+        try {
+          const res = await authService.loginWithClientId({ clientId, password });
+          const { user: raw, accessToken, refreshToken, permissions } = res.data.data;
+          const user = mapUser(raw);
+          set({
+            user,
+            token:             accessToken,
+            refreshTokenValue: refreshToken,
             permissions:       permissions ?? null,
             isLoading:         false,
           });
@@ -117,6 +151,12 @@ export const useAuthStore = create<AuthState>()(
         } catch {
           // On failure keep existing permissions — don't lock user out
         }
+      },
+
+      setSidebarLayout: (layout) => {
+        const current = get().user;
+        if (!current) return;
+        set({ user: { ...current, sidebarLayout: layout } });
       },
     }),
     {

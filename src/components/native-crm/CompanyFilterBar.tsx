@@ -17,13 +17,13 @@ export function CompanyFilterBar() {
 
   return (
     <div className="flex items-center gap-1.5 flex-wrap pb-3">
-      <span className="text-xs text-gray-400 font-medium mr-1 shrink-0">Company:</span>
+      <span className="text-xs text-text-muted font-medium mr-1 shrink-0">Company:</span>
       <button
         onClick={() => switchBranch(null)}
         className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${
           !currentBranch
-            ? 'bg-indigo-600 text-white border-indigo-600'
-            : 'bg-white text-gray-500 border-gray-200 hover:border-indigo-300 hover:text-indigo-600'
+            ? 'bg-ryze-600 text-white border-ryze-600'
+            : 'bg-surface text-text-muted border-border hover:border-ryze-300 hover:text-ryze-600 dark:hover:text-ryze-400'
         }`}
       >
         All Companies
@@ -34,8 +34,8 @@ export function CompanyFilterBar() {
           onClick={() => switchBranch(b)}
           className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${
             currentBranch?._id === b._id
-              ? 'bg-indigo-600 text-white border-indigo-600'
-              : 'bg-white text-gray-500 border-gray-200 hover:border-indigo-300 hover:text-indigo-600'
+              ? 'bg-ryze-600 text-white border-ryze-600'
+              : 'bg-surface text-text-muted border-border hover:border-ryze-300 hover:text-ryze-600 dark:hover:text-ryze-400'
           }`}
         >
           {b.branchName}

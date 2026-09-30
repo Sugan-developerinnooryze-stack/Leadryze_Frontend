@@ -147,23 +147,23 @@ export default function FSShareModal({ module, docId, docLabel, customer, onClos
     onClose();
   };
 
-  const inputCls = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent';
+  const inputCls = 'w-full rounded-lg bg-surface border border-border px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400 focus:border-transparent';
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-lg w-full flex flex-col max-h-[85vh]">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
-          <h3 className="text-sm font-semibold text-gray-900">Share {typeLabel} {docLabel}</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+      <div className="bg-surface-elevated rounded-xl shadow-xl max-w-lg w-full flex flex-col max-h-[85vh]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+          <h3 className="text-sm font-semibold text-text-primary">Share {typeLabel} {docLabel}</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="flex border-b border-gray-100 shrink-0">
+        <div className="flex border-b border-border shrink-0">
           <button
             onClick={() => setTab('email')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium border-b-2 transition-colors ${
-              tab === 'email' ? 'border-brand-500 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+              tab === 'email' ? 'border-ryze-500 text-ryze-600 dark:text-ryze-400' : 'border-transparent text-text-muted hover:text-text-primary'
             }`}
           >
             <EnvelopeIcon className="h-4 w-4" /> Email
@@ -171,7 +171,7 @@ export default function FSShareModal({ module, docId, docLabel, customer, onClos
           <button
             onClick={() => setTab('whatsapp')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium border-b-2 transition-colors ${
-              tab === 'whatsapp' ? 'border-brand-500 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+              tab === 'whatsapp' ? 'border-ryze-500 text-ryze-600 dark:text-ryze-400' : 'border-transparent text-text-muted hover:text-text-primary'
             }`}
           >
             <PhoneIcon className="h-4 w-4" /> WhatsApp
@@ -182,17 +182,17 @@ export default function FSShareModal({ module, docId, docLabel, customer, onClos
           {tab === 'email' && (
             <>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">To</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1 uppercase tracking-wide">To</label>
                 <input type="email" value={to} onChange={(e) => setTo(e.target.value)} placeholder="customer@example.com" className={inputCls} />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">CC</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1 uppercase tracking-wide">CC</label>
                 <div className="flex flex-wrap gap-1.5 mb-1.5">
                   {cc.map((email, i) => (
-                    <span key={i} className="flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full bg-gray-100 text-xs text-gray-700">
+                    <span key={i} className="flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-xs text-text-primary">
                       {email}
-                      <button type="button" onClick={() => removeCc(i)} className="p-0.5 rounded-full hover:bg-gray-200 text-gray-400 hover:text-gray-600">
+                      <button type="button" onClick={() => removeCc(i)} className="p-0.5 rounded-full hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-text-muted hover:text-text-primary">
                         <XMarkIcon className="h-3 w-3" />
                       </button>
                     </span>
@@ -207,42 +207,42 @@ export default function FSShareModal({ module, docId, docLabel, customer, onClos
                     placeholder="Add CC email"
                     className={`${inputCls} flex-1`}
                   />
-                  <button type="button" onClick={addCc} className="px-3 py-1.5 text-xs rounded-lg border border-brand-300 text-brand-600 hover:bg-brand-50 transition-colors shrink-0">
+                  <button type="button" onClick={addCc} className="px-3 py-1.5 text-xs rounded-lg border border-ryze-300 dark:border-ryze-700 text-ryze-600 dark:text-ryze-400 hover:bg-ryze-600/10 transition-colors shrink-0">
                     + Add
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">Subject</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1 uppercase tracking-wide">Subject</label>
                 <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)} className={inputCls} />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">Message</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1 uppercase tracking-wide">Message</label>
                 <textarea rows={4} value={message} onChange={(e) => setMessage(e.target.value)} className={`${inputCls} resize-none`} />
               </div>
 
-              {emailError && <p className="text-xs text-red-500">{emailError}</p>}
-              {emailSent && <p className="text-xs text-green-600">Email sent!</p>}
+              {emailError && <p className="text-xs text-danger-500">{emailError}</p>}
+              {emailSent && <p className="text-xs text-success-600 dark:text-success-500">Email sent!</p>}
             </>
           )}
 
           {tab === 'whatsapp' && (
             <>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Send to</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Send to</label>
                 <div className="space-y-1.5">
                   {numbers.map((n, i) => (
                     <div key={i} className="flex items-center gap-2">
-                      <input type="checkbox" checked={n.checked} onChange={() => toggleNumber(i)} className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-400 shrink-0" />
+                      <input type="checkbox" checked={n.checked} onChange={() => toggleNumber(i)} className="h-4 w-4 rounded border-border text-ryze-600 focus:ring-ryze-400 shrink-0" />
                       <input type="tel" value={n.value} onChange={(e) => editNumber(i, e.target.value)} className={`${inputCls} flex-1`} />
-                      <button type="button" onClick={() => removeNumber(i)} className="shrink-0 p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                      <button type="button" onClick={() => removeNumber(i)} className="shrink-0 p-2 rounded-lg text-text-muted hover:text-danger-500 hover:bg-danger-500/10 transition-colors">
                         <XMarkIcon className="h-4 w-4" />
                       </button>
                     </div>
                   ))}
-                  {numbers.length === 0 && <p className="text-xs text-gray-400 italic">No numbers on file — add one below.</p>}
+                  {numbers.length === 0 && <p className="text-xs text-text-muted italic">No numbers on file — add one below.</p>}
                 </div>
                 <div className="flex gap-2 mt-1.5">
                   <input
@@ -253,30 +253,30 @@ export default function FSShareModal({ module, docId, docLabel, customer, onClos
                     placeholder="+91 9876543210"
                     className={`${inputCls} flex-1`}
                   />
-                  <button type="button" onClick={addNumber} className="px-3 py-1.5 text-xs rounded-lg border border-brand-300 text-brand-600 hover:bg-brand-50 transition-colors shrink-0">
+                  <button type="button" onClick={addNumber} className="px-3 py-1.5 text-xs rounded-lg border border-ryze-300 dark:border-ryze-700 text-ryze-600 dark:text-ryze-400 hover:bg-ryze-600/10 transition-colors shrink-0">
                     + Add
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">Message</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1 uppercase tracking-wide">Message</label>
                 <textarea rows={4} value={waMessage} onChange={(e) => setWaMessage(e.target.value)} className={`${inputCls} resize-none`} />
-                <p className="mt-1 text-[11px] text-gray-400">Opens WhatsApp with this message pre-filled for each selected number — WhatsApp doesn't support attaching the PDF directly, so a view-online link is included instead.</p>
+                <p className="mt-1 text-[11px] text-text-muted">Opens WhatsApp with this message pre-filled for each selected number — WhatsApp doesn't support attaching the PDF directly, so a view-online link is included instead.</p>
               </div>
             </>
           )}
         </div>
 
-        <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-center gap-3 shrink-0 bg-gray-50/60">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">
+        <div className="px-5 py-4 border-t border-border flex items-center justify-center gap-3 shrink-0 bg-black/[0.015] dark:bg-white/[0.02]">
+          <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
             Cancel
           </button>
           {tab === 'email' ? (
             <button
               onClick={handleSendEmail}
               disabled={sending}
-              className="px-6 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-60 transition-colors flex items-center gap-2 min-w-[120px] justify-center"
+              className="px-6 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-60 transition-colors flex items-center gap-2 min-w-[120px] justify-center"
             >
               {sending && (
                 <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
@@ -290,7 +290,7 @@ export default function FSShareModal({ module, docId, docLabel, customer, onClos
             <button
               onClick={handleSendWhatsApp}
               disabled={!numbers.some((n) => n.checked && n.value.trim())}
-              className="px-6 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-60 transition-colors"
+              className="px-6 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-60 transition-colors"
             >
               Send via WhatsApp
             </button>

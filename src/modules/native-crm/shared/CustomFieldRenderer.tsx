@@ -43,8 +43,8 @@ function PhoneSubField({ field, val, setSub }: { field: IFormField; val: any; se
     setSub(field.key, num ? `${c.dial} ${num}` : '');
   };
 
-  const SEL = 'rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brand-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200';
-  const INP = 'flex-1 min-w-0 rounded-r-lg border border-gray-300 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100';
+  const SEL = 'rounded-l-lg border border-r-0 border-border bg-background px-2 py-1.5 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-ryze-400';
+  const INP = 'flex-1 min-w-0 rounded-r-lg bg-surface border border-border px-2.5 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-ryze-400';
 
   return (
     <div className="flex">
@@ -71,8 +71,8 @@ function CurrencySubField({ field, val, setSub }: { field: IFormField; val: any;
     setSub(field.key, { code, amount: amount !== '' ? parseFloat(amount) || 0 : '' });
   };
 
-  const SEL = 'rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brand-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 max-w-[110px]';
-  const INP = 'flex-1 min-w-0 rounded-r-lg border border-gray-300 pl-6 pr-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100';
+  const SEL = 'rounded-l-lg border border-r-0 border-border bg-background px-2 py-1.5 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-ryze-400 max-w-[110px]';
+  const INP = 'flex-1 min-w-0 rounded-r-lg bg-surface border border-border pl-6 pr-2.5 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-ryze-400';
 
   return (
     <div className="flex">
@@ -82,7 +82,7 @@ function CurrencySubField({ field, val, setSub }: { field: IFormField; val: any;
         ))}
       </select>
       <div className="relative flex-1 min-w-0">
-        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-400 pointer-events-none select-none">
+        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm font-semibold text-text-muted pointer-events-none select-none">
           {currency.symbol}
         </span>
         <input type="number" min="0" step="0.01"
@@ -108,7 +108,7 @@ function CascadeDropdownSubField({ field, val, setSub }: {
   const l1 = selected[0] ?? '';
   const l2Options = l1 ? Object.keys(tree[l1] ?? {}) : [];
 
-  const SEL = 'flex-1 min-w-[130px] rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 bg-white';
+  const SEL = 'flex-1 min-w-[130px] rounded-lg bg-surface border border-border px-2.5 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-ryze-400';
 
   return (
     <div className="flex flex-wrap gap-2">
@@ -153,17 +153,17 @@ function TableSubField({ field, val, setSub }: {
   const evalCol = (formula: string, row: Record<string, any>) => evalFormulaWith(formula, row);
 
   if (cols.length === 0) {
-    return <p className="text-xs text-gray-400 italic">No columns defined — configure the template first.</p>;
+    return <p className="text-xs text-text-muted italic">No columns defined — configure the template first.</p>;
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200">
+    <div className="overflow-x-auto rounded-xl border border-border">
       <table className="min-w-full text-sm">
         <thead>
-          <tr className="bg-gray-50 border-b border-gray-200">
+          <tr className="bg-background border-b border-border">
             {cols.map((c) => (
-              <th key={c.key} className="px-3 py-2 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                {c.label}{c.type === 'formula' && <span className="ml-1 text-emerald-500">fx</span>}
+              <th key={c.key} className="px-3 py-2 text-left text-[11px] font-bold text-text-muted uppercase tracking-wider whitespace-nowrap">
+                {c.label}{c.type === 'formula' && <span className="ml-1 text-success-500">fx</span>}
               </th>
             ))}
             <th className="w-8" />
@@ -171,13 +171,13 @@ function TableSubField({ field, val, setSub }: {
         </thead>
         <tbody>
           {rows.map((row, ri) => (
-            <tr key={ri} className="border-b border-gray-100 last:border-0">
+            <tr key={ri} className="border-b border-border last:border-0">
               {cols.map((col) => {
                 const cellVal = row[col.key] ?? '';
                 if (col.type === 'formula') {
                   return (
                     <td key={col.key} className="px-3 py-2">
-                      <span className="font-mono text-emerald-700 font-semibold">{evalCol(col.formula ?? '', row)}</span>
+                      <span className="font-mono text-success-700 dark:text-success-500 font-semibold">{evalCol(col.formula ?? '', row)}</span>
                     </td>
                   );
                 }
@@ -185,7 +185,7 @@ function TableSubField({ field, val, setSub }: {
                   <td key={col.key} className="px-3 py-1.5">
                     {col.type === 'dropdown' ? (
                       <select value={cellVal} onChange={(e) => setCell(ri, col.key, e.target.value)}
-                        className="w-full border border-gray-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 dark:border-gray-600 dark:bg-gray-800">
+                        className="w-full bg-surface border border-border rounded-lg px-2 py-1 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-ryze-400">
                         <option value="">— Select —</option>
                         {(col.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
                       </select>
@@ -194,29 +194,29 @@ function TableSubField({ field, val, setSub }: {
                         type={col.type === 'number' ? 'number' : 'text'}
                         value={cellVal}
                         onChange={(e) => setCell(ri, col.key, col.type === 'number' ? (parseFloat(e.target.value) || '') : e.target.value)}
-                        className="w-full border border-gray-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 dark:border-gray-600 dark:bg-gray-800"
+                        className="w-full bg-surface border border-border rounded-lg px-2 py-1 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-ryze-400"
                       />
                     )}
                   </td>
                 );
               })}
               <td className="px-2 py-1.5">
-                <button type="button" onClick={() => delRow(ri)} className="text-gray-300 hover:text-red-400 text-sm">✕</button>
+                <button type="button" onClick={() => delRow(ri)} className="text-text-muted hover:text-danger-400 text-sm">✕</button>
               </td>
             </tr>
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={cols.length + 1} className="px-4 py-6 text-center text-xs text-gray-400 italic">
+              <td colSpan={cols.length + 1} className="px-4 py-6 text-center text-xs text-text-muted italic">
                 No rows yet — click Add Row
               </td>
             </tr>
           )}
         </tbody>
       </table>
-      <div className="px-3 py-2 border-t border-gray-100">
+      <div className="px-3 py-2 border-t border-border">
         <button type="button" onClick={addRow}
-          className="text-xs text-brand-600 hover:text-brand-800 flex items-center gap-1">
+          className="text-xs text-ryze-600 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 flex items-center gap-1">
           + Add Row
         </button>
       </div>
@@ -234,19 +234,19 @@ function CustomSubForm({ templateFields, value, onChange }: {
   const sorted = [...templateFields].sort((a, b) => a.order - b.order);
   const setSub = (key: string, val: any) => onChange({ ...sub, [key]: val });
 
-  const SUB = 'w-full rounded border border-gray-300 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100';
+  const SUB = 'w-full rounded bg-surface border border-border px-2.5 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-ryze-400';
 
   return (
-    <div className="space-y-3 p-4 rounded-xl bg-purple-50 border border-purple-100">
+    <div className="space-y-3 p-4 rounded-xl bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20">
       {sorted.filter((f) => isVisible(f, sub)).map((f) => {
         const val = sub[f.key];
         if (f.fieldType === 'formula') {
           return (
             <div key={f.key}>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                {f.label} <span className="text-gray-400 font-normal">(computed)</span>
+              <label className="block text-xs font-medium text-text-muted mb-1">
+                {f.label} <span className="text-text-muted/70 font-normal">(computed)</span>
               </label>
-              <div className="px-2.5 py-1.5 bg-white border border-gray-200 rounded text-sm font-semibold text-brand-700">
+              <div className="px-2.5 py-1.5 bg-surface border border-border rounded text-sm font-semibold text-ryze-700 dark:text-ryze-400">
                 {evalFormula(f.formula ?? '', sub)}
               </div>
             </div>
@@ -254,8 +254,8 @@ function CustomSubForm({ templateFields, value, onChange }: {
         }
         return (
           <div key={f.key}>
-            <label className="block text-xs font-medium text-gray-600 mb-1 dark:text-gray-400">
-              {f.label}{f.required && <span className="text-red-500 ml-0.5">*</span>}
+            <label className="block text-xs font-medium text-text-muted mb-1">
+              {f.label}{f.required && <span className="text-danger-500 ml-0.5">*</span>}
             </label>
             {f.fieldType === 'cascade_dropdown' ? (
               <CascadeDropdownSubField field={f} val={val} setSub={setSub} />
@@ -270,9 +270,9 @@ function CustomSubForm({ templateFields, value, onChange }: {
             ) : f.fieldType === 'radio' ? (
               <div className="space-y-1.5">
                 {(f.options ?? []).map((o) => (
-                  <label key={o} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <label key={o} className="flex items-center gap-2 text-sm text-text-primary cursor-pointer">
                     <input type="radio" name={f.key} value={o} checked={val === o}
-                      onChange={() => setSub(f.key, o)} className="h-4 w-4 accent-brand-600" />
+                      onChange={() => setSub(f.key, o)} className="h-4 w-4 accent-ryze-600" />
                     {o}
                   </label>
                 ))}
@@ -282,10 +282,10 @@ function CustomSubForm({ templateFields, value, onChange }: {
                 {(f.options ?? []).map((o) => {
                   const cur = Array.isArray(val) ? val as string[] : [];
                   return (
-                    <label key={o} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <label key={o} className="flex items-center gap-2 text-sm text-text-primary cursor-pointer">
                       <input type="checkbox" checked={cur.includes(o)}
                         onChange={() => setSub(f.key, cur.includes(o) ? cur.filter((x: string) => x !== o) : [...cur, o])}
-                        className="h-4 w-4 rounded accent-brand-600" />
+                        className="h-4 w-4 rounded accent-ryze-600" />
                       {o}
                     </label>
                   );
@@ -295,13 +295,13 @@ function CustomSubForm({ templateFields, value, onChange }: {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={!!val} onChange={(e) => setSub(f.key, e.target.checked)}
                   className="h-4 w-4 rounded" />
-                <span className="text-sm">Yes</span>
+                <span className="text-sm text-text-primary">Yes</span>
               </label>
             ) : f.fieldType === 'rating' ? (
               <div className="flex gap-1">
                 {[1,2,3,4,5].map((s) => (
                   <button key={s} type="button" onClick={() => setSub(f.key, s)}
-                    className={`text-xl transition-colors ${Number(val) >= s ? 'text-amber-400' : 'text-gray-300 hover:text-amber-400'}`}>★</button>
+                    className={`text-xl transition-colors ${Number(val) >= s ? 'text-amber-400' : 'text-text-muted/50 hover:text-amber-400'}`}>★</button>
                 ))}
               </div>
             ) : f.fieldType === 'dropdown' ? (
@@ -327,13 +327,13 @@ function CustomSubForm({ templateFields, value, onChange }: {
         );
       })}
       {sorted.filter((f) => isVisible(f, sub)).length === 0 && (
-        <p className="text-xs text-gray-400">No fields visible — fill in parent fields to reveal sub-fields.</p>
+        <p className="text-xs text-text-muted">No fields visible — fill in parent fields to reveal sub-fields.</p>
       )}
     </div>
   );
 }
 
-const BASE_CLS = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100';
+const BASE_CLS = 'w-full rounded-lg bg-surface border border-border px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400';
 
 // ── Upload button (handles image OR video) ────────────────────────────────────
 function UploadButton({
@@ -385,7 +385,7 @@ function UploadButton({
         type="button"
         onClick={() => { setError(null); ref.current?.click(); }}
         disabled={disabled || upload.isPending}
-        className="flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:border-brand-400 hover:text-brand-600 transition-colors disabled:opacity-50 dark:border-gray-600 dark:text-gray-400"
+        className="flex items-center gap-2 px-3 py-2 border border-dashed border-border rounded-lg text-sm text-text-muted hover:border-ryze-400 hover:text-ryze-600 dark:hover:text-ryze-400 transition-colors disabled:opacity-50"
       >
         {upload.isPending ? (
           <span className="flex items-center gap-1.5">
@@ -407,12 +407,12 @@ function UploadButton({
               </svg>
             )}
             {label}
-            <span className="text-xs text-gray-400 ml-1">(max {maxSizeMB} MB)</span>
+            <span className="text-xs text-text-muted ml-1">(max {maxSizeMB} MB)</span>
           </>
         )}
       </button>
       {error && (
-        <p className="text-xs text-red-500 flex items-center gap-1">
+        <p className="text-xs text-danger-500 flex items-center gap-1">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
           </svg>
@@ -437,7 +437,7 @@ export default function CustomFieldRenderer({ field, value, onChange, templateFi
 
     case 'custom_form':
       if (!templateFields?.length) {
-        return <p className="text-xs text-gray-400 italic">No form template attached.</p>;
+        return <p className="text-xs text-text-muted italic">No form template attached.</p>;
       }
       return (
         <CustomSubForm
@@ -479,12 +479,12 @@ export default function CustomFieldRenderer({ field, value, onChange, templateFi
       return (
         <div className="flex flex-wrap gap-2">
           {opts.map((o) => (
-            <label key={o} className="flex items-center gap-1.5 cursor-pointer text-sm">
+            <label key={o} className="flex items-center gap-1.5 cursor-pointer text-sm text-text-primary">
               <input
                 type="checkbox"
                 checked={current.includes(o)}
                 onChange={() => toggle(o)}
-                className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600"
+                className="h-3.5 w-3.5 rounded border-border text-ryze-600"
               />
               {o}
             </label>
@@ -501,9 +501,9 @@ export default function CustomFieldRenderer({ field, value, onChange, templateFi
             type="checkbox"
             checked={!!value}
             onChange={(e) => onChange(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300 text-brand-600"
+            className="h-4 w-4 rounded border-border text-ryze-600"
           />
-          <span className="text-sm text-gray-700 dark:text-gray-300">Yes</span>
+          <span className="text-sm text-text-primary">Yes</span>
         </label>
       );
 
@@ -558,7 +558,7 @@ export default function CustomFieldRenderer({ field, value, onChange, templateFi
               key={s}
               type="button"
               onClick={() => onChange(s)}
-              className={`text-xl ${Number(value) >= s ? 'text-amber-400' : 'text-gray-300'} hover:text-amber-400 transition-colors`}
+              className={`text-xl ${Number(value) >= s ? 'text-amber-400' : 'text-text-muted/50'} hover:text-amber-400 transition-colors`}
             >
               ★
             </button>
@@ -577,23 +577,23 @@ export default function CustomFieldRenderer({ field, value, onChange, templateFi
           {url && (
             <div className="relative inline-block w-full">
               {isPdf ? (
-                 <a href={url} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center w-full h-32 rounded-lg border border-gray-200 shadow-sm bg-gray-50 hover:bg-brand-50 hover:border-brand-300 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-500 mb-2" viewBox="0 0 20 20" fill="currentColor">
+                 <a href={url} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center w-full h-32 rounded-lg border border-border shadow-sm bg-background hover:bg-ryze-600/5 hover:border-ryze-300 dark:hover:border-ryze-700 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-danger-500 mb-2" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
                     </svg>
-                    <span className="text-sm font-semibold text-gray-700">View PDF Document</span>
+                    <span className="text-sm font-semibold text-text-primary">View PDF Document</span>
                  </a>
               ) : (
                 <img
                   src={url}
                   alt="upload"
-                  className="h-32 w-32 rounded-lg object-cover border border-gray-200 shadow-sm"
+                  className="h-32 w-32 rounded-lg object-cover border border-border shadow-sm"
                 />
               )}
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); onChange(''); }}
-                className={`absolute ${isPdf ? '-top-2 -right-2' : '-top-1.5 left-[120px]'} h-6 w-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center hover:bg-red-600 shadow-md z-10`}
+                className={`absolute ${isPdf ? '-top-2 -right-2' : '-top-1.5 left-[120px]'} h-6 w-6 rounded-full bg-danger-500 text-white text-xs flex items-center justify-center hover:bg-danger-600 shadow-md z-10`}
               >
                 ×
               </button>
@@ -607,7 +607,7 @@ export default function CustomFieldRenderer({ field, value, onChange, templateFi
             onUpload={(urls) => onChange(urls[0] ?? '')}
             label={url ? 'Replace file' : 'Upload file'}
           />
-          <p className="text-xs text-gray-400">Supported: JPG, PNG, GIF, WEBP, SVG, PDF</p>
+          <p className="text-xs text-text-muted">Supported: JPG, PNG, GIF, WEBP, SVG, PDF</p>
         </div>
       );
     }
@@ -624,23 +624,23 @@ export default function CustomFieldRenderer({ field, value, onChange, templateFi
                 return (
                   <div key={i} className="relative group w-24 h-24 shrink-0">
                     {isPdf ? (
-                       <a href={u} target="_blank" rel="noopener noreferrer" className="h-full w-full rounded-lg border border-gray-200 shadow-sm bg-gray-50 flex flex-col items-center justify-center hover:border-brand-300 transition-colors">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
+                       <a href={u} target="_blank" rel="noopener noreferrer" className="h-full w-full rounded-lg border border-border shadow-sm bg-background flex flex-col items-center justify-center hover:border-ryze-300 dark:hover:border-ryze-700 transition-colors">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-danger-500 mb-1" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
                           </svg>
-                          <span className="text-[10px] text-gray-600 font-medium text-center leading-tight">View PDF</span>
+                          <span className="text-[10px] text-text-primary font-medium text-center leading-tight">View PDF</span>
                        </a>
                     ) : (
                       <img
                         src={u}
                         alt={`img-${i}`}
-                        className="h-full w-full rounded-lg object-cover border border-gray-200 shadow-sm"
+                        className="h-full w-full rounded-lg object-cover border border-border shadow-sm"
                       />
                     )}
                     <button
                       type="button"
                       onClick={() => onChange(urls.filter((_, j) => j !== i))}
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center hover:bg-red-600 shadow opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-danger-500 text-white text-xs flex items-center justify-center hover:bg-danger-600 shadow opacity-0 group-hover:opacity-100 transition-opacity z-10"
                     >
                       ×
                     </button>
@@ -657,7 +657,7 @@ export default function CustomFieldRenderer({ field, value, onChange, templateFi
             onUpload={(newUrls) => onChange([...urls, ...newUrls])}
             label="Add files"
           />
-          <p className="text-xs text-gray-400">Supported: JPG, PNG, GIF, WEBP, SVG, PDF · Max 5 MB each · Up to 20 files</p>
+          <p className="text-xs text-text-muted">Supported: JPG, PNG, GIF, WEBP, SVG, PDF · Max 5 MB each · Up to 20 files</p>
         </div>
       );
     }
@@ -672,12 +672,12 @@ export default function CustomFieldRenderer({ field, value, onChange, templateFi
               <video
                 src={url}
                 controls
-                className="w-full max-h-48 rounded-lg border border-gray-200 bg-black shadow-sm"
+                className="w-full max-h-48 rounded-lg border border-border bg-black shadow-sm"
               />
               <button
                 type="button"
                 onClick={() => onChange('')}
-                className="mt-1 flex items-center gap-1 text-xs text-red-500 hover:text-red-600"
+                className="mt-1 flex items-center gap-1 text-xs text-danger-500 hover:text-danger-600"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -694,7 +694,7 @@ export default function CustomFieldRenderer({ field, value, onChange, templateFi
             onUpload={(urls) => onChange(urls[0] ?? '')}
             label={url ? 'Replace video' : 'Upload video'}
           />
-          <p className="text-xs text-gray-400">Supported: MP4, WEBM, MOV, OGG · Max 10 MB</p>
+          <p className="text-xs text-text-muted">Supported: MP4, WEBM, MOV, OGG · Max 10 MB</p>
         </div>
       );
     }
@@ -707,12 +707,12 @@ export default function CustomFieldRenderer({ field, value, onChange, templateFi
           {urls.length > 0 && (
             <div className="space-y-2">
               {urls.map((u, i) => (
-                <div key={i} className="relative rounded-lg overflow-hidden border border-gray-200 bg-black shadow-sm">
+                <div key={i} className="relative rounded-lg overflow-hidden border border-border bg-black shadow-sm">
                   <video src={u} controls className="w-full max-h-36" />
                   <button
                     type="button"
                     onClick={() => onChange(urls.filter((_, j) => j !== i))}
-                    className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center hover:bg-red-600 shadow"
+                    className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-danger-500 text-white text-xs flex items-center justify-center hover:bg-danger-600 shadow"
                   >
                     ×
                   </button>
@@ -728,7 +728,7 @@ export default function CustomFieldRenderer({ field, value, onChange, templateFi
             onUpload={(newUrls) => onChange([...urls, ...newUrls])}
             label="Add videos"
           />
-          <p className="text-xs text-gray-400">Supported: MP4, WEBM, MOV, OGG · Max 10 MB each · Up to 5 files</p>
+          <p className="text-xs text-text-muted">Supported: MP4, WEBM, MOV, OGG · Max 10 MB each · Up to 5 files</p>
         </div>
       );
     }

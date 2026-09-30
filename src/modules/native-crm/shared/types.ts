@@ -45,9 +45,9 @@ export interface FSColumnDef<T = any> {
 }
 
 export const FS_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  active:   { bg: 'bg-green-100', text: 'text-green-700'  },
-  inactive: { bg: 'bg-gray-100',  text: 'text-gray-500'   },
-  onleave:  { bg: 'bg-amber-100', text: 'text-amber-700'  },
+  active:   { bg: 'bg-success-500/15', text: 'text-success-700 dark:text-success-500' },
+  inactive: { bg: 'bg-black/[0.06] dark:bg-white/[0.08]', text: 'text-text-muted' },
+  onleave:  { bg: 'bg-amber-100 dark:bg-amber-500/15', text: 'text-amber-700 dark:text-amber-400' },
 };
 
 export { FSStatusBadge } from './FSStatusBadge';

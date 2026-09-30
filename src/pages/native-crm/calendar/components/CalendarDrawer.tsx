@@ -31,30 +31,26 @@ export default function CalendarDrawer({ event, onClose }: Props) {
       />
       
       {/* Drawer */}
-      <div 
-        className="fixed inset-y-0 right-0 w-[400px] shadow-2xl z-50 flex flex-col transform transition-transform duration-300"
-        style={{ backgroundColor: event.bgColor }}
+      <div
+        className="fixed inset-y-0 right-0 w-[400px] shadow-2xl z-50 flex flex-col transform transition-transform duration-300 bg-surface"
       >
-        <div 
-          className="flex items-center justify-between p-4 border-b shadow-sm"
-          style={{ backgroundColor: event.bgColor, borderColor: event.color }}
-        >
+        <div className="flex items-center justify-between p-4 border-b border-border shadow-sm bg-surface">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-white shadow-sm" style={{ color: event.color }}>
+            <div className="p-2 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] shadow-sm" style={{ color: event.color }}>
               {Icon && <Icon className="w-5 h-5" />}
             </div>
             <div>
-              <h2 className="text-sm font-bold" style={{ color: event.textColor }}>{event.title}</h2>
-              <p className="text-xs uppercase tracking-wider opacity-80" style={{ color: event.textColor }}>{event.module}</p>
+              <h2 className="text-sm font-bold text-text-primary">{event.title}</h2>
+              <p className="text-xs uppercase tracking-wider text-text-muted">{event.module}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-black/5 transition-colors" style={{ color: event.textColor }}>
+          <button onClick={onClose} className="p-2 rounded-full text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] hover:text-text-primary transition-colors">
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          
+
           {/* Status Badge */}
           <div>
             <span className="inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm border"
@@ -64,18 +60,18 @@ export default function CalendarDrawer({ event, onClose }: Props) {
           </div>
 
           {/* Core Info */}
-          <div className="bg-white/60 p-4 rounded-xl space-y-4 border border-white/40 shadow-sm">
+          <div className="bg-black/[0.02] dark:bg-white/[0.03] p-4 rounded-xl space-y-4 border border-border shadow-sm">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: event.textColor, opacity: 0.7 }}>Date & Time</p>
-              <p className="text-sm font-bold" style={{ color: event.textColor }}>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-1 text-text-muted">Date & Time</p>
+              <p className="text-sm font-bold text-text-primary">
                 {new Date(event.start).toLocaleString([], { dateStyle: 'medium', timeStyle: event.allDay ? undefined : 'short' })}
               </p>
             </div>
-            
+
             {event.customerName && (
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: event.textColor, opacity: 0.7 }}>Customer</p>
-                <p className="text-sm font-bold hover:underline cursor-pointer" style={{ color: event.textColor }}>
+                <p className="text-xs font-semibold uppercase tracking-wider mb-1 text-text-muted">Customer</p>
+                <p className="text-sm font-bold hover:underline cursor-pointer text-text-primary">
                   {event.customerName}
                 </p>
               </div>
@@ -83,27 +79,26 @@ export default function CalendarDrawer({ event, onClose }: Props) {
 
             {event.teamId && (
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: event.textColor, opacity: 0.7 }}>Assigned Team</p>
-                <p className="text-sm font-bold" style={{ color: event.textColor }}>{event.teamId}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider mb-1 text-text-muted">Assigned Team</p>
+                <p className="text-sm font-bold text-text-primary">{event.teamId}</p>
               </div>
             )}
           </div>
 
           {/* Quick Actions */}
           <div>
-            <h3 className="text-xs font-bold mb-3 uppercase tracking-wider" style={{ color: event.textColor }}>Quick Actions</h3>
+            <h3 className="text-xs font-bold mb-3 uppercase tracking-wider text-text-muted">Quick Actions</h3>
             <div className="flex gap-3">
-              <button 
-                onClick={handleOpen} 
+              <button
+                onClick={handleOpen}
                 className="flex-1 flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium rounded-lg hover:brightness-95 transition-all shadow-sm"
                 style={{ backgroundColor: event.color, color: '#fff' }}
               >
                 <EyeIcon className="w-4 h-4" /> Open
               </button>
-              <button 
-                onClick={handlePrint} 
-                className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-white border text-sm font-medium rounded-lg hover:bg-gray-50 transition-all shadow-sm"
-                style={{ borderColor: event.color, color: event.textColor }}
+              <button
+                onClick={handlePrint}
+                className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-surface border border-border text-sm font-medium rounded-lg text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all shadow-sm"
               >
                 <PrinterIcon className="w-4 h-4" /> Print
               </button>

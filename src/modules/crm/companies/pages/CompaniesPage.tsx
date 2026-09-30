@@ -20,6 +20,7 @@ const config: ModulePageConfig = {
     { key: 'companyStatus', label: 'Status',           type: 'select', tableCol: true,
       options: ['active', 'inactive', 'prospect'] },
     { key: 'notes',         label: 'Notes',            type: 'textarea' },
+    { key: 'createdAt',     label: 'Created Date',     type: 'date' },
   ],
 };
 

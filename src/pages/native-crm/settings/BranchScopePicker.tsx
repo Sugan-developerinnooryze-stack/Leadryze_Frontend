@@ -26,11 +26,11 @@ export default function BranchScopePicker({
 
   return (
     <div>
-      <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Scope to specific branches (optional)</label>
-      <div className="border border-gray-200 rounded-lg divide-y divide-gray-100 max-h-40 overflow-y-auto">
+      <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Scope to specific branches (optional)</label>
+      <div className="border border-border rounded-lg divide-y divide-gray-100 max-h-40 overflow-y-auto">
         {branches.map((b) => (
-          <label key={b._id} className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 cursor-pointer hover:bg-gray-50">
-            <input type="checkbox" checked={selected.has(b._id)} onChange={() => toggle(b._id)} className="rounded border-gray-300" />
+          <label key={b._id} className="flex items-center gap-2 px-3 py-1.5 text-xs text-text-primary cursor-pointer hover:bg-background">
+            <input type="checkbox" checked={selected.has(b._id)} onChange={() => toggle(b._id)} className="rounded border-border" />
             {b.branchName}
           </label>
         ))}
@@ -38,7 +38,7 @@ export default function BranchScopePicker({
       {selected.size > 0 ? (
         <p className="text-[11px] text-amber-600 mt-1.5">Records with no branch assigned will not match this trigger.</p>
       ) : (
-        <p className="text-[11px] text-gray-400 mt-1.5">Unscoped — matches records in any branch.</p>
+        <p className="text-[11px] text-text-muted mt-1.5">Unscoped — matches records in any branch.</p>
       )}
     </div>
   );

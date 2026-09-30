@@ -12,10 +12,10 @@ import {
 type DocType = 'quotation' | 'contract' | 'workorder' | 'invoice';
 
 const DOC_META: Record<DocType, { label: string; color: string; chip: string }> = {
-  quotation: { label: 'Quotation',   color: 'blue',   chip: 'bg-blue-100 text-blue-700 border-blue-300' },
-  contract:  { label: 'Contract',    color: 'purple', chip: 'bg-purple-100 text-purple-700 border-purple-300' },
-  workorder: { label: 'Work Order',  color: 'amber',  chip: 'bg-amber-100 text-amber-700 border-amber-300' },
-  invoice:   { label: 'Invoice',     color: 'green',  chip: 'bg-green-100 text-green-700 border-green-300' },
+  quotation: { label: 'Quotation',   color: 'blue',   chip: 'bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-500/40' },
+  contract:  { label: 'Contract',    color: 'purple', chip: 'bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400 border-purple-300 dark:border-purple-500/40' },
+  workorder: { label: 'Work Order',  color: 'amber',  chip: 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-500/40' },
+  invoice:   { label: 'Invoice',     color: 'green',  chip: 'bg-success-500/15 text-success-700 dark:text-success-500 border-success-500/30' },
 };
 
 const PALETTE: DocType[] = ['quotation', 'contract', 'workorder', 'invoice'];
@@ -146,23 +146,23 @@ export default function WorkflowBuilderPage() {
   const selected = templates.find((t) => t._id === selectedId);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-[calc(100vh-4rem)] bg-background">
       {/* Left sidebar — template list */}
-      <div className="w-72 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-100">Templates</h2>
+      <div className="w-72 flex-shrink-0 border-r border-border bg-surface flex flex-col">
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <h2 className="font-semibold text-text-primary">Templates</h2>
           <button
             onClick={handleNewTemplate}
-            className="text-xs px-3 py-1.5 rounded-md bg-brand-600 hover:bg-brand-700 text-white font-medium"
+            className="text-xs px-3 py-1.5 rounded-md bg-ryze-600 hover:bg-ryze-700 text-white font-medium"
           >
             + New
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-2">
           {isLoading ? (
-            <p className="text-sm text-gray-500 p-2">Loading...</p>
+            <p className="text-sm text-text-muted p-2">Loading...</p>
           ) : templates.length === 0 ? (
-            <p className="text-sm text-gray-400 p-2">No templates yet.</p>
+            <p className="text-sm text-text-muted p-2">No templates yet.</p>
           ) : (
             templates.map((tpl) => (
               <button
@@ -170,19 +170,19 @@ export default function WorkflowBuilderPage() {
                 onClick={() => loadTemplate(tpl)}
                 className={`w-full text-left px-3 py-2.5 rounded-lg mb-1 transition-colors ${
                   selectedId === tpl._id
-                    ? 'bg-brand-50 dark:bg-brand-900/30 border border-brand-300 dark:border-brand-700'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                    ? 'bg-ryze-600/10 dark:bg-ryze-900/30 border border-ryze-300 dark:border-ryze-700'
+                    : 'hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{tpl.name}</span>
+                  <span className="text-sm font-medium text-text-primary truncate">{tpl.name}</span>
                   {tpl.isDefault && (
-                    <span className="ml-2 flex-shrink-0 text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 font-medium">
+                    <span className="ml-2 flex-shrink-0 text-xs px-1.5 py-0.5 rounded bg-success-500/15 text-success-700 dark:text-success-500 font-medium">
                       Active
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">{tpl.steps.length} step{tpl.steps.length !== 1 ? 's' : ''}</p>
+                <p className="text-xs text-text-muted mt-0.5">{tpl.steps.length} step{tpl.steps.length !== 1 ? 's' : ''}</p>
               </button>
             ))
           )}
@@ -193,18 +193,18 @@ export default function WorkflowBuilderPage() {
       {(selectedId !== null || dirty) ? (
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center gap-4">
+          <div className="px-6 py-4 border-b border-border bg-surface flex items-center gap-4">
             <input
               value={name}
               onChange={(e) => { setName(e.target.value); setDirty(true); }}
-              className="flex-1 text-lg font-semibold bg-transparent border-b-2 border-transparent focus:border-brand-500 outline-none text-gray-800 dark:text-gray-100 py-0.5"
+              className="flex-1 text-lg font-semibold bg-transparent border-b-2 border-transparent focus:border-ryze-500 outline-none text-text-primary py-0.5"
               placeholder="Template name"
             />
             <div className="flex gap-2">
               <button
                 onClick={handleSave}
                 disabled={!dirty || createTpl.isPending || updateTpl.isPending}
-                className="px-4 py-2 text-sm rounded-md bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-medium"
+                className="px-4 py-2 text-sm rounded-md bg-ryze-600 hover:bg-ryze-700 disabled:opacity-50 text-white font-medium"
               >
                 {(createTpl.isPending || updateTpl.isPending) ? 'Saving...' : 'Save'}
               </button>
@@ -213,13 +213,13 @@ export default function WorkflowBuilderPage() {
                   <button
                     onClick={handleSetDefault}
                     disabled={selected?.isDefault || setDefault.isPending}
-                    className="px-4 py-2 text-sm rounded-md border border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 disabled:opacity-40 font-medium"
+                    className="px-4 py-2 text-sm rounded-md border border-success-500 text-success-600 dark:text-success-500 hover:bg-success-500/10 disabled:opacity-40 font-medium"
                   >
                     {selected?.isDefault ? 'Default' : 'Set Default'}
                   </button>
                   <button
                     onClick={handleDelete}
-                    className="px-4 py-2 text-sm rounded-md border border-red-300 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium"
+                    className="px-4 py-2 text-sm rounded-md border border-danger-500/40 text-danger-500 hover:bg-danger-500/10 font-medium"
                   >
                     Delete
                   </button>
@@ -231,7 +231,7 @@ export default function WorkflowBuilderPage() {
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {/* Palette */}
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
                 Drag document types into the pipeline
               </p>
               <div className="flex gap-3 flex-wrap">
@@ -250,7 +250,7 @@ export default function WorkflowBuilderPage() {
 
             {/* Sequence drop zone */}
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
                 Pipeline sequence
               </p>
               <div
@@ -258,12 +258,12 @@ export default function WorkflowBuilderPage() {
                 onDrop={onDropZoneDrop}
                 className={`min-h-[80px] flex flex-wrap gap-3 items-start p-4 rounded-xl border-2 border-dashed transition-colors ${
                   steps.length === 0
-                    ? 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50'
-                    : 'border-transparent bg-gray-50 dark:bg-gray-800/30'
+                    ? 'border-border bg-background'
+                    : 'border-transparent bg-background'
                 }`}
               >
                 {steps.length === 0 && (
-                  <p className="text-sm text-gray-400 w-full text-center py-4">
+                  <p className="text-sm text-text-muted w-full text-center py-4">
                     Drop document types here to build your pipeline
                   </p>
                 )}
@@ -276,13 +276,13 @@ export default function WorkflowBuilderPage() {
                     onDrop={(e) => onSeqDrop(e, idx)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium cursor-grab active:cursor-grabbing select-none transition-all ${
                       DOC_META[step.docType].chip
-                    } ${dragOverIdx === idx ? 'ring-2 ring-brand-400 scale-105' : ''}`}
+                    } ${dragOverIdx === idx ? 'ring-2 ring-ryze-400 scale-105' : ''}`}
                   >
-                    <span className="text-gray-400 mr-1 font-mono text-xs">{idx + 1}</span>
+                    <span className="text-text-muted mr-1 font-mono text-xs">{idx + 1}</span>
                     {step.label}
                     <button
                       onClick={() => removeStep(idx)}
-                      className="ml-1 text-gray-400 hover:text-red-500 text-xs leading-none"
+                      className="ml-1 text-text-muted hover:text-danger-500 text-xs leading-none"
                       title="Remove"
                     >
                       ✕
@@ -300,7 +300,7 @@ export default function WorkflowBuilderPage() {
                         {step.label}
                       </span>
                       {idx < steps.length - 1 && (
-                        <span className="text-gray-400">→</span>
+                        <span className="text-text-muted">→</span>
                       )}
                     </span>
                   ))}
@@ -312,7 +312,7 @@ export default function WorkflowBuilderPage() {
       ) : (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-gray-400 text-sm">Select a template or create a new one</p>
+            <p className="text-text-muted text-sm">Select a template or create a new one</p>
           </div>
         </div>
       )}

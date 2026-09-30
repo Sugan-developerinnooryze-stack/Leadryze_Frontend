@@ -38,6 +38,7 @@ const COLUMNS: FSColumnDef[] = [
   { key: 'contactPerson', label: 'Contact' },
   { key: 'status',        label: 'Status', render: (r) => <FSStatusBadge value={r.status ?? 'active'} /> },
   { key: 'branchId', label: 'Company', render: (r: any) => <CompanyBadge branchId={r.branchId} /> },
+  { key: 'createdAt', label: 'Created Date', render: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—' },
 ];
 
 export default function SitesPage() {
@@ -59,32 +60,32 @@ export default function SitesPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-4 shrink-0">
+      <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-4 shrink-0">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="h-9 w-9 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
-            <MapPinIcon className="h-5 w-5 text-red-600" />
+          <div className="h-9 w-9 rounded-lg bg-danger-500/10 flex items-center justify-center shrink-0">
+            <MapPinIcon className="h-5 w-5 text-danger-600 dark:text-danger-500" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-base font-semibold text-gray-900">Sites</h1>
-            <p className="text-xs text-gray-500">{meta.total} total</p>
+            <h1 className="text-base font-semibold text-text-primary">Sites</h1>
+            <p className="text-xs text-text-muted">{meta.total} total</p>
           </div>
         </div>
 
         <div className="relative">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search sites…"
-            className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
+            className="pl-9 pr-4 py-2 text-sm bg-surface border border-border rounded-lg w-52 text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400"
           />
         </div>
 
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="text-sm border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-400"
+          className="text-sm bg-surface border border-border rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400"
         >
           <option value="">All Status</option>
           <option value="active">Active</option>
@@ -93,7 +94,7 @@ export default function SitesPage() {
 
         <button
           onClick={() => setDrawer({ open: true, record: null })}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors shrink-0"
+          className="flex items-center gap-2 px-4 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 transition-colors shrink-0"
         >
           <PlusIcon className="h-4 w-4" />
           New Site

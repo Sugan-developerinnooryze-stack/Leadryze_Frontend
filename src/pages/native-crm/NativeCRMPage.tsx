@@ -24,7 +24,7 @@ interface PageMeta { total: number; page: number; pages: number }
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 function StatusBadge({ value }: { value: string }) {
-  const colors = STATUS_COLORS[value] ?? { bg: 'bg-gray-100', text: 'text-gray-600' };
+  const colors = STATUS_COLORS[value] ?? { bg: 'bg-black/[0.04] dark:bg-white/[0.06]', text: 'text-text-muted' };
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${colors.bg} ${colors.text}`}>
       {value.replace(/_/g, ' ')}
@@ -49,7 +49,7 @@ function FieldInput({
   value:    string;
   onChange: (v: string) => void;
 }) {
-  const base = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-colors';
+  const base = 'w-full px-3 py-2 bg-surface text-text-primary border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 focus:border-transparent transition-colors';
 
   if (field.type === 'select' && field.options) {
     return (
@@ -149,18 +149,18 @@ function RecordDrawer({
       <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
 
       {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl z-50 flex flex-col">
+      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-surface shadow-2xl z-50 flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-text-primary">
               {isEdit ? `Edit ${config.labelSingular}` : `New ${config.labelSingular}`}
             </h2>
             {isEdit && (
-              <p className="text-xs text-gray-400 mt-0.5 truncate">{record.displayName}</p>
+              <p className="text-xs text-text-muted mt-0.5 truncate">{record.displayName}</p>
             )}
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted hover:text-text-primary transition-colors">
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
@@ -172,7 +172,7 @@ function RecordDrawer({
           )}
           {config.fields.map((field) => (
             <div key={field.key}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-text-primary mb-1">
                 {field.label}
                 {field.required && <span className="text-red-500 ml-1">*</span>}
               </label>
@@ -189,17 +189,17 @@ function RecordDrawer({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
+        <div className="px-6 py-4 border-t border-border flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex-1 px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="flex-1 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 rounded-lg text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2.5 bg-ryze-600 hover:bg-ryze-700 disabled:opacity-60 rounded-lg text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
           >
             {saving && <div className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
             {saving ? 'Saving…' : isEdit ? 'Save Changes' : `Add ${config.labelSingular}`}
@@ -236,16 +236,16 @@ function DeleteConfirm({
     <>
       <div className="fixed inset-0 bg-black/40 z-50" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="bg-surface-elevated rounded-2xl shadow-2xl w-full max-w-sm p-6">
           <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
             <TrashIcon className="h-6 w-6 text-red-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 text-center mb-1">Delete Record</h3>
-          <p className="text-sm text-gray-500 text-center mb-6">
-            Delete <span className="font-medium text-gray-700">{record.displayName}</span>? This cannot be undone.
+          <h3 className="text-lg font-semibold text-text-primary text-center mb-1">Delete Record</h3>
+          <p className="text-sm text-text-muted text-center mb-6">
+            Delete <span className="font-medium text-text-primary">{record.displayName}</span>? This cannot be undone.
           </p>
           <div className="flex gap-3">
-            <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
               Cancel
             </button>
             <button
@@ -332,39 +332,39 @@ export default function NativeCRMPage() {
   return (
     <div className="flex flex-col h-full">
       {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-surface border-b border-border px-6 py-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${config.color}20` }}>
               <ModIcon className="h-5 w-5" style={{ color: config.color }} />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">{config.label}</h1>
-              <p className="text-sm text-gray-400">{meta.total} record{meta.total !== 1 ? 's' : ''}</p>
+              <h1 className="text-xl font-bold text-text-primary">{config.label}</h1>
+              <p className="text-sm text-text-muted">{meta.total} record{meta.total !== 1 ? 's' : ''}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
             {/* Search */}
             <div className="relative">
-              <MagnifyingGlassIcon className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <MagnifyingGlassIcon className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 placeholder={`Search ${config.label.toLowerCase()}…`}
-                className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-56"
+                className="pl-9 pr-4 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 w-56 bg-background text-text-primary"
               />
             </div>
 
             {/* Status filter */}
             {statusOptions.length > 0 && (
               <div className="relative">
-                <FunnelIcon className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <FunnelIcon className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
                 <select
                   value={statusFilter}
                   onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-                  className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 appearance-none"
+                  className="pl-9 pr-4 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 appearance-none bg-background text-text-primary"
                 >
                   <option value="">All statuses</option>
                   {statusOptions.map((o) => (
@@ -377,7 +377,7 @@ export default function NativeCRMPage() {
             {/* Add button */}
             <button
               onClick={openCreate}
-              className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-ryze-600 hover:bg-ryze-700 text-white text-sm font-medium rounded-lg transition-colors"
             >
               <PlusIcon className="h-4 w-4" />
               Add {config.labelSingular}
@@ -394,7 +394,7 @@ export default function NativeCRMPage() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
                 key === module
                   ? 'text-white shadow-sm'
-                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                  : 'text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] hover:text-text-primary'
               }`}
               style={key === module ? { backgroundColor: color } : {}}
             >
@@ -411,7 +411,7 @@ export default function NativeCRMPage() {
           <div className="flex items-center justify-center h-64">
             <div className="flex gap-2">
               {[0, 1, 2].map((i) => (
-                <span key={i} className="h-2.5 w-2.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                <span key={i} className="h-2.5 w-2.5 rounded-full bg-ryze-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
               ))}
             </div>
           </div>
@@ -421,15 +421,15 @@ export default function NativeCRMPage() {
               <ModIcon className="h-8 w-8" style={{ color: config.color }} />
             </div>
             <div>
-              <p className="text-gray-600 font-medium">No {config.label.toLowerCase()} yet</p>
-              <p className="text-gray-400 text-sm mt-1">
+              <p className="text-text-muted font-medium">No {config.label.toLowerCase()} yet</p>
+              <p className="text-text-muted text-sm mt-1">
                 {search ? `No results for "${search}"` : `Click "Add ${config.labelSingular}" to get started`}
               </p>
             </div>
             {!search && (
               <button
                 onClick={openCreate}
-                className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-ryze-600 hover:bg-ryze-700 text-white text-sm font-medium rounded-lg transition-colors"
               >
                 <PlusIcon className="h-4 w-4" />
                 Add {config.labelSingular}
@@ -438,24 +438,24 @@ export default function NativeCRMPage() {
           </div>
         ) : (
           <table className="w-full min-w-[640px]">
-            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+            <thead className="bg-background border-b border-border sticky top-0">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider">Name</th>
                 {colDefs.map((col) => (
-                  <th key={col.key} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th key={col.key} className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider">
                     {col.label}
                   </th>
                 ))}
                 {statusField && !displayCols.includes(statusField) && (
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider">Status</th>
                 )}
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-text-muted uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {records.map((r) => (
                 <Fragment key={r._id}>
-                  <tr className="hover:bg-gray-50 transition-colors group">
+                  <tr className="hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors group">
                     {/* Display name */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
@@ -465,7 +465,7 @@ export default function NativeCRMPage() {
                         >
                           {(r.displayName ?? '?').slice(0, 2).toUpperCase()}
                         </div>
-                        <span className="text-sm font-medium text-gray-900 truncate max-w-[160px]">{r.displayName ?? '—'}</span>
+                        <span className="text-sm font-medium text-text-primary truncate max-w-[160px]">{r.displayName ?? '—'}</span>
                       </div>
                     </td>
 
@@ -474,7 +474,7 @@ export default function NativeCRMPage() {
                       const v = (r.fields as Record<string, unknown>)[col.key];
                       const isStatus = col.key === statusField;
                       return (
-                        <td key={col.key} className="px-4 py-3 text-sm text-gray-600 max-w-[180px]">
+                        <td key={col.key} className="px-4 py-3 text-sm text-text-muted max-w-[180px]">
                           {isStatus
                             ? <StatusBadge value={String(v ?? r.status)} />
                             : <span className="truncate block">{fmtField(v, col.type)}</span>
@@ -495,14 +495,14 @@ export default function NativeCRMPage() {
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => openEdit(r)}
-                          className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-blue-50 text-text-muted hover:text-blue-600 transition-colors"
                           title="Edit"
                         >
                           <PencilSquareIcon className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => setDeleteTarget(r)}
-                          className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-text-muted hover:text-red-500 transition-colors"
                           title="Delete"
                         >
                           <TrashIcon className="h-4 w-4" />
@@ -519,22 +519,22 @@ export default function NativeCRMPage() {
 
       {/* ── Pagination ────────────────────────────────────────────────── */}
       {meta.pages > 1 && (
-        <div className="border-t border-gray-200 px-6 py-3 flex items-center justify-between bg-white">
-          <span className="text-sm text-gray-500">
+        <div className="border-t border-border px-6 py-3 flex items-center justify-between bg-surface">
+          <span className="text-sm text-text-muted">
             Page {meta.page} of {meta.pages} · {meta.total} total
           </span>
           <div className="flex gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 border border-border rounded-lg text-sm text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Previous
             </button>
             <button
               onClick={() => setPage((p) => Math.min(meta.pages, p + 1))}
               disabled={page === meta.pages}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 border border-border rounded-lg text-sm text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Next
             </button>

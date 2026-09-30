@@ -60,14 +60,14 @@ function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) =
         type="button"
         onClick={() => onChange(!on)}
         className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-          on ? 'bg-brand-600' : 'bg-gray-200'
+          on ? 'bg-ryze-600' : 'bg-black/[0.06] dark:bg-white/[0.08]'
         }`}
       >
-        <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform ${
+        <span className={`inline-block h-4 w-4 rounded-full bg-surface shadow transform transition-transform ${
           on ? 'translate-x-4' : 'translate-x-0'
         }`} />
       </button>
-      <span className="text-sm text-gray-700">{label}</span>
+      <span className="text-sm text-text-primary">{label}</span>
     </label>
   );
 }
@@ -85,7 +85,7 @@ function PipelinePreview({ stages }: { stages: PipelineStage[] }) {
           >
             {s.label}
           </span>
-          {i < stages.length - 1 && <ChevronRightIcon className="h-3 w-3 text-gray-300 shrink-0" />}
+          {i < stages.length - 1 && <ChevronRightIcon className="h-3 w-3 text-text-muted shrink-0" />}
         </div>
       ))}
     </div>
@@ -123,27 +123,27 @@ function StageCard({
         onDragEnd={onDragEnd}
         onDragOver={(e) => e.preventDefault()}
         onClick={onActivate}
-        className="group flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-gray-200 hover:border-brand-300 hover:shadow-sm transition-all cursor-pointer"
+        className="group flex items-center gap-3 px-4 py-3 bg-surface rounded-xl border border-border hover:border-ryze-300 dark:border-ryze-700 hover:shadow-sm transition-all cursor-pointer"
       >
-        <span className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing text-lg leading-none select-none" title="Drag to reorder">⠿</span>
+        <span className="text-text-muted hover:text-text-primary cursor-grab active:cursor-grabbing text-lg leading-none select-none" title="Drag to reorder">⠿</span>
         <div className="flex flex-col shrink-0" onClick={(e) => e.stopPropagation()}>
-          <button onClick={onMoveUp} disabled={!canMoveUp} className="text-gray-300 hover:text-gray-600 disabled:opacity-30">
+          <button onClick={onMoveUp} disabled={!canMoveUp} className="text-text-muted hover:text-text-primary disabled:opacity-30">
             <ChevronUpIcon className="h-3 w-3" />
           </button>
-          <button onClick={onMoveDown} disabled={!canMoveDown} className="text-gray-300 hover:text-gray-600 disabled:opacity-30">
+          <button onClick={onMoveDown} disabled={!canMoveDown} className="text-text-muted hover:text-text-primary disabled:opacity-30">
             <ChevronDownIcon className="h-3 w-3" />
           </button>
         </div>
-        <span className="h-3.5 w-3.5 rounded-full shrink-0 ring-2 ring-white shadow-sm" style={{ backgroundColor: stage.color }} />
-        <span className="flex-1 text-sm font-medium text-gray-800 truncate">{stage.label}</span>
+        <span className="h-3.5 w-3.5 rounded-full shrink-0 ring-2 ring-surface shadow-sm" style={{ backgroundColor: stage.color }} />
+        <span className="flex-1 text-sm font-medium text-text-primary truncate">{stage.label}</span>
         {stage.isTerminal && (
-          <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 shrink-0">
+          <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-text-muted shrink-0">
             Terminal{stage.outcome ? ` · ${stage.outcome}` : ''}
           </span>
         )}
         <button
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          className="p-1 rounded text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+          className="p-1 rounded text-text-muted hover:text-danger-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
         >
           <TrashIcon className="h-4 w-4" />
         </button>
@@ -152,14 +152,14 @@ function StageCard({
   }
 
   return (
-    <div className="bg-white rounded-xl border-2 border-brand-300 shadow-md" onDragOver={(e) => e.preventDefault()}>
+    <div className="bg-surface rounded-xl border-2 border-ryze-300 dark:border-ryze-700 shadow-md" onDragOver={(e) => e.preventDefault()}>
       <div className="p-4 space-y-4">
         <div className="flex items-center gap-3">
           <input
             type="color"
             value={stage.color}
             onChange={(e) => onChange({ color: e.target.value })}
-            className="h-8 w-8 rounded-lg border border-gray-200 shrink-0 cursor-pointer"
+            className="h-8 w-8 rounded-lg border border-border shrink-0 cursor-pointer"
             title="Custom color"
           />
           <div className="flex items-center gap-1.5">
@@ -168,7 +168,7 @@ function StageCard({
                 key={hex}
                 type="button"
                 onClick={() => onChange({ color: hex })}
-                className={`h-5 w-5 rounded-full shrink-0 transition-transform hover:scale-110 ${stage.color === hex ? 'ring-2 ring-offset-1 ring-brand-500' : ''}`}
+                className={`h-5 w-5 rounded-full shrink-0 transition-transform hover:scale-110 ${stage.color === hex ? 'ring-2 ring-offset-1 ring-ryze-500' : ''}`}
                 style={{ backgroundColor: hex }}
                 title={hex}
               />
@@ -177,30 +177,30 @@ function StageCard({
         </div>
 
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Stage label</label>
+          <label className="text-xs font-medium text-text-muted mb-1 block">Stage label</label>
           <input
             autoFocus
-            className="w-full text-sm font-medium border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400"
+            className="bg-surface text-text-primary w-full text-sm font-medium border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ryze-400"
             value={stage.label}
             onChange={(e) => onChange({ label: e.target.value })}
           />
         </div>
 
-        <div className="flex items-start gap-1.5 text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">
+        <div className="flex items-start gap-1.5 text-xs text-text-muted bg-background rounded-lg px-3 py-2">
           <LockClosedIcon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
           <p>
-            Internal key: <code className="text-gray-600 font-mono">{stage.key}</code> — renaming the label above never
+            Internal key: <code className="text-text-muted font-mono">{stage.key}</code> — renaming the label above never
             changes this. Automations and reports depend on it staying fixed.
           </p>
         </div>
 
         {canOutcome && (
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Reporting outcome</label>
+            <label className="text-xs font-medium text-text-muted mb-1 block">Reporting outcome</label>
             <select
               value={stage.outcome ?? ''}
               onChange={(e) => onChange({ outcome: e.target.value || null, isTerminal: e.target.value ? true : stage.isTerminal })}
-              className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-400"
+              className="w-full text-sm px-3 py-2 border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400 bg-background"
             >
               <option value="">Regular stage</option>
               {outcomeOptions.map((o) => (
@@ -219,7 +219,7 @@ function StageCard({
         <div className="flex justify-end pt-1">
           <button
             onClick={onDone}
-            className="px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+            className="px-3 py-1.5 text-xs font-medium bg-ryze-600 text-white rounded-lg hover:bg-ryze-700 transition-colors"
           >
             Done
           </button>
@@ -310,32 +310,32 @@ export default function PipelineSettingsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-4 shrink-0">
+      <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-4 shrink-0">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="h-9 w-9 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-            <Squares2X2Icon className="h-5 w-5 text-slate-600" />
+          <div className="h-9 w-9 rounded-lg bg-black/[0.06] dark:bg-white/[0.08] flex items-center justify-center shrink-0">
+            <Squares2X2Icon className="h-5 w-5 text-text-muted" />
           </div>
           <div>
-            <h1 className="text-base font-semibold text-gray-900">Pipeline &amp; Stages</h1>
-            <p className="text-xs text-gray-500">Each module's own stage list — add, rename, reorder, or retire a stage without a code change</p>
+            <h1 className="text-base font-semibold text-text-primary">Pipeline &amp; Stages</h1>
+            <p className="text-xs text-text-muted">Each module's own stage list — add, rename, reorder, or retire a stage without a code change</p>
           </div>
         </div>
         <button
           onClick={handleSave}
           disabled={updateMut.isPending || !dirty}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 disabled:opacity-50 transition-colors"
         >
           {saved ? <><CheckIcon className="h-4 w-4" /> Saved</> : updateMut.isPending ? 'Saving…' : 'Save Changes'}
         </button>
       </div>
 
-      <div className="px-6 py-3 border-b border-gray-100 bg-white flex items-center gap-2 shrink-0 overflow-x-auto">
+      <div className="px-6 py-3 border-b border-border bg-surface flex items-center gap-2 shrink-0 overflow-x-auto">
         {MODULES.map((m) => (
           <button
             key={m.key}
             onClick={() => switchModule(m.key)}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors shrink-0 ${
-              module === m.key ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50'
+              module === m.key ? 'bg-ryze-600/10 text-ryze-700 dark:text-ryze-400' : 'text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
             }`}
           >
             {m.label}
@@ -347,16 +347,16 @@ export default function PipelineSettingsPage() {
         <div className="max-w-2xl mx-auto">
           {isLoading ? (
             <div className="flex items-center justify-center py-10">
-              <div className="animate-spin h-6 w-6 border-2 border-brand-500 border-t-transparent rounded-full" />
+              <div className="animate-spin h-6 w-6 border-2 border-ryze-500 border-t-transparent rounded-full" />
             </div>
           ) : activeStages.length === 0 && removedStages.length === 0 ? (
-            <div className="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center">
-              <Squares2X2Icon className="h-8 w-8 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm font-medium text-gray-700 mb-1">No stages configured yet</p>
-              <p className="text-xs text-gray-500 mb-4">Add the first stage to start shaping this module's pipeline.</p>
+            <div className="bg-surface rounded-xl border border-dashed border-border p-10 text-center">
+              <Squares2X2Icon className="h-8 w-8 text-text-muted mx-auto mb-3" />
+              <p className="text-sm font-medium text-text-primary mb-1">No stages configured yet</p>
+              <p className="text-xs text-text-muted mb-4">Add the first stage to start shaping this module's pipeline.</p>
               <button
                 onClick={addStage}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 transition-colors"
               >
                 <PlusIcon className="h-4 w-4" /> Add first stage
               </button>
@@ -404,22 +404,22 @@ export default function PipelineSettingsPage() {
 
               <button
                 onClick={addStage}
-                className="mt-3 w-full px-3 py-2.5 text-xs font-medium border border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-brand-400 hover:text-brand-600 transition-colors flex items-center justify-center gap-1.5"
+                className="mt-3 w-full px-3 py-2.5 text-xs font-medium border border-dashed border-border rounded-lg text-text-muted hover:border-ryze-400 hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300 transition-colors flex items-center justify-center gap-1.5"
               >
                 <PlusIcon className="h-3.5 w-3.5" /> Add stage
               </button>
 
               {removedStages.length > 0 && (
-                <div className="mt-5 pt-4 border-t border-gray-100">
-                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Removed (existing records keep their stage)</p>
+                <div className="mt-5 pt-4 border-t border-border">
+                  <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wide mb-2">Removed (existing records keep their stage)</p>
                   <div className="space-y-1.5">
                     {removedStages.map((stage) => {
                       const i = stages.indexOf(stage);
                       return (
-                        <div key={stage.key} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 text-xs text-gray-400">
+                        <div key={stage.key} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-background text-xs text-text-muted">
                           <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
                           <span className="flex-1 truncate line-through">{stage.label}</span>
-                          <button onClick={() => restoreStage(i)} className="text-brand-500 hover:text-brand-700 font-medium">Restore</button>
+                          <button onClick={() => restoreStage(i)} className="text-ryze-500 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 font-medium">Restore</button>
                         </div>
                       );
                     })}

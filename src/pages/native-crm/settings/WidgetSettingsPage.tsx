@@ -115,7 +115,7 @@ const NAV_SECTIONS: Array<{ id: string; label: string; icon: React.ComponentType
 function TemplatePreview({ id, color }: { id: Template; color: string }) {
   const dark = shadeColor(color, -0.18);
   return (
-    <div className="rounded-lg overflow-hidden border border-gray-200 bg-gray-50" style={{ width: '100%', height: 72 }}>
+    <div className="rounded-lg overflow-hidden border border-border bg-background" style={{ width: '100%', height: 72 }}>
       <div
         className="flex items-center gap-1.5 px-2"
         style={{
@@ -141,7 +141,7 @@ function TemplatePreview({ id, color }: { id: Template; color: string }) {
       )}
       <div className="p-1.5 flex flex-col gap-1">
         <span
-          className="h-2 bg-white border border-gray-200 self-start"
+          className="h-2 bg-surface border border-border self-start"
           style={{ width: 42, borderRadius: id === 'minimal' ? 3 : '2px 7px 7px 7px' }}
         />
         {id === 'chips' && (
@@ -152,8 +152,8 @@ function TemplatePreview({ id, color }: { id: Template; color: string }) {
         )}
         {id === 'dark' && (
           <div className="flex flex-col gap-[3px]">
-            <span className="h-[7px] rounded border border-gray-200 bg-white" />
-            <span className="h-[7px] rounded border border-gray-200 bg-white" />
+            <span className="h-[7px] rounded border border-border bg-surface" />
+            <span className="h-[7px] rounded border border-border bg-surface" />
           </div>
         )}
         {(id === 'modern' || id === 'minimal') && (
@@ -210,7 +210,7 @@ function CopyButton({ value }: { value: string }) {
           setTimeout(() => setCopied(false), 1500);
         });
       }}
-      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors shrink-0"
+      className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors shrink-0"
       title="Copy"
     >
       {copied ? <CheckIcon className="h-4 w-4 text-emerald-500" /> : <ClipboardDocumentIcon className="h-4 w-4" />}
@@ -223,9 +223,9 @@ function CopyButton({ value }: { value: string }) {
 function StatusPill({ ok, onLabel, offLabel }: { ok: boolean; onLabel: string; offLabel: string }) {
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
-      ok ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-gray-50 text-gray-500 border-gray-200'
+      ok ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-background text-text-muted border-border'
     }`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${ok ? 'bg-emerald-500' : 'bg-gray-300'}`} />
+      <span className={`h-1.5 w-1.5 rounded-full ${ok ? 'bg-success-500' : 'bg-text-muted/40'}`} />
       {ok ? onLabel : offLabel}
     </span>
   );
@@ -246,14 +246,14 @@ function SectionHeader({
   right?: React.ReactNode;
 }) {
   return (
-    <div id={id} className="px-6 py-4 border-b border-gray-100 bg-gray-50/70 flex items-center justify-between gap-3 scroll-mt-6">
+    <div id={id} className="px-6 py-4 border-b border-border bg-black/[0.015] dark:bg-white/[0.02]/70 flex items-center justify-between gap-3 scroll-mt-6">
       <div className="flex items-center gap-3 min-w-0">
         <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${iconClassName}`}>
           <Icon className="h-[18px] w-[18px]" />
         </div>
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
-          {description && <p className="text-xs text-gray-500 mt-0.5 leading-snug">{description}</p>}
+          <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
+          {description && <p className="text-xs text-text-muted mt-0.5 leading-snug">{description}</p>}
         </div>
       </div>
       {right && <div className="shrink-0">{right}</div>}
@@ -483,8 +483,8 @@ export default function WidgetSettingsPage() {
 
   if (!isAdmin) {
     return (
-      <div className="flex flex-col h-full items-center justify-center text-gray-400">
-        <LockClosedIcon className="h-10 w-10 mb-2 text-gray-300" />
+      <div className="flex flex-col h-full items-center justify-center text-text-muted">
+        <LockClosedIcon className="h-10 w-10 mb-2 text-text-muted" />
         <p className="text-sm">Only admins can configure the AI chatbot widget.</p>
       </div>
     );
@@ -494,7 +494,7 @@ export default function WidgetSettingsPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="flex gap-2">{[0, 1, 2].map((i) => (
-          <span key={i} className="h-2.5 w-2.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+          <span key={i} className="h-2.5 w-2.5 rounded-full bg-ryze-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
         ))}</div>
       </div>
     );
@@ -502,7 +502,7 @@ export default function WidgetSettingsPage() {
 
   if (error || !tenant) {
     return (
-      <div className="flex h-full items-center justify-center text-gray-400 text-sm">
+      <div className="flex h-full items-center justify-center text-text-muted text-sm">
         Could not load widget settings.
       </div>
     );
@@ -875,18 +875,18 @@ export default function WidgetSettingsPage() {
     }
   };
 
-  const input = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent';
+  const input = 'w-full rounded-lg bg-surface border border-border px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400 focus:border-transparent';
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between gap-3 shrink-0">
+      <div className="bg-surface border-b border-border px-6 py-4 flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shrink-0 shadow-sm">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-ryze-500 to-ryze-700 flex items-center justify-center shrink-0 shadow-sm">
             <ChatBubbleLeftRightIcon className="h-5 w-5 text-white" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-base font-semibold text-gray-900">AI Chatbot Widget</h1>
-            <p className="text-xs text-gray-500 truncate">Let visitors on your own website chat with your AI sales agent 24/7</p>
+            <h1 className="text-base font-semibold text-text-primary">AI Chatbot Widget</h1>
+            <p className="text-xs text-text-muted truncate">Let visitors on your own website chat with your AI sales agent 24/7</p>
           </div>
         </div>
         <div className="hidden sm:flex items-center gap-2 shrink-0">
@@ -898,12 +898,12 @@ export default function WidgetSettingsPage() {
       <div className="flex-1 overflow-y-auto px-6 py-8">
         <div className="max-w-5xl mx-auto flex items-start gap-8">
           <nav className="hidden lg:block w-52 shrink-0 sticky top-8 space-y-0.5">
-            <p className="px-3 pb-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Jump to section</p>
+            <p className="px-3 pb-2 text-[11px] font-semibold text-text-muted uppercase tracking-wide">Jump to section</p>
             {NAV_SECTIONS.map(({ id, label, icon: Icon }) => (
               <a
                 key={id}
                 href={`#${id}`}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 {label}
@@ -912,21 +912,21 @@ export default function WidgetSettingsPage() {
           </nav>
 
           <div className="flex-1 min-w-0 max-w-2xl space-y-6">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
             <SectionHeader
               id="section-config"
               icon={Cog6ToothIcon}
-              iconClassName="bg-slate-100 text-slate-600"
+              iconClassName="bg-black/[0.06] dark:bg-white/[0.08] text-text-muted"
               title="Configuration"
               description="Core on/off switch, allowed domains, and greeting."
               right={
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-xs text-gray-500">{enabled ? 'Enabled' : 'Disabled'}</span>
+                  <span className="text-xs text-text-muted">{enabled ? 'Enabled' : 'Disabled'}</span>
                   <input
                     type="checkbox"
                     checked={enabled}
                     onChange={(e) => setEnabled(e.target.checked)}
-                    className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                    className="h-4 w-4 rounded text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
                   />
                 </label>
               }
@@ -934,7 +934,7 @@ export default function WidgetSettingsPage() {
 
             <div className="px-6 py-5 space-y-5">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Allowed Domains</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Allowed Domains</label>
                 <div className="flex items-center gap-2">
                   <input
                     value={domainInput}
@@ -946,7 +946,7 @@ export default function WidgetSettingsPage() {
                   <button
                     type="button"
                     onClick={addDomain}
-                    className="px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-1 shrink-0"
+                    className="px-3 py-2 rounded-lg border border-border text-sm text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center gap-1 shrink-0"
                   >
                     <PlusIcon className="h-4 w-4" /> Add
                   </button>
@@ -954,25 +954,25 @@ export default function WidgetSettingsPage() {
                 {domains.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {domains.map((d) => (
-                      <span key={d} className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-full">
+                      <span key={d} className="inline-flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] text-text-primary text-xs px-2.5 py-1 rounded-full">
                         {d}
-                        <button type="button" onClick={() => removeDomain(d)} className="text-gray-400 hover:text-gray-700">
+                        <button type="button" onClick={() => removeDomain(d)} className="text-text-muted hover:text-text-primary">
                           <XMarkIcon className="h-3 w-3" />
                         </button>
                       </span>
                     ))}
                   </div>
                 )}
-                <p className="mt-1 text-[11px] text-gray-400">Only these websites may embed the widget — e.g. "example.com", "www.example.com".</p>
+                <p className="mt-1 text-[11px] text-text-muted">Only these websites may embed the widget — e.g. "example.com", "www.example.com".</p>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Greeting</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Greeting</label>
                 <input value={greeting} onChange={(e) => setGreeting(e.target.value)} className={input} placeholder="Hi! How can I help you today?" />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Quick Questions</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Quick Questions</label>
                 <div className="flex items-center gap-2">
                   <input
                     value={quickQuestionInput}
@@ -984,7 +984,7 @@ export default function WidgetSettingsPage() {
                   <button
                     type="button"
                     onClick={addQuickQuestion}
-                    className="px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-1 shrink-0"
+                    className="px-3 py-2 rounded-lg border border-border text-sm text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center gap-1 shrink-0"
                   >
                     <PlusIcon className="h-4 w-4" /> Add
                   </button>
@@ -992,48 +992,48 @@ export default function WidgetSettingsPage() {
                 {quickQuestions.length > 0 && (
                   <div className="flex flex-col gap-1.5 mt-2">
                     {quickQuestions.map((q) => (
-                      <div key={q.text} className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
+                      <div key={q.text} className="flex items-center gap-2 bg-background border border-border rounded-lg px-3 py-1.5">
                         <input
                           type="checkbox"
                           checked={q.enabled}
                           onChange={() => toggleQuickQuestion(q.text)}
                           className="h-3.5 w-3.5"
                         />
-                        <span className={`flex-1 text-sm ${q.enabled ? 'text-gray-700' : 'text-gray-400 line-through'}`}>{q.text}</span>
-                        <button type="button" onClick={() => removeQuickQuestion(q.text)} className="text-gray-400 hover:text-gray-700">
+                        <span className={`flex-1 text-sm ${q.enabled ? 'text-text-primary' : 'text-text-muted line-through'}`}>{q.text}</span>
+                        <button type="button" onClick={() => removeQuickQuestion(q.text)} className="text-text-muted hover:text-text-primary">
                           <XMarkIcon className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     ))}
                   </div>
                 )}
-                <p className="mt-1 text-[11px] text-gray-400">
+                <p className="mt-1 text-[11px] text-text-muted">
                   Suggestion chips shown when the widget opens. Uncheck to hide one without deleting it.
                   Clicking a chip just sends its text as a normal message — the answer always comes live from your
                   Business Knowledge, Product Catalog, or website content, never from something set here.
                 </p>
-                <label className="mt-2 flex items-center gap-2 text-xs text-gray-600">
+                <label className="mt-2 flex items-center gap-2 text-xs text-text-muted">
                   <input type="checkbox" checked={showBookingQuickReply} onChange={(e) => setShowBookingQuickReply(e.target.checked)} className="h-3.5 w-3.5" />
                   Always show a "Book an appointment" chip alongside the questions above (when booking is enabled)
                 </label>
-                <label className="mt-2 flex items-center gap-2 text-xs text-gray-600">
+                <label className="mt-2 flex items-center gap-2 text-xs text-text-muted">
                   <input type="checkbox" checked={autoSendLeadEmails} onChange={(e) => setAutoSendLeadEmails(e.target.checked)} className="h-3.5 w-3.5" />
                   Automatically email a visitor + your assigned team member when the chatbot captures a new lead
                 </label>
               </div>
 
-              <div className="border-t border-gray-100 pt-4">
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Widget Identity</label>
-                <p className="mb-2 text-[11px] text-gray-400">
+              <div className="border-t border-border pt-4">
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Widget Identity</label>
+                <p className="mb-2 text-[11px] text-text-muted">
                   What visitors see in the chat panel's header on your website — the bold assistant name on top, and your company name underneath it.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[11px] text-gray-500 mb-1">Widget Name</label>
+                    <label className="block text-[11px] text-text-muted mb-1">Widget Name</label>
                     <input value={widgetName} onChange={(e) => setWidgetName(e.target.value)} className={input} placeholder="LeadBot" />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-gray-500 mb-1">Company Name</label>
+                    <label className="block text-[11px] text-text-muted mb-1">Company Name</label>
                     <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} className={input} placeholder="Your Company Inc." />
                   </div>
                 </div>
@@ -1042,7 +1042,7 @@ export default function WidgetSettingsPage() {
                     type="button"
                     onClick={handleWidgetIdentitySave}
                     disabled={brandingMutation.isPending || aiConfigMutation.isPending}
-                    className="px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 disabled:opacity-50"
+                    className="px-3 py-1.5 rounded-lg bg-ryze-600 text-white text-xs font-medium hover:bg-ryze-700 disabled:opacity-50"
                   >
                     {(brandingMutation.isPending || aiConfigMutation.isPending) ? 'Saving...' : 'Save Widget Identity'}
                   </button>
@@ -1052,9 +1052,9 @@ export default function WidgetSettingsPage() {
                 </div>
               </div>
 
-              <div className="border-t border-gray-100 pt-4">
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Contact Info (used in lead-confirmation emails)</label>
-                <p className="mb-2 text-[11px] text-gray-400">
+              <div className="border-t border-border pt-4">
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Contact Info (used in lead-confirmation emails)</label>
+                <p className="mb-2 text-[11px] text-text-muted">
                   Shown to a visitor in the automatic "thank you for visiting" email above — your real, public contact details, not shown anywhere else.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1067,7 +1067,7 @@ export default function WidgetSettingsPage() {
                     type="button"
                     onClick={handleContactInfoSave}
                     disabled={brandingMutation.isPending}
-                    className="px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 disabled:opacity-50"
+                    className="px-3 py-1.5 rounded-lg bg-ryze-600 text-white text-xs font-medium hover:bg-ryze-700 disabled:opacity-50"
                   >
                     {brandingMutation.isPending ? 'Saving...' : 'Save Contact Info'}
                   </button>
@@ -1078,7 +1078,7 @@ export default function WidgetSettingsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Default Team (round-robin assignment)</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Default Team (round-robin assignment)</label>
                 <select value={teamId} onChange={(e) => setTeamId(e.target.value)} className={input}>
                   <option value="">No default — rotate across all active staff</option>
                   {(teamsData?.items ?? []).map((t: any) => (
@@ -1102,7 +1102,7 @@ export default function WidgetSettingsPage() {
                   type="button"
                   onClick={handleSave}
                   disabled={updateMutation.isPending}
-                  className="px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                  className="px-5 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors"
                 >
                   {updateMutation.isPending ? 'Saving…' : 'Save Settings'}
                 </button>
@@ -1110,21 +1110,21 @@ export default function WidgetSettingsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
             <SectionHeader
               id="section-booking"
               icon={CalendarDaysIcon}
-              iconClassName="bg-blue-50 text-blue-600"
+              iconClassName="bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400"
               title="Booking Hours"
               description="When visitors can actually book a real appointment through the widget."
               right={
                 <label className="flex items-center gap-2 cursor-pointer shrink-0">
-                  <span className="text-xs text-gray-500">{bookingEnabled ? 'Enabled' : 'Disabled'}</span>
+                  <span className="text-xs text-text-muted">{bookingEnabled ? 'Enabled' : 'Disabled'}</span>
                   <input
                     type="checkbox"
                     checked={bookingEnabled}
                     onChange={(e) => setBookingEnabled(e.target.checked)}
-                    className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                    className="h-4 w-4 rounded text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
                   />
                 </label>
               }
@@ -1132,11 +1132,11 @@ export default function WidgetSettingsPage() {
             <div className="px-6 py-5 space-y-5">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Timezone</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Timezone</label>
                   <input value={bookingTimezone} onChange={(e) => setBookingTimezone(e.target.value)} className={input} placeholder="e.g. Asia/Kolkata" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Slot Length (min)</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Slot Length (min)</label>
                   <input
                     type="number" min={5} step={5}
                     value={bookingSlotMinutes}
@@ -1145,7 +1145,7 @@ export default function WidgetSettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Lead Time (hrs)</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Lead Time (hrs)</label>
                   <input
                     type="number" min={0}
                     value={bookingLeadTimeHours}
@@ -1154,7 +1154,7 @@ export default function WidgetSettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Book Ahead (days)</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Book Ahead (days)</label>
                   <input
                     type="number" min={1}
                     value={bookingHorizonDays}
@@ -1165,7 +1165,7 @@ export default function WidgetSettingsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Business Hours</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Business Hours</label>
                 <div className="space-y-1.5">
                   {WEEKDAYS.map(({ day, label }) => {
                     const d = bookingHours[day] ?? DEFAULT_DAY;
@@ -1176,40 +1176,40 @@ export default function WidgetSettingsPage() {
                             type="checkbox"
                             checked={d.open}
                             onChange={(e) => setBookingHours({ ...bookingHours, [day]: { ...d, open: e.target.checked } })}
-                            className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                            className="h-4 w-4 rounded text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
                           />
-                          <span className={d.open ? 'text-gray-700' : 'text-gray-400'}>{label}</span>
+                          <span className={d.open ? 'text-text-primary' : 'text-text-muted'}>{label}</span>
                         </label>
                         <input
                           type="time"
                           value={d.start}
                           disabled={!d.open}
                           onChange={(e) => setBookingHours({ ...bookingHours, [day]: { ...d, start: e.target.value } })}
-                          className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs text-gray-700 disabled:bg-gray-50 disabled:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-400"
+                          className="rounded-lg border border-border px-2 py-1.5 text-xs text-text-primary disabled:bg-background disabled:text-text-muted focus:outline-none focus:ring-2 focus:ring-ryze-400"
                         />
-                        <span className="text-gray-300 text-xs">to</span>
+                        <span className="text-text-muted text-xs">to</span>
                         <input
                           type="time"
                           value={d.end}
                           disabled={!d.open}
                           onChange={(e) => setBookingHours({ ...bookingHours, [day]: { ...d, end: e.target.value } })}
-                          className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs text-gray-700 disabled:bg-gray-50 disabled:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-400"
+                          className="rounded-lg border border-border px-2 py-1.5 text-xs text-text-primary disabled:bg-background disabled:text-text-muted focus:outline-none focus:ring-2 focus:ring-ryze-400"
                         />
                       </div>
                     );
                   })}
                 </div>
-                <p className="mt-2 text-[11px] text-gray-400">Uncheck a day to keep it closed. Times are in the timezone set above.</p>
+                <p className="mt-2 text-[11px] text-text-muted">Uncheck a day to keep it closed. Times are in the timezone set above.</p>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Required Before Booking</label>
-                <p className="mb-2 text-[11px] text-gray-400">
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Required Before Booking</label>
+                <p className="mb-2 text-[11px] text-text-muted">
                   Only ask visitors for what your business actually needs — not every business needs a department/service question.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Ask which department/team</label>
+                    <label className="block text-xs font-medium text-text-muted mb-1">Ask which department/team</label>
                     <select
                       value={tristateToSelect(bookingRequireTeam)}
                       onChange={(e) => setBookingRequireTeam(selectToTristate(e.target.value))}
@@ -1221,7 +1221,7 @@ export default function WidgetSettingsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Ask what service/reason the visit is for</label>
+                    <label className="block text-xs font-medium text-text-muted mb-1">Ask what service/reason the visit is for</label>
                     <select
                       value={tristateToSelect(bookingRequireService)}
                       onChange={(e) => setBookingRequireService(selectToTristate(e.target.value))}
@@ -1233,12 +1233,12 @@ export default function WidgetSettingsPage() {
                     </select>
                   </div>
                 </div>
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-text-primary">
                   <input
                     type="checkbox"
                     checked={bookingRequireName}
                     onChange={(e) => setBookingRequireName(e.target.checked)}
-                    className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                    className="h-4 w-4 rounded text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
                   />
                   Require the visitor's name
                 </label>
@@ -1246,7 +1246,7 @@ export default function WidgetSettingsPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Contact Info Required</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Contact Info Required</label>
                   <select
                     value={bookingContactRequirement}
                     onChange={(e) => setBookingContactRequirement(e.target.value as typeof bookingContactRequirement)}
@@ -1259,14 +1259,14 @@ export default function WidgetSettingsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Staff Title</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Staff Title</label>
                   <input
                     value={bookingStaffLabel}
                     onChange={(e) => setBookingStaffLabel(e.target.value)}
                     className={input}
                     placeholder="e.g. Doctor, Stylist, Consultant, team member"
                   />
-                  <p className="mt-1 text-[11px] text-gray-400">What the AI calls a staff member when talking to visitors.</p>
+                  <p className="mt-1 text-[11px] text-text-muted">What the AI calls a staff member when talking to visitors.</p>
                 </div>
               </div>
 
@@ -1284,52 +1284,52 @@ export default function WidgetSettingsPage() {
                 type="button"
                 onClick={handleBookingSave}
                 disabled={updateMutation.isPending}
-                className="px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                className="px-5 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors"
               >
                 {updateMutation.isPending ? 'Saving…' : 'Save Booking Hours'}
               </button>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
             <SectionHeader
               id="section-departments"
               icon={UserGroupIcon}
-              iconClassName="bg-violet-50 text-violet-600"
+              iconClassName="bg-violet-50 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400"
               title="Departments"
               description="Show a team as a bookable department so visitors can pick a specific doctor/staff member — leave everything off for a simple, single booking flow. Picking which Services a department handles also routes a chatbot lead mentioning that service straight to this team, instead of your one default team."
             />
             <div className="px-6 py-5 space-y-3">
               {(teamsData?.items ?? []).length === 0 ? (
-                <p className="text-xs text-gray-400">No teams exist yet — create one under Team &amp; Staff to use this.</p>
+                <p className="text-xs text-text-muted">No teams exist yet — create one under Team &amp; Staff to use this.</p>
               ) : (
                 (teamsData?.items ?? []).map((t: any) => {
                   const teamServiceIds: string[] = (t.serviceIds ?? []).map((s: any) => (typeof s === 'object' ? s._id : s));
                   return (
                     <div key={t._id} className="py-1">
                       <label className="flex items-center justify-between gap-3 text-sm cursor-pointer">
-                        <span className="text-gray-700">{t.name}</span>
+                        <span className="text-text-primary">{t.name}</span>
                         <span className="flex items-center gap-2 shrink-0">
-                          {togglingTeamId === t._id && <ArrowPathIcon className="h-3.5 w-3.5 text-gray-300 animate-spin" />}
+                          {togglingTeamId === t._id && <ArrowPathIcon className="h-3.5 w-3.5 text-text-muted animate-spin" />}
                           <input
                             type="checkbox"
                             checked={!!t.showInWidget}
                             disabled={togglingTeamId === t._id}
                             onChange={(e) => handleToggleDepartment(t._id, e.target.checked)}
-                            className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                            className="h-4 w-4 rounded text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
                           />
                         </span>
                       </label>
                       {t.showInWidget && (servicesData?.items ?? []).length > 0 && (
-                        <div className="mt-1.5 ml-2 pl-3 border-l border-gray-100 flex flex-wrap gap-x-4 gap-y-1">
+                        <div className="mt-1.5 ml-2 pl-3 border-l border-border flex flex-wrap gap-x-4 gap-y-1">
                           {(servicesData?.items ?? []).map((svc: any) => (
-                            <label key={svc._id} className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+                            <label key={svc._id} className="flex items-center gap-1.5 text-xs text-text-muted cursor-pointer">
                               <input
                                 type="checkbox"
                                 checked={teamServiceIds.includes(svc._id)}
                                 disabled={togglingTeamId === t._id}
                                 onChange={(e) => handleToggleTeamService(t, svc._id, e.target.checked)}
-                                className="h-3.5 w-3.5 rounded text-brand-600 focus:ring-brand-400"
+                                className="h-3.5 w-3.5 rounded text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
                               />
                               {svc.name}
                             </label>
@@ -1349,44 +1349,44 @@ export default function WidgetSettingsPage() {
                   {departmentsMessage.text}
                 </div>
               )}
-              <p className="mt-1 text-[11px] text-gray-400">Changes save immediately — no separate Save button needed.</p>
+              <p className="mt-1 text-[11px] text-text-muted">Changes save immediately — no separate Save button needed.</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
             <SectionHeader
               id="section-tool-model"
               icon={CpuChipIcon}
-              iconClassName="bg-amber-50 text-amber-600"
+              iconClassName="bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
               title="Tool Model"
               description="Which AI model looks up product/website info and handles bookings for this widget — doesn't affect your account's default assistant elsewhere."
             />
             <div className="px-6 py-5 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Model</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Model</label>
                 <select value={toolModelPreset} onChange={(e) => setToolModelPreset(e.target.value as ToolModelPreset | '')} className={input}>
                   {TOOL_MODEL_OPTIONS.map((o) => (
                     <option key={o.id || 'default'} value={o.id}>{o.name}</option>
                   ))}
                 </select>
-                <p className="mt-1 text-[11px] text-gray-400">
+                <p className="mt-1 text-[11px] text-text-muted">
                   {TOOL_MODEL_OPTIONS.find((o) => o.id === toolModelPreset)?.description}
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-gray-100">
+              <div className="pt-3 border-t border-border">
                 <label className="flex items-start gap-2.5 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={autoConvertLeadOnMeetingCompleted}
                     onChange={(e) => setAutoConvertLeadOnMeetingCompleted(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                    className="mt-0.5 h-4 w-4 rounded text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
                   />
                   <span>
-                    <span className="block text-sm font-medium text-gray-800">
+                    <span className="block text-sm font-medium text-text-primary">
                       Auto-convert Lead to Customer when their appointment is marked completed
                     </span>
-                    <span className="block text-[11px] text-gray-400 mt-0.5">
+                    <span className="block text-[11px] text-text-muted mt-0.5">
                       Off by default — conversion stays a manual action from the Lead's own Convert tab unless this is turned on.
                     </span>
                   </span>
@@ -1407,18 +1407,18 @@ export default function WidgetSettingsPage() {
                 type="button"
                 onClick={handleToolModelSave}
                 disabled={aiConfigMutation.isPending}
-                className="px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                className="px-5 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors"
               >
                 {aiConfigMutation.isPending ? 'Saving…' : 'Save Settings'}
               </button>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
             <SectionHeader
               id="section-ai-usage"
               icon={ChartBarIcon}
-              iconClassName="bg-violet-50 text-violet-600"
+              iconClassName="bg-violet-50 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400"
               title="AI Usage & Limits"
               description="How much of this widget's monthly AI budget has been used, and where the limit is set — the fallback message visitors see once it's reached."
               right={aiUsage && (
@@ -1439,12 +1439,12 @@ export default function WidgetSettingsPage() {
               {aiUsage && (
                 <div>
                   <div className="flex items-baseline justify-between mb-1.5">
-                    <span className="text-sm font-medium text-gray-800">
+                    <span className="text-sm font-medium text-text-primary">
                       {aiUsage.tokensUsedThisMonth.toLocaleString()} / {aiUsage.monthlyTokenLimit.toLocaleString()} tokens
                     </span>
-                    <span className="text-xs text-gray-400">{aiUsage.percentUsed}%</span>
+                    <span className="text-xs text-text-muted">{aiUsage.percentUsed}%</span>
                   </div>
-                  <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                  <div className="h-2 rounded-full bg-black/[0.04] dark:bg-white/[0.06] overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all ${
                         aiUsage.status === 'exceeded' ? 'bg-red-500'
@@ -1455,7 +1455,7 @@ export default function WidgetSettingsPage() {
                       style={{ width: `${Math.min(100, aiUsage.percentUsed)}%` }}
                     />
                   </div>
-                  <p className="mt-1.5 text-[11px] text-gray-400">
+                  <p className="mt-1.5 text-[11px] text-text-muted">
                     {aiUsage.tokensRemaining.toLocaleString()} tokens remaining this month · plan default is {aiUsage.planDefaultTokenLimit.toLocaleString()} ({aiUsage.plan})
                   </p>
                 </div>
@@ -1463,29 +1463,29 @@ export default function WidgetSettingsPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Monthly Token Limit</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Monthly Token Limit</label>
                   <input
                     type="number" min={0} className={input} value={customTokenLimit}
                     onChange={(e) => setCustomTokenLimit(e.target.value)}
                     placeholder={aiUsage ? String(aiUsage.planDefaultTokenLimit) : 'Plan default'}
                   />
-                  <p className="mt-1 text-[11px] text-gray-400">Blank = use the plan default shown above.</p>
+                  <p className="mt-1 text-[11px] text-text-muted">Blank = use the plan default shown above.</p>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Warning Threshold %</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Warning Threshold %</label>
                   <input
                     type="number" min={1} max={99} className={input} value={warningThresholdPercent}
                     onChange={(e) => setWarningThresholdPercent(e.target.value)}
                   />
-                  <p className="mt-1 text-[11px] text-gray-400">Admin-facing only — never affects what visitors see.</p>
+                  <p className="mt-1 text-[11px] text-text-muted">Admin-facing only — never affects what visitors see.</p>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Critical Threshold %</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Critical Threshold %</label>
                   <input
                     type="number" min={1} max={100} className={input} value={criticalThresholdPercent}
                     onChange={(e) => setCriticalThresholdPercent(e.target.value)}
                   />
-                  <p className="mt-1 text-[11px] text-gray-400">The fallback ("please leave your contact info") only ever starts at 100%.</p>
+                  <p className="mt-1 text-[11px] text-text-muted">The fallback ("please leave your contact info") only ever starts at 100%.</p>
                 </div>
               </div>
 
@@ -1503,35 +1503,35 @@ export default function WidgetSettingsPage() {
                 type="button"
                 onClick={handleAiUsageSave}
                 disabled={aiConfigMutation.isPending}
-                className="px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                className="px-5 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors"
               >
                 {aiConfigMutation.isPending ? 'Saving…' : 'Save Changes'}
               </button>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
             <SectionHeader
               id="section-voice"
               icon={MicrophoneIcon}
-              iconClassName="bg-cyan-50 text-cyan-600"
+              iconClassName="bg-cyan-50 dark:bg-cyan-500/15 text-cyan-600 dark:text-cyan-400"
               title="Voice"
               description="Let visitors talk to the widget with their microphone instead of typing — push-to-talk, powered by the same AI."
               right={
                 <label className="flex items-center gap-2 cursor-pointer shrink-0">
-                  <span className="text-xs text-gray-500">{voiceEnabled ? 'Enabled' : 'Disabled'}</span>
+                  <span className="text-xs text-text-muted">{voiceEnabled ? 'Enabled' : 'Disabled'}</span>
                   <input
                     type="checkbox"
                     checked={voiceEnabled}
                     onChange={(e) => setVoiceEnabled(e.target.checked)}
-                    className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                    className="h-4 w-4 rounded text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
                   />
                 </label>
               }
             />
             <div className="px-6 py-5 space-y-5">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Conversation Mode</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Conversation Mode</label>
                 <div className="flex gap-3">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -1539,9 +1539,9 @@ export default function WidgetSettingsPage() {
                       name="voiceConversationMode"
                       checked={!continuousModeEnabled}
                       onChange={() => setContinuousModeEnabled(false)}
-                      className="h-4 w-4 text-brand-600 focus:ring-brand-400"
+                      className="h-4 w-4 text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
                     />
-                    <span className="text-sm text-gray-700">Push-to-talk</span>
+                    <span className="text-sm text-text-primary">Push-to-talk</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -1549,12 +1549,12 @@ export default function WidgetSettingsPage() {
                       name="voiceConversationMode"
                       checked={continuousModeEnabled}
                       onChange={() => setContinuousModeEnabled(true)}
-                      className="h-4 w-4 text-brand-600 focus:ring-brand-400"
+                      className="h-4 w-4 text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
                     />
-                    <span className="text-sm text-gray-700">Continuous (hands-free)</span>
+                    <span className="text-sm text-text-primary">Continuous (hands-free)</span>
                   </label>
                 </div>
-                <p className="mt-1 text-[11px] text-gray-400">
+                <p className="mt-1 text-[11px] text-text-muted">
                   Continuous mode holds an open, natural back-and-forth conversation — visitors don't tap to record each turn, and the AI can be
                   interrupted mid-reply. Real per-minute cost is materially higher than push-to-talk (a dedicated real-time voice platform plus
                   streaming speech-to-text/text-to-speech, on top of the LLM cost already tracked).
@@ -1563,7 +1563,7 @@ export default function WidgetSettingsPage() {
               {continuousModeEnabled && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Max Call Length (minutes)</label>
+                    <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Max Call Length (minutes)</label>
                     <input
                       type="number"
                       min={1}
@@ -1572,28 +1572,28 @@ export default function WidgetSettingsPage() {
                       className={input}
                       placeholder="No limit"
                     />
-                    <p className="mt-1 text-[11px] text-gray-400">
+                    <p className="mt-1 text-[11px] text-text-muted">
                       Hard per-call duration cap — the AI speaks a wrap-up and ends the call once reached. Separate from the monthly voice-minutes
                       quota above, this protects against one runaway call using up the whole month's budget alone.
                     </p>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Typing During a Call</label>
+                    <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Typing During a Call</label>
                     <label className="flex items-center gap-2 cursor-pointer mt-2">
                       <input
                         type="checkbox"
                         checked={allowTextDuringVoice}
                         onChange={(e) => setAllowTextDuringVoice(e.target.checked)}
-                        className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                        className="h-4 w-4 rounded text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
                       />
-                      <span className="text-sm text-gray-700">Allow visitors to type while a voice call is active</span>
+                      <span className="text-sm text-text-primary">Allow visitors to type while a voice call is active</span>
                     </label>
-                    <p className="mt-1 text-[11px] text-gray-400">
+                    <p className="mt-1 text-[11px] text-text-muted">
                       On by default (hybrid mode). Turn off to require one active conversational channel at a time.
                     </p>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Voice</label>
+                    <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Voice</label>
                     <div className="flex items-center gap-2">
                       <select
                         value={voicePresetGender}
@@ -1607,7 +1607,7 @@ export default function WidgetSettingsPage() {
                         type="button"
                         onClick={handleTestVoice}
                         disabled={testVoiceState === 'loading'}
-                        className="shrink-0 px-3 py-2.5 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors whitespace-nowrap"
+                        className="shrink-0 px-3 py-2.5 rounded-xl border border-border text-xs font-medium text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-50 transition-colors whitespace-nowrap"
                       >
                         {testVoiceState === 'loading' ? 'Loading…' : '🔊 Test Voice'}
                       </button>
@@ -1616,7 +1616,7 @@ export default function WidgetSettingsPage() {
                     {testVoiceState === 'error' && (
                       <p className="mt-1 text-[11px] text-red-500">Could not play a preview — try again.</p>
                     )}
-                    <p className="mt-1 text-[11px] text-gray-400">
+                    <p className="mt-1 text-[11px] text-text-muted">
                       Continuous calls always listen with Deepgram and speak with Cartesia — that's fixed, not configurable here.
                       Confirm this voice sounds right, then Save Voice Settings below. (The Speech Provider field further down is
                       for Push-to-talk only. The Voice Name field is also used for Push-to-talk, but doubles as a fallback voice
@@ -1627,29 +1627,29 @@ export default function WidgetSettingsPage() {
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Push-to-talk Speech Provider</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Push-to-talk Speech Provider</label>
                   <select value={voiceProvider} onChange={(e) => setVoiceProvider(e.target.value as VoiceProvider)} className={input}>
                     <option value="groq">Groq (recommended)</option>
                   </select>
-                  <p className="mt-1 text-[11px] text-gray-400">
+                  <p className="mt-1 text-[11px] text-text-muted">
                     Handles both listening (speech-to-text) and speaking (text-to-speech) for Push-to-talk only — no separate account
                     needed. Continuous (hands-free) calls always use Deepgram + Cartesia instead, regardless of this setting.
                   </p>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Push-to-talk Voice Name (advanced)</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Push-to-talk Voice Name (advanced)</label>
                   <input value={voiceName} onChange={(e) => setVoiceName(e.target.value)} className={input} placeholder="e.g. Fritz-PlayAI (leave blank for default)" />
-                  <p className="mt-1 text-[11px] text-gray-400">Used for Push-to-talk. Also used as a fallback voice for Continuous calls if no Male/Female preset is selected above — pick a preset above for direct control over the Continuous voice instead.</p>
+                  <p className="mt-1 text-[11px] text-text-muted">Used for Push-to-talk. Also used as a fallback voice for Continuous calls if no Male/Female preset is selected above — pick a preset above for direct control over the Continuous voice instead.</p>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Speech Language</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Speech Language</label>
                   <select value={sttLanguage} onChange={(e) => setSttLanguage(e.target.value)} className={input}>
                     <option value="">Auto-detect</option>
                     {SUPPORTED_LANGUAGES.map((l) => (
                       <option key={l.code} value={l.code}>{l.label}</option>
                     ))}
                   </select>
-                  <p className="mt-1 text-[11px] text-gray-400">
+                  <p className="mt-1 text-[11px] text-text-muted">
                     Used by both Push-to-talk and Continuous calls. Reply language uses the AI Agent's own Language setting elsewhere in Settings.
                   </p>
                 </div>
@@ -1659,9 +1659,9 @@ export default function WidgetSettingsPage() {
                       type="checkbox"
                       checked={voiceAutoPlay}
                       onChange={(e) => setVoiceAutoPlay(e.target.checked)}
-                      className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+                      className="h-4 w-4 rounded text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
                     />
-                    <span className="text-sm text-gray-700">Auto-play spoken replies</span>
+                    <span className="text-sm text-text-primary">Auto-play spoken replies</span>
                   </label>
                 </div>
               </div>
@@ -1681,34 +1681,34 @@ export default function WidgetSettingsPage() {
                   type="button"
                   onClick={handleVoiceSave}
                   disabled={updateMutation.isPending}
-                  className="px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                  className="px-5 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors"
                 >
                   {updateMutation.isPending ? 'Saving…' : 'Save Voice Settings'}
                 </button>
-                <a href="/native-crm/settings/voice-playground" className="text-xs font-medium text-brand-600 hover:text-brand-700">
+                <a href="/native-crm/settings/voice-playground" className="text-xs font-medium text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300">
                   Test in Voice Playground →
                 </a>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
             <SectionHeader
               id="section-appearance"
               icon={SwatchIcon}
-              iconClassName="bg-rose-50 text-rose-600"
+              iconClassName="bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400"
               title="Appearance"
               description="Every client's own website looks different — pick a logo and layout that fit theirs."
             />
             <div className="px-6 py-5 space-y-6">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Logo / Icon</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Logo / Icon</label>
                 <div className="flex items-center gap-3">
-                  <div className="h-14 w-14 rounded-full border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+                  <div className="h-14 w-14 rounded-full border border-border bg-background flex items-center justify-center overflow-hidden shrink-0">
                     {tenant.widget?.logoUrl ? (
                       <img src={tenant.widget.logoUrl} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      <PhotoIcon className="h-6 w-6 text-gray-300" />
+                      <PhotoIcon className="h-6 w-6 text-text-muted" />
                     )}
                   </div>
                   <input
@@ -1722,7 +1722,7 @@ export default function WidgetSettingsPage() {
                     type="button"
                     onClick={() => logoFileInputRef.current?.click()}
                     disabled={uploadLogoMutation.isPending}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border text-sm font-medium text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-50 transition-colors"
                   >
                     <PhotoIcon className="h-4 w-4" />
                     {uploadLogoMutation.isPending ? 'Uploading…' : tenant.widget?.logoUrl ? 'Replace' : 'Upload'}
@@ -1732,13 +1732,13 @@ export default function WidgetSettingsPage() {
                       type="button"
                       onClick={handleRemoveLogo}
                       disabled={removeLogoMutation.isPending}
-                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-200 text-sm font-medium text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors"
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border text-sm font-medium text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors"
                     >
                       <TrashIcon className="h-4 w-4" /> Remove
                     </button>
                   )}
                 </div>
-                <p className="mt-1.5 text-[11px] text-gray-400">Shown as the chat avatar. Falls back to your account logo, then to a plain initial, if none is set here.</p>
+                <p className="mt-1.5 text-[11px] text-text-muted">Shown as the chat avatar. Falls back to your account logo, then to a plain initial, if none is set here.</p>
                 {logoMessage && (
                   <div className={`mt-2 text-sm px-4 py-2.5 rounded-lg border ${
                     logoMessage.type === 'ok'
@@ -1751,7 +1751,7 @@ export default function WidgetSettingsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Template</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Template</label>
                 <div className="grid grid-cols-2 gap-3">
                   {TEMPLATES.map((t) => (
                     <button
@@ -1759,31 +1759,31 @@ export default function WidgetSettingsPage() {
                       type="button"
                       onClick={() => setTemplate(t.id)}
                       className={`text-left rounded-xl border-2 p-2.5 transition-colors ${
-                        template === t.id ? 'border-brand-500 bg-brand-50/40' : 'border-gray-200 hover:border-gray-300'
+                        template === t.id ? 'border-ryze-500 bg-ryze-600/10/40' : 'border-border hover:border-border'
                       }`}
                     >
                       <TemplatePreview id={t.id} color={tenant.branding?.primaryColor || '#2563eb'} />
-                      <p className="mt-2 text-xs font-semibold text-gray-700">{t.name}</p>
-                      <p className="text-[11px] text-gray-500 leading-snug mt-0.5">{t.description}</p>
+                      <p className="mt-2 text-xs font-semibold text-text-primary">{t.name}</p>
+                      <p className="text-[11px] text-text-muted leading-snug mt-0.5">{t.description}</p>
                     </button>
                   ))}
                 </div>
-                <p className="mt-2 text-[11px] text-gray-400">Applies immediately once you click Save Settings above.</p>
+                <p className="mt-2 text-[11px] text-text-muted">Applies immediately once you click Save Settings above.</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
             <SectionHeader
               id="section-website"
               icon={GlobeAltIcon}
-              iconClassName="bg-emerald-50 text-emerald-600"
+              iconClassName="bg-success-500/15 text-success-700 dark:text-success-500"
               title="Website Content"
               description="Crawl your own site so the widget can answer from your real pages."
             />
             <div className="px-6 py-5 space-y-5">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Your Website URL</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Your Website URL</label>
                 <div className="flex items-center gap-2">
                   <input
                     value={websiteUrl}
@@ -1795,13 +1795,13 @@ export default function WidgetSettingsPage() {
                     type="button"
                     onClick={handleCrawl}
                     disabled={isCrawlPolling || updateMutation.isPending || crawlMutation.isPending}
-                    className="px-4 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors flex items-center gap-1.5 shrink-0"
+                    className="px-4 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors flex items-center gap-1.5 shrink-0"
                   >
                     <GlobeAltIcon className={`h-4 w-4 ${isCrawlPolling ? 'animate-pulse' : ''}`} />
                     {isCrawlPolling ? 'Crawling…' : 'Crawl Now'}
                   </button>
                 </div>
-                <p className="mt-1 text-[11px] text-gray-400">
+                <p className="mt-1 text-[11px] text-text-muted">
                   Lets the widget answer questions using your own site's content (products, services, FAQs) — crawls up to 20 pages, 2 links deep. Re-crawl any time to pick up changes.
                 </p>
               </div>
@@ -1813,7 +1813,7 @@ export default function WidgetSettingsPage() {
                     : tenant.widget?.crawlStatus === 'ready' ? 'bg-emerald-50 text-emerald-600'
                     : tenant.widget?.crawlStatus === 'ready_with_warnings' ? 'bg-amber-50 text-amber-600'
                     : tenant.widget?.crawlStatus === 'failed' ? 'bg-red-50 text-red-600'
-                    : 'bg-gray-100 text-gray-500'
+                    : 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'
                   }`}>
                     {isCrawlPolling || tenant.widget?.crawlStatus === 'crawling' ? 'Crawling…'
                       : tenant.widget?.crawlStatus === 'ready' ? 'Ready'
@@ -1821,7 +1821,7 @@ export default function WidgetSettingsPage() {
                       : tenant.widget?.crawlStatus === 'failed' ? 'Failed'
                       : 'Not configured'}
                   </span>
-                  <p className="text-gray-500">
+                  <p className="text-text-muted">
                     {typeof tenant.widget?.crawlPagesIndexed === 'number' ? (
                       <>
                         Pages: {tenant.widget.crawlPagesIndexed}
@@ -1851,11 +1851,11 @@ export default function WidgetSettingsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
             <SectionHeader
               id="section-catalog"
               icon={Square3Stack3DIcon}
-              iconClassName="bg-orange-50 text-orange-600"
+              iconClassName="bg-orange-50 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400"
               title="Product Catalog"
               description="Give the widget exact product specs to answer from, not just page text."
             />
@@ -1872,12 +1872,12 @@ export default function WidgetSettingsPage() {
                   type="button"
                   onClick={() => catalogFileInputRef.current?.click()}
                   disabled={importMutation.isPending}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors"
                 >
                   <DocumentArrowUpIcon className={`h-4 w-4 ${importMutation.isPending ? 'animate-pulse' : ''}`} />
                   {importMutation.isPending ? 'Importing…' : 'Import Catalog (Excel / CSV / JSON)'}
                 </button>
-                <p className="mt-1.5 text-[11px] text-gray-400">
+                <p className="mt-1.5 text-[11px] text-text-muted">
                   Give the widget exact product specs to answer from — not just website text. Recognized columns: title/name, sku, category, description; everything else is kept as a specification.
                 </p>
               </div>
@@ -1894,12 +1894,12 @@ export default function WidgetSettingsPage() {
 
               {catalogSources && catalogSources.length > 0 && (
                 <div className="space-y-2">
-                  <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Sources</label>
+                  <label className="block text-xs font-semibold text-text-muted uppercase tracking-wide">Sources</label>
                   {catalogSources.map((s) => (
-                    <div key={s._id} className="flex items-start justify-between text-xs bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 gap-2">
+                    <div key={s._id} className="flex items-start justify-between text-xs bg-background border border-border rounded-lg px-3 py-2 gap-2">
                       <div className="min-w-0">
-                        <p className="text-gray-700 truncate">{s.label}</p>
-                        <p className="text-gray-400">
+                        <p className="text-text-primary truncate">{s.label}</p>
+                        <p className="text-text-muted">
                           {s.itemsImported} new · {s.itemsUpdated} updated{s.itemsFailed ? ` · ${s.itemsFailed} failed` : ''}
                           {s.itemsAmbiguous ? ` · ${s.itemsAmbiguous} ambiguous (review)` : ''}
                           {s.lastSyncAt ? ` · ${new Date(s.lastSyncAt).toLocaleString()}` : ''}
@@ -1925,11 +1925,11 @@ export default function WidgetSettingsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
             <SectionHeader
               id="section-datasets"
               icon={CircleStackIcon}
-              iconClassName="bg-cyan-50 text-cyan-600"
+              iconClassName="bg-cyan-50 dark:bg-cyan-500/15 text-cyan-600 dark:text-cyan-400"
               title="Business Knowledge"
               description="Upload any business data — machines, services, courses, price lists — and the widget can answer questions about it."
             />
@@ -1946,12 +1946,12 @@ export default function WidgetSettingsPage() {
                   type="button"
                   onClick={() => datasetFileInputRef.current?.click()}
                   disabled={importDatasetMutation.isPending}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors"
                 >
                   <DocumentArrowUpIcon className={`h-4 w-4 ${importDatasetMutation.isPending ? 'animate-pulse' : ''}`} />
                   {importDatasetMutation.isPending ? 'Importing…' : 'Upload Data (Excel / CSV / JSON)'}
                 </button>
-                <p className="mt-1.5 text-[11px] text-gray-400">
+                <p className="mt-1.5 text-[11px] text-text-muted">
                   Separate from the Product Catalog above — for any other business-specific data. You'll review and confirm the column mapping before anything imports.
                 </p>
               </div>
@@ -1968,12 +1968,12 @@ export default function WidgetSettingsPage() {
 
               {datasets && datasets.length > 0 && (
                 <div className="space-y-2">
-                  <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Datasets</label>
+                  <label className="block text-xs font-semibold text-text-muted uppercase tracking-wide">Datasets</label>
                   {datasets.map((d) => (
-                    <div key={d._id} className="flex items-start justify-between text-xs bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 gap-2">
+                    <div key={d._id} className="flex items-start justify-between text-xs bg-background border border-border rounded-lg px-3 py-2 gap-2">
                       <div className="min-w-0">
-                        <p className="text-gray-700 truncate font-medium">{d.name}</p>
-                        <p className="text-gray-400">
+                        <p className="text-text-primary truncate font-medium">{d.name}</p>
+                        <p className="text-text-muted">
                           {d.activeVersionDetail
                             ? `${d.activeVersionDetail.recordsInserted} record(s)${d.activeVersionDetail.recordsFailed ? ` · ${d.activeVersionDetail.recordsFailed} failed` : ''}`
                             : 'Importing…'}
@@ -1989,9 +1989,9 @@ export default function WidgetSettingsPage() {
                             type="checkbox"
                             checked={d.availableToChatbot}
                             onChange={(e) => toggleDatasetMutation.mutate({ datasetId: d._id, availableToChatbot: e.target.checked })}
-                            className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-400"
+                            className="h-3.5 w-3.5 rounded border-border text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
                           />
-                          <span className={d.availableToChatbot ? 'text-emerald-600 font-medium' : 'text-gray-400'}>
+                          <span className={d.availableToChatbot ? 'text-emerald-600 font-medium' : 'text-text-muted'}>
                             {d.availableToChatbot ? 'Live on widget' : 'Not visible'}
                           </span>
                         </label>
@@ -2007,7 +2007,7 @@ export default function WidgetSettingsPage() {
                             <button
                               type="button"
                               onClick={() => setDatasetDeleteConfirm(null)}
-                              className="px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50"
+                              className="px-2 py-1 rounded border border-border text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
                             >
                               Cancel
                             </button>
@@ -2016,7 +2016,7 @@ export default function WidgetSettingsPage() {
                           <button
                             type="button"
                             onClick={() => setDatasetDeleteConfirm(d._id)}
-                            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-red-500"
+                            className="p-1 rounded hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted hover:text-red-500"
                           >
                             <TrashIcon className="h-3.5 w-3.5" />
                           </button>
@@ -2029,23 +2029,23 @@ export default function WidgetSettingsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
             <SectionHeader
               id="section-embed"
               icon={KeyIcon}
-              iconClassName="bg-indigo-50 text-indigo-600"
+              iconClassName="bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400"
               title="Widget Key & Embed Snippet"
               description="The one script tag that goes on your website."
             />
             <div className="px-6 py-5 space-y-5">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Widget Key</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Widget Key</label>
                 <div className="flex items-center gap-2">
                   <input
                     value={widgetKey ?? 'Not generated yet'}
                     readOnly
                     disabled
-                    className={`${input} bg-gray-50 text-gray-500 font-mono cursor-not-allowed`}
+                    className={`${input} bg-background text-text-muted font-mono cursor-not-allowed`}
                   />
                   {widgetKey && <CopyButton value={widgetKey} />}
                 </div>
@@ -2062,7 +2062,7 @@ export default function WidgetSettingsPage() {
                     <button type="button" onClick={handleRegenerate} className="px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-medium hover:bg-amber-700">
                       {widgetKey ? 'Yes, regenerate' : 'Yes, generate'}
                     </button>
-                    <button type="button" onClick={() => setConfirmingRegen(false)} className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50">
+                    <button type="button" onClick={() => setConfirmingRegen(false)} className="px-3 py-1.5 rounded-lg border border-border text-xs text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">
                       Cancel
                     </button>
                   </div>
@@ -2072,7 +2072,7 @@ export default function WidgetSettingsPage() {
                   type="button"
                   onClick={() => setConfirmingRegen(true)}
                   disabled={regenMutation.isPending}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-50 transition-colors"
                 >
                   <ArrowPathIcon className={`h-4 w-4 ${regenMutation.isPending ? 'animate-spin' : ''}`} />
                   {widgetKey ? 'Regenerate Widget Key' : 'Generate Widget Key'}
@@ -2090,16 +2090,16 @@ export default function WidgetSettingsPage() {
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Embed Snippet</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Embed Snippet</label>
                 {widgetKey ? (
                   <div className="flex items-start gap-2">
                     <pre className="flex-1 bg-gray-900 text-emerald-300 text-xs rounded-lg p-3 overflow-x-auto"><code>{embedSnippet}</code></pre>
                     <CopyButton value={embedSnippet} />
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-400">Generate a widget key above to get your embed snippet.</p>
+                  <p className="text-xs text-text-muted">Generate a widget key above to get your embed snippet.</p>
                 )}
-                <p className="mt-1 text-[11px] text-gray-400">Paste this one line into your website's HTML — the widget loads itself.</p>
+                <p className="mt-1 text-[11px] text-text-muted">Paste this one line into your website's HTML — the widget loads itself.</p>
               </div>
             </div>
           </div>

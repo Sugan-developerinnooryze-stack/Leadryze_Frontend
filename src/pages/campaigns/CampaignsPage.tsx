@@ -73,7 +73,7 @@ export default function CampaignsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Campaigns</h1>
+        <h1 className="text-2xl font-bold text-text-primary">Campaigns</h1>
         <button className="btn-primary gap-2" onClick={() => setShowModal(true)}>
           <PlusIcon className="h-4 w-4" /> New Campaign
         </button>
@@ -81,11 +81,11 @@ export default function CampaignsPage() {
 
       {isLoading ? (
         <div className="animate-pulse grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => <div key={i} className="card h-40 bg-gray-100" />)}
+          {[...Array(3)].map((_, i) => <div key={i} className="card h-40 bg-black/[0.04] dark:bg-white/[0.06]" />)}
         </div>
       ) : campaigns.length === 0 ? (
         <div className="card text-center py-16">
-          <p className="text-gray-400 mb-4">No campaigns yet. Create your first campaign!</p>
+          <p className="text-text-muted mb-4">No campaigns yet. Create your first campaign!</p>
           <button className="btn-primary gap-2" onClick={() => setShowModal(true)}>
             <PlusIcon className="h-4 w-4" /> New Campaign
           </button>
@@ -95,7 +95,7 @@ export default function CampaignsPage() {
           {campaigns.map((c) => (
             <div key={c._id} className="card hover:shadow-md transition-shadow cursor-pointer">
               <div className="flex items-start justify-between mb-3">
-                <h3 className="font-semibold text-gray-900 truncate">{c.name}</h3>
+                <h3 className="font-semibold text-text-primary truncate">{c.name}</h3>
                 <span className={`ml-2 shrink-0 badge ${STATUS_BADGE[c.status] || 'badge-gray'} capitalize`}>
                   {c.status}
                 </span>
@@ -104,15 +104,15 @@ export default function CampaignsPage() {
                 <span className="badge badge-blue capitalize">{c.type}</span>
                 <span className="badge badge-gray capitalize">{c.channel}</span>
               </div>
-              <div className="grid grid-cols-3 gap-3 text-center border-t border-gray-100 pt-4">
+              <div className="grid grid-cols-3 gap-3 text-center border-t border-border pt-4">
                 {([['Sent', c.stats?.sent ?? 0], ['Delivered', c.stats?.delivered ?? 0], ['Replied', c.stats?.replied ?? 0]] as [string, number][]).map(([label, val]) => (
                   <div key={label}>
-                    <p className="text-lg font-bold text-gray-900">{val}</p>
-                    <p className="text-xs text-gray-500">{label}</p>
+                    <p className="text-lg font-bold text-text-primary">{val}</p>
+                    <p className="text-xs text-text-muted">{label}</p>
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-gray-400 mt-3">
+              <p className="text-xs text-text-muted mt-3">
                 Created {format(new Date(c.createdAt), 'dd MMM yyyy')}
               </p>
             </div>
@@ -147,7 +147,7 @@ export default function CampaignsPage() {
             </div>
           </div>
           <div>
-            <label className="label">Description <span className="text-gray-400 font-normal">(optional)</span></label>
+            <label className="label">Description <span className="text-text-muted font-normal">(optional)</span></label>
             <textarea className="input" rows={3} placeholder="What is this campaign about?" value={form.description} onChange={f('description')} />
           </div>
           <div className="bg-blue-50 rounded-xl p-4 text-sm text-blue-700">

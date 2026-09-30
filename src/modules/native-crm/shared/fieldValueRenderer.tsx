@@ -19,9 +19,9 @@ export function renderFieldValue(v: unknown): React.ReactNode {
       return (
         <div className="flex items-center gap-1.5 flex-wrap">
           {images.slice(0, 4).map((u, i) => (
-            <img key={i} src={u} alt="" className="h-10 w-10 object-cover rounded-lg border border-gray-200" />
+            <img key={i} src={u} alt="" className="h-10 w-10 object-cover rounded-lg border border-border" />
           ))}
-          {urls.length > 4 && <span className="text-xs text-gray-400">+{urls.length - 4}</span>}
+          {urls.length > 4 && <span className="text-xs text-text-muted">+{urls.length - 4}</span>}
         </div>
       );
     }
@@ -29,7 +29,7 @@ export function renderFieldValue(v: unknown): React.ReactNode {
       return (
         <div className="flex flex-col gap-0.5">
           {urls.map((u, i) => (
-            <a key={i} href={u} target="_blank" rel="noreferrer" className="text-xs text-brand-600 hover:underline truncate max-w-xs">
+            <a key={i} href={u} target="_blank" rel="noreferrer" className="text-xs text-ryze-600 dark:text-ryze-400 hover:underline truncate max-w-xs">
               {u.split('/').pop() || u}
             </a>
           ))}
@@ -40,10 +40,10 @@ export function renderFieldValue(v: unknown): React.ReactNode {
   }
 
   if (isImageUrl(v)) {
-    return <img src={v} alt="" className="h-14 w-14 object-cover rounded-lg border border-gray-200" />;
+    return <img src={v} alt="" className="h-14 w-14 object-cover rounded-lg border border-border" />;
   }
   if (isUrl(v)) {
-    return <a href={v} target="_blank" rel="noreferrer" className="text-xs text-brand-600 hover:underline break-all">{v}</a>;
+    return <a href={v} target="_blank" rel="noreferrer" className="text-xs text-ryze-600 dark:text-ryze-400 hover:underline break-all">{v}</a>;
   }
   return String(v);
 }

@@ -92,17 +92,17 @@ export default function FsRelationPicker({ value, onChange }: { value: FsRelatio
 
   if (value.relatedId) {
     return (
-      <div className="pt-2 border-t border-gray-100">
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Linked Field Service Record</p>
-        <div className="flex items-center justify-between gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg">
+      <div className="pt-2 border-t border-border">
+        <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2">Linked Field Service Record</p>
+        <div className="flex items-center justify-between gap-2 px-3 py-2 bg-ryze-600/10 border border-ryze-100 dark:border-ryze-900 rounded-lg">
           <div className="flex items-center gap-2 min-w-0">
-            <LinkIcon className="h-4 w-4 text-blue-500 shrink-0" />
-            <span className="text-sm text-blue-800 truncate">{value.relatedLabel}</span>
+            <LinkIcon className="h-4 w-4 text-ryze-500 shrink-0" />
+            <span className="text-sm text-ryze-700 dark:text-ryze-400 truncate">{value.relatedLabel}</span>
           </div>
           <button
             type="button"
             onClick={() => onChange({})}
-            className="p-1 rounded hover:bg-blue-100 text-blue-400 hover:text-blue-600 shrink-0"
+            className="p-1 rounded hover:bg-ryze-600/20 text-ryze-400 hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300 shrink-0"
           >
             <XMarkIcon className="h-4 w-4" />
           </button>
@@ -112,13 +112,13 @@ export default function FsRelationPicker({ value, onChange }: { value: FsRelatio
   }
 
   return (
-    <div className="pt-2 border-t border-gray-100">
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Link to a Field Service record</p>
+    <div className="pt-2 border-t border-border">
+      <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2">Link to a Field Service record</p>
       <div className="flex gap-2 mb-2">
         <select
           value={moduleType}
           onChange={(e) => { setModuleType(e.target.value as FsRelatedModule); setSearch(''); }}
-          className="px-2.5 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white"
+          className="px-2.5 py-2 border border-border rounded-lg text-sm text-text-primary bg-surface"
         >
           {MODULE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
@@ -126,13 +126,13 @@ export default function FsRelationPicker({ value, onChange }: { value: FsRelatio
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={`Search ${MODULE_OPTIONS.find((o) => o.value === moduleType)?.label.toLowerCase()}s…`}
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+          className="flex-1 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500/30 bg-background text-text-primary"
         />
       </div>
       {search.trim() && (
-        <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
-          {isLoading && <div className="px-3 py-2 text-xs text-gray-400">Searching…</div>}
-          {!isLoading && items.length === 0 && <div className="px-3 py-2 text-xs text-gray-400">No matches</div>}
+        <div className="max-h-40 overflow-y-auto border border-border rounded-lg divide-y divide-border">
+          {isLoading && <div className="px-3 py-2 text-xs text-text-muted">Searching…</div>}
+          {!isLoading && items.length === 0 && <div className="px-3 py-2 text-xs text-text-muted">No matches</div>}
           {items.map((r: any) => {
             const rid = humanId(moduleType, r);
             const name = displayName(moduleType, r);
@@ -145,10 +145,10 @@ export default function FsRelationPicker({ value, onChange }: { value: FsRelatio
                   relatedId: r._id,
                   relatedLabel: rid ? `${rid} — ${name}` : name,
                 })}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                className="w-full text-left px-3 py-2 text-sm hover:bg-background"
               >
-                {rid && <span className="font-medium text-gray-800">{rid}</span>}
-                <span className={rid ? 'text-gray-400' : 'font-medium text-gray-800'}>{rid ? ` — ${name}` : name}</span>
+                {rid && <span className="font-medium text-text-primary">{rid}</span>}
+                <span className={rid ? 'text-text-muted' : 'font-medium text-text-primary'}>{rid ? ` — ${name}` : name}</span>
               </button>
             );
           })}

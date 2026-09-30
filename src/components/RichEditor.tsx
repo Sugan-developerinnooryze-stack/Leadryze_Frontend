@@ -17,8 +17,8 @@ function ToolBtn({
       onMouseDown={e => { e.preventDefault(); onClick(); }}
       className={`px-1.5 py-0.5 rounded text-xs font-medium border leading-none ${
         active
-          ? 'bg-brand-600 text-white border-brand-600'
-          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+          ? 'bg-ryze-600 text-white border-ryze-600'
+          : 'bg-surface text-text-primary border-border hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
       }`}
     >
       {children}
@@ -39,7 +39,7 @@ export default function RichEditor({ value, onChange }: Props) {
     },
     editorProps: {
       attributes: {
-        class: 'focus:outline-none min-h-[3.5rem] px-2 py-1.5 text-xs text-gray-600 leading-relaxed',
+        class: 'focus:outline-none min-h-[3.5rem] px-2 py-1.5 text-xs text-text-muted leading-relaxed',
       },
     },
   });
@@ -47,16 +47,16 @@ export default function RichEditor({ value, onChange }: Props) {
   if (!editor) return null;
 
   return (
-    <div className="border border-gray-200 rounded overflow-hidden bg-gray-50">
+    <div className="border border-border rounded overflow-hidden bg-background">
       {/* Toolbar — hidden when printing */}
-      <div className="print:hidden flex flex-wrap gap-1 p-1.5 border-b border-gray-200 bg-white">
+      <div className="print:hidden flex flex-wrap gap-1 p-1.5 border-b border-border bg-surface">
         <ToolBtn title="Bold"          onClick={() => editor.chain().focus().toggleBold().run()}                     active={editor.isActive('bold')}><strong>B</strong></ToolBtn>
         <ToolBtn title="Italic"        onClick={() => editor.chain().focus().toggleItalic().run()}                   active={editor.isActive('italic')}><em>I</em></ToolBtn>
         <ToolBtn title="Heading"       onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}      active={editor.isActive('heading', { level: 2 })}>H1</ToolBtn>
         <ToolBtn title="Sub-heading"   onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}      active={editor.isActive('heading', { level: 3 })}>H2</ToolBtn>
         <ToolBtn title="Ordered list"  onClick={() => editor.chain().focus().toggleOrderedList().run()}              active={editor.isActive('orderedList')}>1.</ToolBtn>
         <ToolBtn title="Bullet list"   onClick={() => editor.chain().focus().toggleBulletList().run()}               active={editor.isActive('bulletList')}>•</ToolBtn>
-        <div className="w-px bg-gray-200 mx-0.5" />
+        <div className="w-px bg-border mx-0.5" />
         <ToolBtn title="Clear marks"   onClick={() => editor.chain().focus().unsetAllMarks().run()}                  active={false}>T</ToolBtn>
       </div>
       <EditorContent editor={editor} />

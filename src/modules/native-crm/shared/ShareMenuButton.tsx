@@ -31,9 +31,9 @@ export default function ShareMenuButton({ copyLabel, copying, onCopyLink, onEmai
     <button
       type="button"
       onClick={() => { setOpen(false); onClick(); }}
-      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
     >
-      <Icon className="h-4 w-4 text-gray-400" /> {label}
+      <Icon className="h-4 w-4 text-text-muted" /> {label}
     </button>
   );
 
@@ -43,12 +43,12 @@ export default function ShareMenuButton({ copyLabel, copying, onCopyLink, onEmai
         type="button"
         onClick={() => setOpen((v) => !v)}
         disabled={copying}
-        className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 disabled:opacity-60"
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-surface border border-border text-text-primary text-xs font-medium rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-60"
       >
         <LinkIcon className="h-4 w-4" />Share<ChevronDownIcon className="h-3.5 w-3.5" />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border border-gray-200 z-20 overflow-hidden py-1">
+        <div className="absolute right-0 top-full mt-1 w-44 bg-surface-elevated rounded-xl shadow-lg border border-border z-20 overflow-hidden py-1">
           {item(LinkIcon, copyLabel, onCopyLink)}
           {showContactShare && item(EnvelopeIcon, 'Email PDF', onEmail)}
           {showContactShare && item(PhoneIcon, 'WhatsApp', onWhatsApp)}

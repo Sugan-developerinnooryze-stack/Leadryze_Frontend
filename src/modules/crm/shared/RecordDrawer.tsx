@@ -76,6 +76,12 @@ export default function RecordDrawer({
   useEffect(() => { setCustomForm(initCustomForm()); }, [initCustomForm]);
   useEffect(() => { setRelation(initRelation()); }, [initRelation]);
 
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(t);
+  }, []);
+
   const validate = () => {
     const errs: Record<string, string> = {};
     for (const f of config.fields) {
@@ -161,51 +167,54 @@ export default function RecordDrawer({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
-      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl z-50 flex flex-col">
+      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
+      <div className={`fixed right-0 top-0 bottom-0 w-[46vw] min-w-[520px] bg-surface border-l border-border shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-out ${visible ? 'translate-x-0' : 'translate-x-full'}`}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-text-primary">
               {isEdit ? `Edit ${config.labelSingular}` : `Create ${config.labelSingular}`}
             </h2>
-            {isEdit && <p className="text-xs text-gray-400 mt-0.5 truncate">{nameOf}</p>}
+            {isEdit && <p className="text-xs text-text-muted mt-0.5 truncate">{nameOf}</p>}
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-2 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted hover:text-text-primary transition-colors"
           >
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+        <div className="flex-1 overflow-y-auto px-7 py-5">
           {errors._global && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
               {errors._global}
             </div>
           )}
-          {config.fields.filter((field) => !field.hideInForm).map((field) => (
-            <CrmField
-              key={field.key}
-              field={field}
-              value={form[field.key] ?? ''}
-              onChange={(v) => setForm((prev) => ({ ...prev, [field.key]: v }))}
-              error={errors[field.key]}
-            />
-          ))}
+          <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+            {config.fields.filter((field) => !field.hideInForm).map((field) => (
+              <div key={field.key} className={field.type === 'textarea' ? 'col-span-2' : ''}>
+                <CrmField
+                  field={field}
+                  value={form[field.key] ?? ''}
+                  onChange={(v) => setForm((prev) => ({ ...prev, [field.key]: v }))}
+                  error={errors[field.key]}
+                />
+              </div>
+            ))}
+          </div>
 
           {/* Custom Fields section */}
           {activeCustomFields.length > 0 && (
-            <div className="pt-2 border-t border-gray-100">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+            <div className="mt-4 pt-4 border-t border-border">
+              <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-3">
                 Custom Fields
               </p>
-              <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-x-5 gap-y-4">
                 {activeCustomFields.map((cf) => (
-                  <div key={cf._id}>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <div key={cf._id} className={cf.fieldType === 'textarea' ? 'col-span-2' : ''}>
+                    <label className="block text-sm font-medium text-text-primary mb-1">
                       {cf.label}
                       {cf.required && <span className="text-red-500 ml-0.5">*</span>}
                     </label>
@@ -224,28 +233,32 @@ export default function RecordDrawer({
           )}
 
           {showFsRelation && (
-            <FsRelationPicker value={relation} onChange={setRelation} />
+            <div className="mt-4 pt-4 border-t border-border">
+              <FsRelationPicker value={relation} onChange={setRelation} />
+            </div>
           )}
 
           {moduleName === 'meetings' && isEdit && record && (
-            <MeetingAssignmentPanel record={record} apiBase={config.apiBase} onReassigned={onSaved} />
+            <div className="mt-4 pt-4 border-t border-border">
+              <MeetingAssignmentPanel record={record} apiBase={config.apiBase} onReassigned={onSaved} />
+            </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 shrink-0">
+        <div className="px-6 py-4 border-t border-border shrink-0">
           {isEdit ? (
             <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-text-primary hover:bg-background transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={() => submit(false)}
                 disabled={saving}
-                className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 rounded-lg text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2.5 bg-ryze-600 hover:bg-ryze-700 disabled:opacity-60 rounded-lg text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
               >
                 {saving && <div className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
                 {saving ? 'Saving…' : 'Save Changes'}
@@ -256,7 +269,7 @@ export default function RecordDrawer({
               <button
                 onClick={() => submit(false)}
                 disabled={saving}
-                className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 rounded-lg text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
+                className="w-full px-4 py-2.5 bg-ryze-600 hover:bg-ryze-700 disabled:opacity-60 rounded-lg text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
               >
                 {saving && <div className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
                 {saving ? 'Creating…' : 'Create'}
@@ -264,13 +277,13 @@ export default function RecordDrawer({
               <button
                 onClick={() => submit(true)}
                 disabled={saving}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="w-full px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-text-primary hover:bg-background transition-colors"
               >
                 Create and add another
               </button>
               <button
                 onClick={onClose}
-                className="w-full text-sm text-gray-400 hover:text-gray-600 transition-colors py-1"
+                className="w-full text-sm text-text-muted hover:text-text-primary transition-colors py-1"
               >
                 Cancel
               </button>

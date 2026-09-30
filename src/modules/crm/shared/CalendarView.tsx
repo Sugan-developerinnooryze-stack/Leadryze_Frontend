@@ -51,34 +51,34 @@ export default function CalendarView({
   return (
     <div className="flex flex-col h-full p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-800">
+        <h3 className="text-sm font-semibold text-text-primary">
           {cursor.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </h3>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setCursor(new Date(year, month - 1, 1))}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+            className="p-1.5 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted"
           >
             <ChevronLeftIcon className="h-4 w-4" />
           </button>
           <button
             onClick={() => setCursor(new Date())}
-            className="px-2.5 py-1 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50"
+            className="px-2.5 py-1 text-xs font-medium text-text-muted border border-border rounded-lg hover:bg-background"
           >
             Today
           </button>
           <button
             onClick={() => setCursor(new Date(year, month + 1, 1))}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+            className="p-1.5 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted"
           >
             <ChevronRightIcon className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 border-t border-l border-gray-200 flex-1 min-h-0">
+      <div className="grid grid-cols-7 border-t border-l border-border flex-1 min-h-0">
         {WEEKDAYS.map((wd) => (
-          <div key={wd} className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide text-center py-1.5 border-r border-b border-gray-200 bg-gray-50">
+          <div key={wd} className="text-[11px] font-semibold text-text-muted uppercase tracking-wide text-center py-1.5 border-r border-b border-border bg-background">
             {wd}
           </div>
         ))}
@@ -89,10 +89,10 @@ export default function CalendarView({
           return (
             <div
               key={i}
-              className={`border-r border-b border-gray-200 p-1.5 min-h-[90px] overflow-hidden ${inMonth ? 'bg-white' : 'bg-gray-50/60'}`}
+              className={`border-r border-b border-border p-1.5 min-h-[90px] overflow-hidden ${inMonth ? 'bg-surface' : 'bg-background/60'}`}
             >
               <span className={`text-xs inline-flex items-center justify-center h-5 w-5 rounded-full ${
-                isToday ? 'bg-blue-600 text-white font-semibold' : inMonth ? 'text-gray-600' : 'text-gray-300'
+                isToday ? 'bg-ryze-600 text-white font-semibold' : inMonth ? 'text-text-muted' : 'text-text-muted'
               }`}>
                 {day.getDate()}
               </span>
@@ -118,7 +118,7 @@ export default function CalendarView({
                   );
                 })}
                 {dayRecords.length > 3 && (
-                  <p className="text-[10px] text-gray-400 px-1">+{dayRecords.length - 3} more</p>
+                  <p className="text-[10px] text-text-muted px-1">+{dayRecords.length - 3} more</p>
                 )}
               </div>
             </div>

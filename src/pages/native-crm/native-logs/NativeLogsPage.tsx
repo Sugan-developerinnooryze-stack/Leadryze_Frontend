@@ -95,7 +95,7 @@ function DetailPanel({ log }: { log: NativeCrmLogEntry }) {
         <div className="bg-purple-50 px-4 py-2 border-b border-purple-200 flex items-center gap-2">
           <span className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Permissions Updated</span>
           <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-200 text-purple-800">{roleName}</span>
-          <span className="ml-auto text-xs text-gray-400">{total} total permission{total !== 1 ? 's' : ''}</span>
+          <span className="ml-auto text-xs text-text-muted">{total} total permission{total !== 1 ? 's' : ''}</span>
         </div>
         <div className="p-4 grid grid-cols-2 gap-4">
           <div>
@@ -103,7 +103,7 @@ function DetailPanel({ log }: { log: NativeCrmLogEntry }) {
               Granted ({granted.length})
             </p>
             {granted.length === 0 ? (
-              <p className="text-xs text-gray-400">No new permissions granted</p>
+              <p className="text-xs text-text-muted">No new permissions granted</p>
             ) : (
               <div className="flex flex-wrap gap-1">
                 {granted.map((k) => (
@@ -119,7 +119,7 @@ function DetailPanel({ log }: { log: NativeCrmLogEntry }) {
               Revoked ({revoked.length})
             </p>
             {revoked.length === 0 ? (
-              <p className="text-xs text-gray-400">No permissions revoked</p>
+              <p className="text-xs text-text-muted">No permissions revoked</p>
             ) : (
               <div className="flex flex-wrap gap-1">
                 {revoked.map((k) => (
@@ -162,8 +162,8 @@ function DetailPanel({ log }: { log: NativeCrmLogEntry }) {
         <div className="p-4 grid grid-cols-2 gap-x-6 gap-y-2">
           {keys.map((k) => (
             <div key={k}>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{toTitle(k)}</p>
-              <p className="text-xs text-gray-700 mt-0.5">{renderValue(fields[k])}</p>
+              <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">{toTitle(k)}</p>
+              <p className="text-xs text-text-primary mt-0.5">{renderValue(fields[k])}</p>
             </div>
           ))}
         </div>
@@ -184,7 +184,7 @@ function DetailPanel({ log }: { log: NativeCrmLogEntry }) {
         <div className="p-4 grid grid-cols-2 gap-x-6 gap-y-2">
           {keys.map((k) => (
             <div key={k}>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{toTitle(k)}</p>
+              <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">{toTitle(k)}</p>
               <p className="text-xs text-emerald-800 mt-0.5">{renderValue(fields[k])}</p>
             </div>
           ))}
@@ -196,21 +196,21 @@ function DetailPanel({ log }: { log: NativeCrmLogEntry }) {
   /* UPDATE */
   const changed = changedKeys(log.before, log.after);
   if (!changed.length) {
-    return <p className="text-xs text-gray-400 px-2 py-3">No field differences detected.</p>;
+    return <p className="text-xs text-text-muted px-2 py-3">No field differences detected.</p>;
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
-      <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center gap-4">
+    <div className="border border-border rounded-lg overflow-hidden">
+      <div className="bg-background px-4 py-2 border-b border-border flex items-center gap-4">
         <span className="text-xs font-semibold text-red-600">Before</span>
-        <span className="text-gray-300">→</span>
+        <span className="text-text-muted">→</span>
         <span className="text-xs font-semibold text-emerald-600">After</span>
-        <span className="ml-auto text-xs text-gray-400">{changed.length} field{changed.length > 1 ? 's' : ''} changed</span>
+        <span className="ml-auto text-xs text-text-muted">{changed.length} field{changed.length > 1 ? 's' : ''} changed</span>
       </div>
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-border">
         {changed.map((k) => (
           <div key={k} className="px-4 py-2 grid grid-cols-3 gap-4 items-start">
-            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide pt-0.5">{toTitle(k)}</p>
+            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide pt-0.5">{toTitle(k)}</p>
             <div className="bg-red-50 rounded px-2 py-1">
               <p className="text-xs text-red-700 line-through">{renderValue((log.before ?? {})[k])}</p>
             </div>
@@ -267,19 +267,19 @@ export default function NativeLogsPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-4 shrink-0">
+      <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-4 shrink-0">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-gray-100 shrink-0">
-            <ClipboardDocumentListIcon className="h-5 w-5 text-gray-500" />
+          <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.06] shrink-0">
+            <ClipboardDocumentListIcon className="h-5 w-5 text-text-muted" />
           </div>
           <div>
-            <h1 className="text-base font-semibold text-gray-900">Native Logs</h1>
-            <p className="text-xs text-gray-500">{meta.total} total entries</p>
+            <h1 className="text-base font-semibold text-text-primary">Native Logs</h1>
+            <p className="text-xs text-text-muted">{meta.total} total entries</p>
           </div>
         </div>
         <button
           onClick={() => qc.invalidateQueries({ queryKey: ['native-crm', 'native-logs'] })}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
         >
           <ArrowPathIcon className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
           Refresh
@@ -287,7 +287,7 @@ export default function NativeLogsPage() {
       </div>
 
       {/* Filter bar */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3 shrink-0 space-y-2">
+      <div className="bg-surface border-b border-border px-6 py-3 shrink-0 space-y-2">
         {/* Action tabs */}
         <div className="flex items-center gap-1">
           {ACTION_TABS.map((t) => (
@@ -296,8 +296,8 @@ export default function NativeLogsPage() {
               onClick={() => handleTab(t)}
               className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                 actionTab === t
-                  ? 'bg-brand-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-ryze-600 text-white'
+                  : 'text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
               }`}
             >
               {t ? ACTION_LABELS[t] : 'All'}
@@ -311,7 +311,7 @@ export default function NativeLogsPage() {
           <select
             value={module}
             onChange={(e) => { setModule(e.target.value); setPage(1); }}
-            className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-400 text-gray-700"
+            className="text-xs border border-border rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-ryze-400 text-text-primary bg-background"
           >
             <option value="">All Modules</option>
             {MODULES.map((m) => (
@@ -324,14 +324,14 @@ export default function NativeLogsPage() {
             type="date"
             value={startDate}
             onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
-            className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-400 text-gray-700"
+            className="text-xs border border-border rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-ryze-400 text-text-primary bg-background"
           />
-          <span className="text-xs text-gray-400">to</span>
+          <span className="text-xs text-text-muted">to</span>
           <input
             type="date"
             value={endDate}
             onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
-            className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-400 text-gray-700"
+            className="text-xs border border-border rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-ryze-400 text-text-primary bg-background"
           />
 
           {/* Actor search */}
@@ -340,11 +340,11 @@ export default function NativeLogsPage() {
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search actor…"
-            className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 w-40 focus:outline-none focus:ring-2 focus:ring-brand-400 text-gray-700"
+            className="text-xs border border-border rounded-lg px-2 py-1.5 w-40 focus:outline-none focus:ring-2 focus:ring-ryze-400 text-text-primary bg-background"
           />
 
           {(module || startDate || endDate || search) && (
-            <button onClick={resetFilters} className="text-xs text-brand-600 hover:underline">
+            <button onClick={resetFilters} className="text-xs text-ryze-600 dark:text-ryze-400 hover:underline">
               Clear filters
             </button>
           )}
@@ -357,64 +357,64 @@ export default function NativeLogsPage() {
           <div className="flex items-center justify-center py-20">
             <div className="flex gap-2">
               {[0,1,2].map((i) => (
-                <span key={i} className="h-2.5 w-2.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: `${i*0.15}s` }} />
+                <span key={i} className="h-2.5 w-2.5 rounded-full bg-ryze-400 animate-bounce" style={{ animationDelay: `${i*0.15}s` }} />
               ))}
             </div>
           </div>
         ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-gray-400">
-            <ClipboardDocumentListIcon className="h-12 w-12 mb-3 text-gray-300" />
+          <div className="flex flex-col items-center justify-center py-24 text-text-muted">
+            <ClipboardDocumentListIcon className="h-12 w-12 mb-3 text-text-muted" />
             <p className="text-sm font-medium">No activity logged yet.</p>
             <p className="text-xs mt-1">Logs will appear here after any Create, Update, or Delete operation.</p>
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
+            <thead className="sticky top-0 bg-background border-b border-border z-10">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-10">No.</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Time</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actor</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Module</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Record ID</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Summary</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider w-10">No.</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider">Time</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider">Actor</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider">Action</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider">Module</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider">Record ID</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider">Summary</th>
                 <th className="px-4 py-3 w-8"></th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
+            <tbody className="bg-surface divide-y divide-border">
               {items.map((log, idx) => {
                 const isOpen = expanded === log._id;
                 return (
                   <Fragment key={log._id}>
                     <tr
-                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      className="hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
                       onClick={() => setExpanded(isOpen ? null : log._id)}
                     >
-                      <td className="px-4 py-3 text-xs text-gray-400 tabular-nums">
+                      <td className="px-4 py-3 text-xs text-text-muted tabular-nums">
                         {(page - 1) * 20 + idx + 1}
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                      <td className="px-4 py-3 text-xs text-text-muted whitespace-nowrap">
                         {formatTime(log.timestamp)}
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-xs font-medium text-gray-800">{log.actorName || log.actorId}</p>
+                        <p className="text-xs font-medium text-text-primary">{log.actorName || log.actorId}</p>
                         {log.actorRole && (
-                          <span className="text-[10px] text-gray-400 capitalize">{log.actorRole.toLowerCase()}</span>
+                          <span className="text-[10px] text-text-muted capitalize">{log.actorRole.toLowerCase()}</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${ACTION_BADGE[log.action] ?? 'bg-gray-100 text-gray-600'}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${ACTION_BADGE[log.action] ?? 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'}`}>
                           {ACTION_LABELS[log.action] ?? log.action}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-700 capitalize">{log.module}</td>
-                      <td className="px-4 py-3 text-xs font-mono text-gray-500 max-w-[120px] truncate">
+                      <td className="px-4 py-3 text-xs text-text-primary capitalize">{log.module}</td>
+                      <td className="px-4 py-3 text-xs font-mono text-text-muted max-w-[120px] truncate">
                         {log.resourceId || '—'}
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-600 max-w-[220px] truncate">
+                      <td className="px-4 py-3 text-xs text-text-muted max-w-[220px] truncate">
                         {summary(log)}
                       </td>
-                      <td className="px-4 py-3 text-gray-400">
+                      <td className="px-4 py-3 text-text-muted">
                         {isOpen
                           ? <ChevronDownIcon  className="h-4 w-4" />
                           : <ChevronRightIcon className="h-4 w-4" />}
@@ -422,7 +422,7 @@ export default function NativeLogsPage() {
                     </tr>
 
                     {isOpen && (
-                      <tr className="bg-gray-50">
+                      <tr className="bg-background">
                         <td colSpan={8} className="px-6 py-4">
                           <DetailPanel log={log} />
                         </td>
@@ -438,24 +438,24 @@ export default function NativeLogsPage() {
 
       {/* Pagination */}
       {meta.totalPages > 1 && (
-        <div className="border-t border-gray-200 px-6 py-3 flex items-center justify-between bg-white shrink-0">
-          <p className="text-xs text-gray-500">
-            Page <span className="font-medium text-gray-700">{meta.page}</span> of{' '}
-            <span className="font-medium text-gray-700">{meta.totalPages}</span> &middot;{' '}
-            <span className="font-medium text-gray-700">{meta.total}</span> total
+        <div className="border-t border-border px-6 py-3 flex items-center justify-between bg-surface shrink-0">
+          <p className="text-xs text-text-muted">
+            Page <span className="font-medium text-text-primary">{meta.page}</span> of{' '}
+            <span className="font-medium text-text-primary">{meta.totalPages}</span> &middot;{' '}
+            <span className="font-medium text-text-primary">{meta.total}</span> total
           </p>
           <div className="flex gap-2">
             <button
               onClick={() => setPage((p) => p - 1)}
               disabled={page <= 1}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 text-xs font-medium rounded-lg border border-border text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Previous
             </button>
             <button
               onClick={() => setPage((p) => p + 1)}
               disabled={page >= meta.totalPages}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 text-xs font-medium rounded-lg border border-border text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Next
             </button>

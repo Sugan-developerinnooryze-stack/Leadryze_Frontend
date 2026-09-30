@@ -62,17 +62,17 @@ export default function KnowledgePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Knowledge Base</h1>
-        <p className="text-sm text-gray-500">Upload documents to power your AI agent's responses</p>
+        <h1 className="text-2xl font-bold text-text-primary">Knowledge Base</h1>
+        <p className="text-sm text-text-muted">Upload documents to power your AI agent's responses</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload Document</h2>
+          <h2 className="text-lg font-semibold text-text-primary mb-4">Upload Document</h2>
           <form onSubmit={uploadFile} className="space-y-4">
-            <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-brand-400 transition-colors">
-              <CloudArrowUpIcon className="mx-auto h-10 w-10 text-gray-400" />
-              <p className="mt-2 text-sm text-gray-600">PDF, TXT, or Markdown</p>
+            <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-ryze-400 transition-colors">
+              <CloudArrowUpIcon className="mx-auto h-10 w-10 text-text-muted" />
+              <p className="mt-2 text-sm text-text-muted">PDF, TXT, or Markdown</p>
               <input
                 ref={fileRef}
                 type="file"
@@ -95,7 +95,7 @@ export default function KnowledgePage() {
         </div>
 
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Search Knowledge Base</h2>
+          <h2 className="text-lg font-semibold text-text-primary mb-4">Search Knowledge Base</h2>
           <form onSubmit={search} className="flex gap-3 mb-4">
             <input
               type="text"
@@ -110,18 +110,18 @@ export default function KnowledgePage() {
           </form>
           <div className="space-y-3 max-h-72 overflow-y-auto">
             {results.map((r, i) => (
-              <div key={i} className="bg-gray-50 rounded-xl p-4">
+              <div key={i} className="bg-background rounded-xl p-4">
                 <div className="flex justify-between mb-2">
-                  <span className="text-xs text-gray-500 font-medium">{r.source}</span>
-                  <span className="text-xs text-brand-600 font-medium">
+                  <span className="text-xs text-text-muted font-medium">{r.source}</span>
+                  <span className="text-xs text-ryze-600 dark:text-ryze-400 font-medium">
                     {Math.round(r.score * 100)}% match
                   </span>
                 </div>
-                <p className="text-sm text-gray-700 line-clamp-4">{r.content}</p>
+                <p className="text-sm text-text-primary line-clamp-4">{r.content}</p>
               </div>
             ))}
             {results.length === 0 && searchQuery && !isSearching && (
-              <p className="text-sm text-gray-400 text-center py-6">No results found</p>
+              <p className="text-sm text-text-muted text-center py-6">No results found</p>
             )}
           </div>
         </div>

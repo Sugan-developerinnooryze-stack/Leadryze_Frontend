@@ -92,12 +92,12 @@ export default function BranchesPage() {
   function field(key: keyof typeof EMPTY_FORM, label: string, placeholder = '') {
     return (
       <div>
-        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{label}</label>
+        <label className="block text-xs font-medium text-text-muted mb-1">{label}</label>
         <input
           value={(form as any)[key] ?? ''}
           onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
           placeholder={placeholder}
-          className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-surface text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-500"
         />
       </div>
     );
@@ -108,8 +108,8 @@ export default function BranchesPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Branches</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+          <h1 className="text-xl font-semibold text-text-primary">Branches</h1>
+          <p className="text-sm text-text-muted mt-0.5">
             Manage sub-organizations under your account
           </p>
         </div>
@@ -117,7 +117,7 @@ export default function BranchesPage() {
           <button
             onClick={openCreate}
             disabled={limit !== null && used >= limit}
-            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-white bg-ryze-600 hover:bg-ryze-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors"
           >
             + New Branch
           </button>
@@ -125,24 +125,24 @@ export default function BranchesPage() {
       </div>
 
       {/* Plan usage */}
-      <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center gap-4">
+      <div className="mb-6 p-4 bg-background rounded-xl border border-border flex items-center gap-4">
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <p className="text-sm font-medium text-text-primary">
             {limit === null
               ? `${used} branches (Enterprise — unlimited)`
               : `${used} of ${limit} branches used (${plan.charAt(0).toUpperCase() + plan.slice(1)} plan)`}
           </p>
           {limit !== null && (
-            <div className="mt-2 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div className="mt-2 h-1.5 bg-black/[0.06] dark:bg-white/[0.08] rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all ${used >= limit ? 'bg-red-500' : 'bg-indigo-500'}`}
+                className={`h-full rounded-full transition-all ${used >= limit ? 'bg-danger-500' : 'bg-ryze-500'}`}
                 style={{ width: `${Math.min((used / limit) * 100, 100)}%` }}
               />
             </div>
           )}
         </div>
         {limit !== null && used >= limit && (
-          <span className="text-xs text-red-600 dark:text-red-400 font-medium shrink-0">
+          <span className="text-xs text-danger-600 dark:text-danger-500 font-medium shrink-0">
             Upgrade to add more branches
           </span>
         )}
@@ -150,39 +150,39 @@ export default function BranchesPage() {
 
       {/* Branch list */}
       {isLoading ? (
-        <div className="text-center py-12 text-gray-400">Loading branches...</div>
+        <div className="text-center py-12 text-text-muted">Loading branches...</div>
       ) : items.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-text-muted">
           <p className="text-4xl mb-3">&#127963;</p>
-          <p className="font-medium text-gray-600 dark:text-gray-300">No branches yet</p>
+          <p className="font-medium text-text-muted">No branches yet</p>
           <p className="text-sm mt-1">Create your first branch to start segmenting your data</p>
-          {isAdmin && <button onClick={openCreate} className="mt-4 text-sm text-indigo-600 hover:underline">+ Create Branch</button>}
+          {isAdmin && <button onClick={openCreate} className="mt-4 text-sm text-ryze-600 dark:text-ryze-400 hover:underline">+ Create Branch</button>}
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left border-b border-gray-200 dark:border-gray-700">
-                <th className="pb-3 font-medium text-gray-500 dark:text-gray-400">Branch</th>
-                <th className="pb-3 font-medium text-gray-500 dark:text-gray-400">Type</th>
-                <th className="pb-3 font-medium text-gray-500 dark:text-gray-400">Location</th>
-                <th className="pb-3 font-medium text-gray-500 dark:text-gray-400">GST</th>
-                <th className="pb-3 font-medium text-gray-500 dark:text-gray-400">Status</th>
+              <tr className="text-left border-b border-border">
+                <th className="pb-3 font-medium text-text-muted">Branch</th>
+                <th className="pb-3 font-medium text-text-muted">Type</th>
+                <th className="pb-3 font-medium text-text-muted">Location</th>
+                <th className="pb-3 font-medium text-text-muted">GST</th>
+                <th className="pb-3 font-medium text-text-muted">Status</th>
                 {isAdmin && <th className="pb-3" />}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+            <tbody className="divide-y divide-border">
               {items.map((b) => (
-                <tr key={b._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <tr key={b._id} className="hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">
                   <td className="py-3 pr-4">
-                    <p className="font-medium text-gray-900 dark:text-white">{b.branchName}</p>
-                    <p className="text-xs text-gray-400">{b.branchCode}</p>
+                    <p className="font-medium text-text-primary">{b.branchName}</p>
+                    <p className="text-xs text-text-muted">{b.branchCode}</p>
                   </td>
-                  <td className="py-3 pr-4 text-gray-600 dark:text-gray-300 capitalize">{b.branchType}</td>
-                  <td className="py-3 pr-4 text-gray-600 dark:text-gray-300">{[b.city, b.state].filter(Boolean).join(', ') || '—'}</td>
-                  <td className="py-3 pr-4 text-gray-600 dark:text-gray-300">{b.gstin || '—'}</td>
+                  <td className="py-3 pr-4 text-text-muted capitalize">{b.branchType}</td>
+                  <td className="py-3 pr-4 text-text-muted">{[b.city, b.state].filter(Boolean).join(', ') || '—'}</td>
+                  <td className="py-3 pr-4 text-text-muted">{b.gstin || '—'}</td>
                   <td className="py-3 pr-4">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${b.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${b.status === 'active' ? 'bg-success-500/15 text-success-700 dark:text-success-500' : 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'}`}>
                       {b.status}
                     </span>
                   </td>
@@ -190,13 +190,13 @@ export default function BranchesPage() {
                     <td className="py-3 text-right">
                       <button
                         onClick={() => openBranchSettings(b)}
-                        className="text-xs px-2 py-1 rounded-md text-indigo-600 border border-indigo-100 bg-indigo-50 hover:bg-indigo-100 transition-colors mr-2"
+                        className="text-xs px-2 py-1 rounded-md text-ryze-600 dark:text-ryze-400 border border-ryze-100 dark:border-ryze-800/40 bg-ryze-50 dark:bg-ryze-900/20 hover:bg-ryze-100 dark:hover:bg-ryze-900/30 transition-colors mr-2"
                       >
                         ⚙ Settings
                       </button>
-                      <button onClick={() => openEdit(b)} className="text-xs text-indigo-600 hover:underline mr-3">Edit</button>
+                      <button onClick={() => openEdit(b)} className="text-xs text-ryze-600 dark:text-ryze-400 hover:underline mr-3">Edit</button>
                       {b.status === 'active' && (
-                        <button onClick={() => handleDeactivate(b._id)} className="text-xs text-red-500 hover:underline">Deactivate</button>
+                        <button onClick={() => handleDeactivate(b._id)} className="text-xs text-danger-500 hover:underline">Deactivate</button>
                       )}
                     </td>
                   )}
@@ -211,19 +211,19 @@ export default function BranchesPage() {
       {showDrawer && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setShowDrawer(false)} />
-          <div className="w-full max-w-md bg-white dark:bg-gray-900 shadow-2xl overflow-y-auto flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
-              <h2 className="font-semibold text-gray-900 dark:text-white">{editing ? 'Edit Branch' : 'New Branch'}</h2>
-              <button onClick={() => setShowDrawer(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl">&times;</button>
+          <div className="w-full max-w-md bg-surface shadow-2xl overflow-y-auto flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+              <h2 className="font-semibold text-text-primary">{editing ? 'Edit Branch' : 'New Branch'}</h2>
+              <button onClick={() => setShowDrawer(false)} className="text-text-muted hover:text-text-primary text-xl">&times;</button>
             </div>
             <div className="p-6 space-y-4 flex-1">
               {/* Branch type */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Branch Type</label>
+                <label className="block text-xs font-medium text-text-muted mb-1">Branch Type</label>
                 <select
                   value={form.branchType ?? 'branch'}
                   onChange={(e) => setForm((f) => ({ ...f, branchType: e.target.value as any }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-surface text-text-primary"
                 >
                   {BRANCH_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
@@ -243,13 +243,13 @@ export default function BranchesPage() {
                 {field('country', 'Country')}
                 {field('postalCode', 'Postal Code')}
               </div>
-              {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+              {error && <p className="text-sm text-danger-600 dark:text-danger-500">{error}</p>}
             </div>
-            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex gap-3 shrink-0">
-              <button onClick={() => setShowDrawer(false)} className="flex-1 px-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+            <div className="px-6 py-4 border-t border-border flex gap-3 shrink-0">
+              <button onClick={() => setShowDrawer(false)} className="flex-1 px-4 py-2 text-sm border border-border rounded-lg text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">
                 Cancel
               </button>
-              <button onClick={handleSave} disabled={saving} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 rounded-lg transition-colors">
+              <button onClick={handleSave} disabled={saving} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-ryze-600 hover:bg-ryze-700 disabled:opacity-60 rounded-lg transition-colors">
                 {saving ? 'Saving...' : (editing ? 'Update Branch' : 'Create Branch')}
               </button>
             </div>

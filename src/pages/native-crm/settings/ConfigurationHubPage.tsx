@@ -85,13 +85,13 @@ export default function ConfigurationHubPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3 shrink-0">
-        <div className="h-9 w-9 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-          <Cog6ToothIcon className="h-5 w-5 text-slate-600" />
+      <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-3 shrink-0">
+        <div className="h-9 w-9 rounded-lg bg-black/[0.06] dark:bg-white/[0.08] flex items-center justify-center shrink-0">
+          <Cog6ToothIcon className="h-5 w-5 text-text-muted" />
         </div>
         <div>
-          <h1 className="text-base font-semibold text-gray-900">Configuration</h1>
-          <p className="text-xs text-gray-500">Everything a tenant admin configures, in one place</p>
+          <h1 className="text-base font-semibold text-text-primary">Configuration</h1>
+          <p className="text-xs text-text-muted">Everything a tenant admin configures, in one place</p>
         </div>
       </div>
 
@@ -106,9 +106,9 @@ export default function ConfigurationHubPage() {
                 type="button"
                 disabled={!available}
                 onClick={() => available && navigate(card.path!)}
-                className={`text-left bg-white rounded-xl border border-gray-200 p-5 shadow-sm transition-all ${
+                className={`text-left bg-surface rounded-xl border border-border p-5 shadow-sm transition-all ${
                   available
-                    ? 'hover:border-brand-300 hover:shadow-md cursor-pointer group'
+                    ? 'hover:border-ryze-300 dark:border-ryze-700 hover:shadow-md cursor-pointer group'
                     : 'opacity-60 cursor-not-allowed'
                 }`}
               >
@@ -120,15 +120,15 @@ export default function ConfigurationHubPage() {
                     <Icon className="h-5 w-5" style={{ color: card.color }} />
                   </div>
                   {card.eta ? (
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 bg-gray-100 rounded-full px-2 py-1 shrink-0">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted bg-black/[0.04] dark:bg-white/[0.06] rounded-full px-2 py-1 shrink-0">
                       {card.eta}
                     </span>
                   ) : (
-                    <ArrowRightIcon className="h-4 w-4 text-gray-300 group-hover:text-brand-500 group-hover:translate-x-0.5 transition-all shrink-0 mt-2.5" />
+                    <ArrowRightIcon className="h-4 w-4 text-text-muted group-hover:text-ryze-500 group-hover:translate-x-0.5 transition-all shrink-0 mt-2.5" />
                   )}
                 </div>
-                <p className="text-sm font-semibold text-gray-900 mt-3">{card.title}</p>
-                <p className="text-xs text-gray-500 mt-1 leading-relaxed">{card.description}</p>
+                <p className="text-sm font-semibold text-text-primary mt-3">{card.title}</p>
+                <p className="text-xs text-text-muted mt-1 leading-relaxed">{card.description}</p>
               </button>
             );
           })}

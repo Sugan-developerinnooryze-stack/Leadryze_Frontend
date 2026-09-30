@@ -18,6 +18,18 @@ export function useWorkordersListQuery(params: ListParams) {
   });
 }
 
+export function useWorkordersStatsQuery(range?: string, customFrom?: string, customTo?: string) {
+  return useQuery({
+    queryKey: [...KEY, 'stats', range, customFrom, customTo],
+    queryFn: () => api.get(`${BASE}/stats`, { params: range ? { range, customFrom, customTo } : undefined }).then((r) => r.data.data as {
+      total: number;
+      allTimeTotal: number;
+      overdue: number;
+      byStatus: Record<string, number>;
+    }),
+  });
+}
+
 export function useWorkorderQuery(id: string) {
   return useQuery({
     queryKey: [...KEY, id],

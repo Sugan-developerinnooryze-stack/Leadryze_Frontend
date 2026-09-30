@@ -48,10 +48,10 @@ export default function AnalyticsPage() {
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-6">
-        <div className="h-8 bg-gray-200 rounded w-48" />
+        <div className="h-8 bg-black/[0.06] dark:bg-white/[0.08] rounded w-48" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="card h-64 bg-gray-100" />
-          <div className="card h-64 bg-gray-100" />
+          <div className="card h-64 bg-black/[0.04] dark:bg-white/[0.06]" />
+          <div className="card h-64 bg-black/[0.04] dark:bg-white/[0.06]" />
         </div>
       </div>
     );
@@ -82,13 +82,13 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
+      <h1 className="text-2xl font-bold text-text-primary">Analytics</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Daily Lead Volume</h2>
+          <h2 className="text-lg font-semibold text-text-primary mb-4">Daily Lead Volume</h2>
           {(data?.dailyLeads?.length ?? 0) === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-10">No data yet</p>
+            <p className="text-text-muted text-sm text-center py-10">No data yet</p>
           ) : (
             <Bar
               data={dailyLeadsData}
@@ -97,9 +97,9 @@ export default function AnalyticsPage() {
           )}
         </div>
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Leads by Channel</h2>
+          <h2 className="text-lg font-semibold text-text-primary mb-4">Leads by Channel</h2>
           {Object.keys(data?.byChannel ?? {}).length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-10">No data yet</p>
+            <p className="text-text-muted text-sm text-center py-10">No data yet</p>
           ) : (
             <div className="max-w-xs mx-auto">
               <Doughnut data={channelData} />

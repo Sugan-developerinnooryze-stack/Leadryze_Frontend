@@ -33,9 +33,9 @@ const TABS = [
 
 function InfoRow({ label, value }: { label: string; value?: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-2 py-2 border-b border-gray-50 last:border-0">
-      <span className="text-sm text-gray-500 w-40 shrink-0">{label}</span>
-      <span className="text-sm text-gray-900 font-medium">{value ?? '—'}</span>
+    <div className="flex items-start gap-2 py-2 border-b border-border last:border-0">
+      <span className="text-sm text-text-muted w-40 shrink-0">{label}</span>
+      <span className="text-sm text-text-primary font-medium">{value ?? '—'}</span>
     </div>
   );
 }
@@ -47,7 +47,7 @@ function GenericTabList({ queryHook, customerId, onRowClick, columns }: any) {
   const meta = data?.meta ?? { total: 0, page: 1, totalPages: 1 };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col h-[600px] overflow-hidden">
+    <div className="bg-surface rounded-xl border border-border shadow-sm flex flex-col h-[600px] overflow-hidden">
       <FSTable
         columns={columns}
         data={items}
@@ -105,32 +105,32 @@ export default function CustomerViewPage() {
 
   if (isLoading) return (
     <div className="flex items-center justify-center h-full">
-      <div className="flex gap-2">{[0,1,2].map(i => <span key={i} className="h-2.5 w-2.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}</div>
+      <div className="flex gap-2">{[0,1,2].map(i => <span key={i} className="h-2.5 w-2.5 rounded-full bg-ryze-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}</div>
     </div>
   );
   
-  if (!item) return <div className="flex items-center justify-center h-full text-gray-400">Customer not found.</div>;
+  if (!item) return <div className="flex items-center justify-center h-full text-text-muted">Customer not found.</div>;
 
   const addr = [item.address, item.city, item.state, item.postcode, item.country].filter(Boolean).join(', ');
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 overflow-hidden">
+    <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-8 py-6 shrink-0">
+      <div className="bg-surface border-b border-border px-8 py-6 shrink-0">
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => navigate('/native-crm/customers')}
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors">
+            className="flex items-center gap-1.5 text-sm text-text-muted hover:text-text-primary transition-colors">
             <ArrowLeftIcon className="h-4 w-4" /> Back to Customers
           </button>
         </div>
         
         <div className="flex items-start gap-4">
-          <div className="h-16 w-16 rounded-2xl bg-indigo-100 flex items-center justify-center shrink-0 border border-indigo-200">
-            <UsersIcon className="h-8 w-8 text-indigo-600" />
+          <div className="h-16 w-16 rounded-2xl bg-indigo-100 dark:bg-indigo-500/15 flex items-center justify-center shrink-0 border border-indigo-200 dark:border-indigo-500/30">
+            <UsersIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
           </div>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">{item.name}</h1>
-            <div className="flex flex-wrap gap-x-6 gap-y-2 mt-2 text-sm text-gray-600">
+            <h1 className="text-2xl font-bold text-text-primary">{item.name}</h1>
+            <div className="flex flex-wrap gap-x-6 gap-y-2 mt-2 text-sm text-text-muted">
               {item.email && <p><strong>Email:</strong> {item.email}</p>}
               {item.phone && <p><strong>Phone:</strong> {item.phone}</p>}
               {addr && <p><strong>Address:</strong> {addr}</p>}
@@ -145,7 +145,7 @@ export default function CustomerViewPage() {
       {/* Tabs Layout */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Sidebar Tabs */}
-        <div className="w-full md:w-64 bg-white border-r border-gray-200 shrink-0 overflow-y-auto">
+        <div className="w-full md:w-64 bg-surface border-r border-border shrink-0 overflow-y-auto">
           <nav className="p-4 space-y-1">
             {TABS.map((tab) => {
               const Icon = tab.icon;
@@ -156,11 +156,11 @@ export default function CustomerViewPage() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all ${
                     active 
-                      ? 'bg-brand-50 text-brand-700 shadow-sm' 
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-ryze-600/10 text-ryze-700 dark:text-ryze-400 shadow-sm'
+                      : 'text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] hover:text-text-primary'
                   }`}
                 >
-                  <Icon className={`h-5 w-5 ${active ? 'text-brand-600' : 'text-gray-400'}`} />
+                  <Icon className={`h-5 w-5 ${active ? 'text-ryze-600 dark:text-ryze-400' : 'text-text-muted'}`} />
                   {tab.label}
                 </button>
               );
@@ -172,9 +172,9 @@ export default function CustomerViewPage() {
         <div className="flex-1 overflow-y-auto p-6 md:p-8">
           {activeTab === 'overview' && (
             <div className="space-y-6 max-w-4xl">
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-                  <h3 className="text-sm font-semibold text-gray-700">Customer Details</h3>
+              <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-border bg-black/[0.015] dark:bg-white/[0.02]">
+                  <h3 className="text-sm font-semibold text-text-primary">Customer Details</h3>
                 </div>
                 <div className="px-6 py-4">
                   <InfoRow label="Customer ID" value={item.customerId} />
@@ -192,9 +192,9 @@ export default function CustomerViewPage() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-                  <h3 className="text-sm font-semibold text-gray-700">Billing & Delivery</h3>
+              <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-border bg-black/[0.015] dark:bg-white/[0.02]">
+                  <h3 className="text-sm font-semibold text-text-primary">Billing & Delivery</h3>
                 </div>
                 <div className="px-6 py-4">
                   <InfoRow label="Billing Name" value={item.billingName} />
@@ -204,9 +204,9 @@ export default function CustomerViewPage() {
               </div>
 
               {item.customFields && Object.keys(item.customFields).length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-                    <h3 className="text-sm font-semibold text-gray-700">Custom Fields</h3>
+                <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
+                  <div className="px-6 py-4 border-b border-border bg-black/[0.015] dark:bg-white/[0.02]">
+                    <h3 className="text-sm font-semibold text-text-primary">Custom Fields</h3>
                   </div>
                   <div className="px-6 py-4">
                     {Object.entries(item.customFields).map(([k, v]) => (

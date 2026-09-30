@@ -39,7 +39,7 @@ export function BranchSwitcher() {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors min-w-[160px] max-w-[220px]"
+        className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg border border-border bg-surface text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors min-w-[160px] max-w-[220px]"
       >
         <span className="text-base">&#127963;</span>
         <span className="truncate flex-1 text-left">{label}</span>
@@ -49,19 +49,19 @@ export function BranchSwitcher() {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
+        <div className="absolute top-full left-0 mt-1 w-64 bg-surface border border-border rounded-xl shadow-lg z-50 py-1 overflow-hidden">
           {isAdmin && (
             <>
               <button
                 onClick={() => selectBranch(null)}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${!currentBranch ? 'font-semibold text-indigo-600 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-200'}`}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors ${!currentBranch ? 'font-semibold text-ryze-600 dark:text-ryze-400' : 'text-text-primary'}`}
               >
-                {!currentBranch && <span className="text-indigo-500">&#10003;</span>}
+                {!currentBranch && <span className="text-ryze-500">&#10003;</span>}
                 {!!currentBranch && <span className="w-4" />}
                 <span>All Branches</span>
-                <span className="ml-auto text-xs text-gray-400">Admin view</span>
+                <span className="ml-auto text-xs text-text-muted">Admin view</span>
               </button>
-              {branches.length > 0 && <div className="mx-2 border-t border-gray-100 dark:border-gray-700 my-1" />}
+              {branches.length > 0 && <div className="mx-2 border-t border-border my-1" />}
             </>
           )}
 
@@ -69,24 +69,24 @@ export function BranchSwitcher() {
             <button
               key={b._id}
               onClick={() => selectBranch(b)}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${currentBranch?._id === b._id ? 'font-semibold text-indigo-600 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-200'}`}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors ${currentBranch?._id === b._id ? 'font-semibold text-ryze-600 dark:text-ryze-400' : 'text-text-primary'}`}
             >
-              {currentBranch?._id === b._id ? <span className="text-indigo-500">&#10003;</span> : <span className="w-4" />}
+              {currentBranch?._id === b._id ? <span className="text-ryze-500">&#10003;</span> : <span className="w-4" />}
               <span className="flex-1 truncate">{b.branchName}</span>
-              {b.city && <span className="text-xs text-gray-400 shrink-0">{b.city}</span>}
+              {b.city && <span className="text-xs text-text-muted shrink-0">{b.city}</span>}
             </button>
           ))}
 
           {branches.length === 0 && !isAdmin && (
-            <p className="px-3 py-2 text-sm text-gray-400">No branches assigned</p>
+            <p className="px-3 py-2 text-sm text-text-muted">No branches assigned</p>
           )}
 
           {isAdmin && (
             <>
-              <div className="mx-2 border-t border-gray-100 dark:border-gray-700 my-1" />
+              <div className="mx-2 border-t border-border my-1" />
               <button
                 onClick={() => { setOpen(false); navigate('/native-crm/branches'); }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-ryze-600 dark:text-ryze-400 hover:bg-ryze-50 dark:hover:bg-ryze-900/20 transition-colors"
               >
                 <span>&#43;</span>
                 <span>Manage Branches</span>

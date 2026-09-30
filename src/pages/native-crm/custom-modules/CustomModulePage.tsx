@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { PlusIcon, MagnifyingGlassIcon, TableCellsIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import FSDeleteModal from '../../../modules/native-crm/shared/FSDeleteModal';
 import type { FSColumnDef } from '../../../modules/native-crm/shared/types';
 import KanbanBoard from '../../../modules/crm/shared/KanbanBoard';
 import type { CrmRecord } from '../../../modules/crm/shared/types/crm.types';
-import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
+import { usePipelineStages, type PipelineStage } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import {
   useCustomModuleBySlugQuery,
   useCustomRecordsQuery,
@@ -35,6 +36,10 @@ import { useBranchesQuery       } from '../../../modules/native-crm/queries/bran
 import CustomModuleFormDrawer from './CustomModuleFormDrawer';
 
 /* ── Column builder ───────────────────────────────────────────────────────── */
+
+// Cycled per option index when a custom module's pipeline field has no
+// tenant-configured stage colors yet (see pipelineFallbackStages below).
+const PIPELINE_FALLBACK_COLORS = ['#6366f1', '#0ea5e9', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#f97316', '#14b8a6'];
 
 type LookupMap = Map<string, Record<string, any>>;
 
@@ -78,7 +83,7 @@ function toFSColumns(
     {
       key:    'recordId',
       label:  'ID',
-      render: (r) => <span className="text-xs font-mono text-gray-500">{r.recordId ?? '—'}</span>,
+      render: (r) => <span className="text-xs font-mono text-text-muted">{r.recordId ?? '—'}</span>,
     },
   ];
 
@@ -101,8 +106,8 @@ function toFSColumns(
         label: f.label,
         render: (r) => {
           const val = r.data?.[f.key] as string[] | undefined;
-          if (!val?.length) return <span className="text-gray-400">—</span>;
-          return <span className="text-sm text-gray-700">{val.join(' › ')}</span>;
+          if (!val?.length) return <span className="text-text-muted">—</span>;
+          return <span className="text-sm text-text-primary">{val.join(' › ')}</span>;
         },
         exportValue: (r) => {
           const val = r.data?.[f.key] as string[] | undefined;
@@ -137,7 +142,7 @@ function toFSColumns(
           const id  = r.data?.[f.key] as string | undefined;
           const rec = id ? map?.get(id) : undefined;
           const name = rec ? getRelLabel(rec, target) : (id ?? '');
-          return <span className="text-sm text-gray-700">{name || '—'}</span>;
+          return <span className="text-sm text-text-primary">{name || '—'}</span>;
         },
         exportValue: (r) => {
           const id  = r.data?.[f.key] as string | undefined;
@@ -157,8 +162,8 @@ function toFSColumns(
             const id  = r.data?.[f.key] as string | undefined;
             const rec = id ? map?.get(id) : undefined;
             const val = rec?.[sfKey];
-            if (val === undefined || val === null) return <span className="text-gray-400">—</span>;
-            return <span className="text-sm text-gray-700">{String(val)}</span>;
+            if (val === undefined || val === null) return <span className="text-text-muted">—</span>;
+            return <span className="text-sm text-text-primary">{String(val)}</span>;
           },
           exportValue: (r) => {
             const id  = r.data?.[f.key] as string | undefined;
@@ -181,8 +186,8 @@ function toFSColumns(
           label: f.label,
           render: (r) => {
             const val = r.data?.[f.key];
-            if (!Array.isArray(val) || val.length === 0) return <span className="text-gray-400">—</span>;
-            return <span className="text-xs text-gray-700 whitespace-nowrap">{summarizeTableRows(val, tableCols)}</span>;
+            if (!Array.isArray(val) || val.length === 0) return <span className="text-text-muted">—</span>;
+            return <span className="text-xs text-text-primary whitespace-nowrap">{summarizeTableRows(val, tableCols)}</span>;
           },
           exportValue: (r) => {
             const val = r.data?.[f.key];
@@ -211,8 +216,8 @@ function toFSColumns(
             const vals = Array.isArray(rows)
               ? rows.map(cellValue).filter((v) => v !== undefined && v !== null && v !== '')
               : [];
-            if (vals.length === 0) return <span className="text-gray-400">—</span>;
-            return <span className="text-xs text-gray-700 whitespace-nowrap">{vals.join(', ')}</span>;
+            if (vals.length === 0) return <span className="text-text-muted">—</span>;
+            return <span className="text-xs text-text-primary whitespace-nowrap">{vals.join(', ')}</span>;
           },
           exportValue: (r) => {
             const rows = (r.data?.[f.key] ?? []) as Record<string, any>[];
@@ -230,22 +235,22 @@ function toFSColumns(
       label: f.label,
       render: (r) => {
         const val = r.data?.[f.key];
-        if (val === null || val === undefined) return <span className="text-gray-400">—</span>;
+        if (val === null || val === undefined) return <span className="text-text-muted">—</span>;
         if (typeof val === 'boolean') return val ? 'Yes' : 'No';
         if (f.fieldType === 'date' && typeof val === 'string') return val.slice(0, 10);
         if (f.fieldType === 'image' && typeof val === 'string' && val) {
           if (val.toLowerCase().includes('.pdf'))
-            return <a href={val} target="_blank" rel="noreferrer" className="text-xs text-brand-600 hover:underline font-medium">PDF</a>;
+            return <a href={val} target="_blank" rel="noreferrer" className="text-xs text-ryze-600 dark:text-ryze-400 hover:underline font-medium">PDF</a>;
           return <img src={val} alt="" className="h-8 w-8 object-cover rounded" />;
         }
         if (f.fieldType === 'images' && Array.isArray(val) && val.length > 0) {
           const firstUrl = val[0] as string;
           if (firstUrl.toLowerCase().includes('.pdf'))
-            return <span className="text-xs text-gray-600">{val.length} file{val.length > 1 ? 's' : ''}</span>;
+            return <span className="text-xs text-text-muted">{val.length} file{val.length > 1 ? 's' : ''}</span>;
           return (
             <div className="flex items-center gap-1">
               <img src={firstUrl} alt="" className="h-8 w-8 object-cover rounded" />
-              {val.length > 1 && <span className="text-xs text-gray-400">+{val.length - 1}</span>}
+              {val.length > 1 && <span className="text-xs text-text-muted">+{val.length - 1}</span>}
             </div>
           );
         }
@@ -263,6 +268,12 @@ function toFSColumns(
         return String(val);
       },
     });
+  });
+
+  cols.push({
+    key:   'createdAt',
+    label: 'Created Date',
+    render: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—',
   });
 
   return cols;
@@ -292,7 +303,21 @@ export default function CustomModulePage() {
   // to treat this module as having a stage concept at all. Always called
   // (hooks rule); the query itself no-ops until pipelineFieldKey is set.
   const pipelineFieldKey = modDef?.pipelineFieldKey;
-  const { stages: pipelineStages } = usePipelineStages(pipelineFieldKey ? `custom:${slug}` : undefined);
+  // Until a tenant explicitly customizes stages via Pipeline Settings for
+  // this custom module, fall back to the pipeline field's own dropdown
+  // options (it's always a 'select' field — see CustomModuleBuilderPage) so
+  // the board has real columns to show instead of rendering nothing.
+  const pipelineFallbackStages: PipelineStage[] = useMemo(() => {
+    const field = modDef?.fields.find((f) => f.key === pipelineFieldKey);
+    return (field?.options ?? []).map((opt, i) => ({
+      key: opt, label: opt, color: PIPELINE_FALLBACK_COLORS[i % PIPELINE_FALLBACK_COLORS.length],
+      order: i, isTerminal: false, outcome: null, isActive: true,
+    }));
+  }, [modDef, pipelineFieldKey]);
+  const { stages: pipelineStages } = usePipelineStages(
+    pipelineFieldKey ? `custom:${slug}` : undefined,
+    pipelineFallbackStages,
+  );
 
   const items = result?.items ?? [];
   const meta  = result?.meta  ?? { total: 0, page: 1, totalPages: 1 };
@@ -339,10 +364,10 @@ export default function CustomModulePage() {
   }), [customersData, staffsData, teamsData, sitesData, workordersData, quotationsData, servicesData, categoriesData, partsData, expensesData, productsData, assetsData, vehiclesData, leadsData, dealsData, branchesData]);
 
   if (modLoading) {
-    return <div className="flex items-center justify-center h-full text-gray-400 text-sm">Loading…</div>;
+    return <div className="flex items-center justify-center h-full text-text-muted text-sm">Loading…</div>;
   }
   if (!modDef) {
-    return <div className="flex items-center justify-center h-full text-gray-500 text-sm">Module not found.</div>;
+    return <div className="flex items-center justify-center h-full text-text-muted text-sm">Module not found.</div>;
   }
 
   const fsColumns = toFSColumns(modDef.fields, lookupMaps);
@@ -371,7 +396,15 @@ export default function CustomModulePage() {
   const handleKanbanStatusChange = (r: CrmRecord, next: string) => {
     const original = items.find((it) => it._id === r._id);
     if (!original || !pipelineFieldKey) return;
-    updateMutation.mutate({ id: original._id, data: { ...original.data, [pipelineFieldKey]: next } });
+    updateMutation.mutate(
+      { id: original._id, data: { ...original.data, [pipelineFieldKey]: next } },
+      {
+        // The board already reflects the drop optimistically; without this,
+        // a rejected update (e.g. a stage no longer valid) fails silently
+        // and just snaps back on the next refetch with no explanation.
+        onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to update status'),
+      },
+    );
   };
 
   const delLabel = delTarget
@@ -381,7 +414,7 @@ export default function CustomModulePage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-4 shrink-0">
+      <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-4 shrink-0">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div
             className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0 text-lg select-none"
@@ -390,35 +423,35 @@ export default function CustomModulePage() {
             {modDef.icon}
           </div>
           <div className="min-w-0">
-            <h1 className="text-base font-semibold text-gray-900">{modDef.name}</h1>
-            <p className="text-xs text-gray-500">{meta.total} total</p>
+            <h1 className="text-base font-semibold text-text-primary">{modDef.name}</h1>
+            <p className="text-xs text-text-muted">{meta.total} total</p>
           </div>
         </div>
 
         <div className="relative">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
           <input
             type="text"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder={`Search ${modDef.name.toLowerCase()}…`}
-            className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
+            className="pl-9 pr-4 py-2 text-sm border border-border rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-ryze-400 bg-background text-text-primary"
           />
         </div>
 
         {pipelineFieldKey && (
-          <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden shrink-0">
+          <div className="flex items-center border border-border rounded-lg overflow-hidden shrink-0">
             <button
               onClick={() => setViewMode('table')}
               title="Table view"
-              className={`p-2 ${viewMode === 'table' ? 'bg-brand-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+              className={`p-2 ${viewMode === 'table' ? 'bg-ryze-600 text-white' : 'text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
             >
               <TableCellsIcon className="h-4 w-4" />
             </button>
             <button
               onClick={() => setViewMode('kanban')}
               title="Kanban board"
-              className={`p-2 border-l border-gray-300 ${viewMode === 'kanban' ? 'bg-brand-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+              className={`p-2 border-l border-border ${viewMode === 'kanban' ? 'bg-ryze-600 text-white' : 'text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
             >
               <Squares2X2Icon className="h-4 w-4" />
             </button>
@@ -427,7 +460,7 @@ export default function CustomModulePage() {
 
         <button
           onClick={() => setDrawer({ open: true, record: null })}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors shrink-0"
+          className="flex items-center gap-2 px-4 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 transition-colors shrink-0"
         >
           <PlusIcon className="h-4 w-4" />
           New {modDef.singularName}

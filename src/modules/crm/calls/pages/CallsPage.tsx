@@ -20,6 +20,7 @@ export const config: ModulePageConfig = {
       options: ['planned', 'completed', 'missed', 'cancelled'] },
     { key: 'date',        label: 'Date & Time',     type: 'datetime', tableCol: true },
     { key: 'notes',       label: 'Notes',           type: 'textarea' },
+    { key: 'createdAt',   label: 'Created Date',    type: 'date' },
   ],
 };
 

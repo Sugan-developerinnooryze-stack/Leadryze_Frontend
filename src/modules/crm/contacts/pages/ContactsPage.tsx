@@ -35,6 +35,7 @@ const config: ModulePageConfig = {
       options: ['website','referral','social','email','cold','other'] },
     /* ── Notes ── */
     { key: 'notes',         label: 'Notes',           type: 'textarea' },
+    { key: 'createdAt',     label: 'Created Date',    type: 'date' },
   ],
 };
 

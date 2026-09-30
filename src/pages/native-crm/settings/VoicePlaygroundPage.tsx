@@ -38,9 +38,9 @@ export default function VoicePlaygroundPage() {
 
   if (!isAdmin) {
     return (
-      <div className="flex h-full items-center justify-center text-gray-400">
+      <div className="flex h-full items-center justify-center text-text-muted">
         <div className="text-center">
-          <LockClosedIcon className="h-10 w-10 mx-auto mb-2 text-gray-300" />
+          <LockClosedIcon className="h-10 w-10 mx-auto mb-2 text-text-muted" />
           <p className="text-sm">Only admins can use the Voice Playground.</p>
         </div>
       </div>
@@ -114,33 +114,33 @@ export default function VoicePlaygroundPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3 shrink-0">
-        <button onClick={() => navigate('/native-crm/settings/widget')} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+      <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-3 shrink-0">
+        <button onClick={() => navigate('/native-crm/settings/widget')} className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
           <ArrowLeftIcon className="h-4 w-4" />
         </button>
         <div className="h-9 w-9 rounded-lg bg-cyan-50 flex items-center justify-center shrink-0">
           <MicrophoneIcon className="h-[18px] w-[18px] text-cyan-600" />
         </div>
         <div>
-          <h1 className="text-base font-semibold text-gray-900">Voice Playground</h1>
-          <p className="text-xs text-gray-500">Test speech-to-text and text-to-speech for your tenant — no embedded widget needed.</p>
+          <h1 className="text-base font-semibold text-text-primary">Voice Playground</h1>
+          <p className="text-xs text-text-muted">Test speech-to-text and text-to-speech for your tenant — no embedded widget needed.</p>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-8">
         <div className="max-w-xl mx-auto">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 flex flex-col items-center text-center">
+          <div className="bg-surface rounded-xl border border-border shadow-sm p-8 flex flex-col items-center text-center">
             <button
               type="button"
               onClick={handleMicClick}
               disabled={state === 'uploading' || state === 'thinking' || state === 'speaking'}
               className={`h-20 w-20 rounded-full flex items-center justify-center transition-colors disabled:opacity-60 ${
-                state === 'recording' ? 'bg-red-500 text-white animate-pulse' : 'bg-brand-600 text-white hover:bg-brand-700'
+                state === 'recording' ? 'bg-red-500 text-white animate-pulse' : 'bg-ryze-600 text-white hover:bg-ryze-700'
               }`}
             >
               {state === 'recording' ? <StopIcon className="h-8 w-8" /> : <MicrophoneIcon className="h-8 w-8" />}
             </button>
-            <p className="mt-4 text-sm text-gray-500">
+            <p className="mt-4 text-sm text-text-muted">
               {state === 'idle' && 'Tap to start recording'}
               {state === 'recording' && 'Recording… tap to stop and send'}
               {state === 'uploading' && 'Uploading…'}
@@ -159,15 +159,15 @@ export default function VoicePlaygroundPage() {
 
             {result && (
               <div className="mt-6 w-full text-left space-y-3">
-                <div className="bg-gray-50 border border-gray-100 rounded-lg px-4 py-3">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">You said</p>
-                  <p className="text-sm text-gray-700">{result.transcript || '(nothing recognized)'}</p>
+                <div className="bg-background border border-border rounded-lg px-4 py-3">
+                  <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide mb-1">You said</p>
+                  <p className="text-sm text-text-primary">{result.transcript || '(nothing recognized)'}</p>
                 </div>
-                <div className="bg-brand-50/40 border border-brand-100 rounded-lg px-4 py-3">
-                  <p className="text-[10px] font-semibold text-brand-500 uppercase tracking-wide mb-1">Assistant replied</p>
-                  <p className="text-sm text-gray-800">{result.response}</p>
+                <div className="bg-ryze-600/10/40 border border-ryze-100 dark:border-ryze-900 rounded-lg px-4 py-3">
+                  <p className="text-[10px] font-semibold text-ryze-500 uppercase tracking-wide mb-1">Assistant replied</p>
+                  <p className="text-sm text-text-primary">{result.response}</p>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-gray-400">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-text-muted">
                   <span>Recording: {durationSeconds.toFixed(1)}s</span>
                   {result.escalate && <span className="text-amber-600 font-medium">Escalated to human</span>}
                   {Object.keys(result.capturedData ?? {}).length > 0 && (

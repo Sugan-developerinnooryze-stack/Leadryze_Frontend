@@ -54,9 +54,9 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+        className="h-4 w-4 rounded text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
       />
-      <span className={`text-xs font-medium ${checked ? 'text-brand-700' : 'text-gray-500'}`}>
+      <span className={`text-xs font-medium ${checked ? 'text-ryze-700 dark:text-ryze-400' : 'text-text-muted'}`}>
         {checked ? 'Scoped to each Supervisor' : 'Full access for everyone'}
       </span>
     </label>
@@ -104,8 +104,8 @@ export default function DataScopeSettingsPage() {
 
   if (!isAdmin) {
     return (
-      <div className="flex flex-col h-full items-center justify-center text-gray-400">
-        <LockClosedIcon className="h-10 w-10 mb-2 text-gray-300" />
+      <div className="flex flex-col h-full items-center justify-center text-text-muted">
+        <LockClosedIcon className="h-10 w-10 mb-2 text-text-muted" />
         <p className="text-sm">Only admins can configure data visibility.</p>
       </div>
     );
@@ -115,7 +115,7 @@ export default function DataScopeSettingsPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="flex gap-2">{[0, 1, 2].map((i) => (
-          <span key={i} className="h-2.5 w-2.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+          <span key={i} className="h-2.5 w-2.5 rounded-full bg-ryze-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
         ))}</div>
       </div>
     );
@@ -130,15 +130,15 @@ export default function DataScopeSettingsPage() {
   }
 
   const renderSection = (title: string, subtitle: string, modules: Array<{ key: string; label: string }>) => (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-      <div className="px-5 py-4 border-b border-gray-100">
-        <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
-        <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>
+    <div className="bg-surface rounded-2xl border border-border shadow-sm">
+      <div className="px-5 py-4 border-b border-border">
+        <h2 className="text-sm font-semibold text-text-primary">{title}</h2>
+        <p className="text-xs text-text-muted mt-0.5">{subtitle}</p>
       </div>
       <div className="divide-y divide-gray-50">
         {modules.map((m) => (
           <div key={m.key} className="flex items-center justify-between px-5 py-3">
-            <span className="text-sm text-gray-700">{m.label}</span>
+            <span className="text-sm text-text-primary">{m.label}</span>
             <Toggle checked={config[m.key] ?? defaultFor(m.key)} onChange={(v) => setModule(m.key, v)} />
           </div>
         ))}
@@ -148,13 +148,13 @@ export default function DataScopeSettingsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3 shrink-0">
-        <div className="h-9 w-9 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-          <ShieldCheckIcon className="h-5 w-5 text-indigo-600" />
+      <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-3 shrink-0">
+        <div className="h-9 w-9 rounded-lg bg-black/[0.06] dark:bg-white/[0.08] flex items-center justify-center shrink-0">
+          <ShieldCheckIcon className="h-5 w-5 text-text-muted" />
         </div>
         <div>
-          <h1 className="text-base font-semibold text-gray-900">Data Visibility</h1>
-          <p className="text-xs text-gray-500">
+          <h1 className="text-base font-semibold text-text-primary">Data Visibility</h1>
+          <p className="text-xs text-text-muted">
             Decide, per module, whether a Supervisor (Manager) or Staff (Agent) login only sees their own team's
             records, or everyone's — Tenant Admin always sees everything either way.
           </p>
@@ -178,7 +178,7 @@ export default function DataScopeSettingsPage() {
             <button
               onClick={handleSave}
               disabled={!dirty || updateMutation.isPending}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <CheckIcon className="h-4 w-4" />
               {updateMutation.isPending ? 'Saving…' : 'Save Changes'}

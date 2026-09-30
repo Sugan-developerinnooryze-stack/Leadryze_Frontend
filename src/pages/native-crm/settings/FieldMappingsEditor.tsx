@@ -33,20 +33,20 @@ export default function FieldMappingsEditor({ mappings, onChange, sourceFields, 
         <div key={i} className="flex items-center gap-1.5">
           {allowFreeTextTarget ? (
             <input value={m.targetField} onChange={(e) => patch(i, { targetField: e.target.value })} placeholder="JSON key…"
-              className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-gray-300 rounded-lg" />
+              className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary" />
           ) : (
-            <select value={m.targetField} onChange={(e) => patch(i, { targetField: e.target.value })} className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-gray-300 rounded-lg">
+            <select value={m.targetField} onChange={(e) => patch(i, { targetField: e.target.value })} className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary">
               <option value="">Set field…</option>
               {targetFields.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
             </select>
           )}
-          <span className="text-[10px] text-gray-400">=</span>
-          <select value={m.sourceType} onChange={(e) => patch(i, { sourceType: e.target.value as any })} className="px-2 py-1.5 text-xs border border-gray-300 rounded-lg">
+          <span className="text-[10px] text-text-muted">=</span>
+          <select value={m.sourceType} onChange={(e) => patch(i, { sourceType: e.target.value as any })} className="px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary">
             <option value="field">From field</option>
             <option value="static">Fixed value</option>
           </select>
           {m.sourceType === 'field' ? (
-            <select value={m.sourceField ?? ''} onChange={(e) => patch(i, { sourceField: e.target.value })} className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-gray-300 rounded-lg">
+            <select value={m.sourceField ?? ''} onChange={(e) => patch(i, { sourceField: e.target.value })} className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary">
               <option value="">Source field…</option>
               {sourceFields.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
             </select>
@@ -55,21 +55,21 @@ export default function FieldMappingsEditor({ mappings, onChange, sourceFields, 
               <input
                 ref={(el) => { staticValueRefs.current[i] = el; }}
                 value={m.staticValue ?? ''} onChange={(e) => patch(i, { staticValue: e.target.value })} placeholder="Value"
-                className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-gray-300 rounded-lg"
+                className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary"
               />
               {variableModule !== undefined && (
                 <VariablePicker
                   module={variableModule} targetRef={{ current: staticValueRefs.current[i] }}
                   value={m.staticValue ?? ''} onChange={(v) => patch(i, { staticValue: v })}
-                  className="shrink-0 text-[10px] text-brand-600 hover:text-brand-700 px-1.5 py-1 border border-brand-200 rounded bg-brand-50 hover:bg-brand-100"
+                  className="shrink-0 text-[10px] text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 px-1.5 py-1 border border-ryze-200 dark:border-ryze-800 rounded bg-ryze-600/10 hover:bg-ryze-600/15"
                 />
               )}
             </>
           )}
-          <button onClick={() => remove(i)} className="p-1 text-gray-400 hover:text-red-500 shrink-0"><TrashIcon className="h-3.5 w-3.5" /></button>
+          <button onClick={() => remove(i)} className="p-1 text-text-muted hover:text-red-500 shrink-0"><TrashIcon className="h-3.5 w-3.5" /></button>
         </div>
       ))}
-      <button onClick={add} className="text-[11px] font-medium text-brand-600 hover:text-brand-700">+ Add field mapping</button>
+      <button onClick={add} className="text-[11px] font-medium text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300">+ Add field mapping</button>
     </div>
   );
 }

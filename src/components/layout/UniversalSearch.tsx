@@ -20,15 +20,15 @@ interface SearchResponse {
 }
 
 const CHANNEL_STYLE: Record<string, { bg: string; text: string; border: string }> = {
-  zoho:       { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200' },
-  hubspot:    { bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-orange-200' },
-  salesforce: { bg: 'bg-sky-50',     text: 'text-sky-700',     border: 'border-sky-200' },
-  mysql:      { bg: 'bg-teal-50',    text: 'text-teal-700',    border: 'border-teal-200' },
-  postgresql: { bg: 'bg-indigo-50',  text: 'text-indigo-700',  border: 'border-indigo-200' },
-  mongodb:    { bg: 'bg-green-50',   text: 'text-green-700',   border: 'border-green-200' },
-  rest:       { bg: 'bg-purple-50',  text: 'text-purple-700',  border: 'border-purple-200' },
-  native:     { bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-violet-200' },
-  web:        { bg: 'bg-gray-50',    text: 'text-gray-600',    border: 'border-gray-200' },
+  zoho:       { bg: 'bg-blue-50 dark:bg-blue-500/15',    text: 'text-blue-700 dark:text-blue-400',    border: 'border-blue-200 dark:border-blue-500/30' },
+  hubspot:    { bg: 'bg-orange-50 dark:bg-orange-500/15',  text: 'text-orange-700 dark:text-orange-400',  border: 'border-orange-200 dark:border-orange-500/30' },
+  salesforce: { bg: 'bg-sky-50 dark:bg-sky-500/15',     text: 'text-sky-700 dark:text-sky-400',     border: 'border-sky-200 dark:border-sky-500/30' },
+  mysql:      { bg: 'bg-teal-50 dark:bg-teal-500/15',    text: 'text-teal-700 dark:text-teal-400',    border: 'border-teal-200 dark:border-teal-500/30' },
+  postgresql: { bg: 'bg-indigo-50 dark:bg-indigo-500/15',  text: 'text-indigo-700 dark:text-indigo-400',  border: 'border-indigo-200 dark:border-indigo-500/30' },
+  mongodb:    { bg: 'bg-success-500/15',   text: 'text-success-700 dark:text-success-500',   border: 'border-success-500/30' },
+  rest:       { bg: 'bg-purple-50 dark:bg-purple-500/15',  text: 'text-purple-700 dark:text-purple-400',  border: 'border-purple-200 dark:border-purple-500/30' },
+  native:     { bg: 'bg-violet-50 dark:bg-violet-500/15',  text: 'text-violet-700 dark:text-violet-400',  border: 'border-violet-200 dark:border-violet-500/30' },
+  web:        { bg: 'bg-black/[0.06] dark:bg-white/[0.08]',    text: 'text-text-muted',    border: 'border-border' },
 };
 
 const AVATAR_GRADIENTS = [
@@ -150,14 +150,14 @@ export default function UniversalSearch() {
       {/* ── Search input ── */}
       <div className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl border-2 transition-all duration-200 ${
         isActive
-          ? 'border-blue-500 bg-white shadow-lg shadow-blue-100'
-          : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-white hover:shadow-sm'
+          ? 'border-ryze-500 bg-surface shadow-lg shadow-ryze-600/10'
+          : 'border-border bg-background hover:border-ryze-300 hover:bg-surface hover:shadow-sm'
       }`}>
 
         {/* Search icon */}
-        <div className={`shrink-0 transition-colors duration-200 ${isActive ? 'text-blue-500' : 'text-gray-400'}`}>
+        <div className={`shrink-0 transition-colors duration-200 ${isActive ? 'text-ryze-500' : 'text-text-muted'}`}>
           {loading
-            ? <div className="h-4 w-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+            ? <div className="h-4 w-4 border-2 border-ryze-400 border-t-transparent rounded-full animate-spin" />
             : <MagnifyingGlassIcon className="h-4 w-4" />
           }
         </div>
@@ -172,21 +172,21 @@ export default function UniversalSearch() {
           onBlur={() => setFocused(false)}
           onKeyDown={handleKeyDown}
           placeholder="Search contacts, products, records…"
-          className="flex-1 bg-transparent text-sm font-medium text-gray-800 placeholder-gray-400 outline-none min-w-0"
+          className="flex-1 bg-transparent text-sm font-medium text-text-primary placeholder-text-muted outline-none min-w-0"
         />
 
         {/* Right side: clear button OR keyboard shortcut hint */}
         {query ? (
-          <button onClick={handleClear} className="shrink-0 p-0.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+          <button onClick={handleClear} className="shrink-0 p-0.5 rounded-md text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
             <XMarkIcon className="h-4 w-4" />
           </button>
         ) : (
           <div className="shrink-0 hidden sm:flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-semibold text-gray-400 bg-gray-100 border border-gray-200 rounded">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-semibold text-text-muted bg-black/[0.04] dark:bg-white/[0.06] border border-border rounded">
               Ctrl
             </kbd>
-            <span className="text-[10px] text-gray-300">+</span>
-            <kbd className="px-1.5 py-0.5 text-[10px] font-semibold text-gray-400 bg-gray-100 border border-gray-200 rounded">
+            <span className="text-[10px] text-text-muted">+</span>
+            <kbd className="px-1.5 py-0.5 text-[10px] font-semibold text-text-muted bg-black/[0.04] dark:bg-white/[0.06] border border-border rounded">
               K
             </kbd>
           </div>
@@ -195,34 +195,36 @@ export default function UniversalSearch() {
 
       {/* ── Results dropdown ── */}
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-gray-200 shadow-2xl shadow-gray-200/80 z-50 overflow-hidden">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-surface-elevated rounded-2xl border border-border shadow-2xl z-50 overflow-hidden">
 
           {results.length === 0 ? (
             <div className="px-5 py-8 flex flex-col items-center gap-2 text-center">
-              <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+              <div className="h-10 w-10 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center">
+                <MagnifyingGlassIcon className="h-5 w-5 text-text-muted" />
               </div>
-              <p className="text-sm font-medium text-gray-600">No results found</p>
-              <p className="text-xs text-gray-400">Try a different name, email, or phone number</p>
+              <p className="text-sm font-medium text-text-primary">No results found</p>
+              <p className="text-xs text-text-muted">Try a different name, email, or phone number</p>
             </div>
           ) : (
             <>
               {/* Header bar */}
-              <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <div className="px-4 py-2.5 bg-background border-b border-border flex items-center justify-between">
+                <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
                   {results.length} result{results.length !== 1 ? 's' : ''} found
                 </span>
-                <span className="text-[10px] text-gray-400 hidden sm:block">
+                <span className="text-[10px] text-text-muted hidden sm:block">
                   ↑↓ to navigate · Enter to open · Esc to close
                 </span>
               </div>
 
-              {/* Result list */}
+              {/* Result list — per-channel/avatar colors (CHANNEL_STYLE,
+                 avatarGradient) are deliberately untouched: legitimate
+                 data-source differentiation, not chrome. */}
               <div className="max-h-80 overflow-y-auto">
                 {results.map((r, idx) => {
                   const keyVal   = getKeyValue(r.data);
                   const initials = r.displayName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-                  const chStyle  = CHANNEL_STYLE[r.channel] ?? { bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-200' };
+                  const chStyle  = CHANNEL_STYLE[r.channel] ?? { bg: 'bg-black/[0.06] dark:bg-white/[0.08]', text: 'text-text-muted', border: 'border-border' };
                   const isHighlighted = idx === activeIdx;
 
                   return (
@@ -230,8 +232,8 @@ export default function UniversalSearch() {
                       key={`${r.channel}-${r.module}-${r.displayName}-${idx}`}
                       onClick={() => handleSelect(r)}
                       onMouseEnter={() => setActiveIdx(idx)}
-                      className={`w-full px-4 py-3 flex items-center gap-3.5 text-left transition-colors duration-100 border-b border-gray-50 last:border-0 ${
-                        isHighlighted ? 'bg-blue-50' : 'hover:bg-gray-50'
+                      className={`w-full px-4 py-3 flex items-center gap-3.5 text-left transition-colors duration-100 border-b border-border last:border-0 ${
+                        isHighlighted ? 'bg-ryze-600/10' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.05]'
                       }`}
                     >
                       {/* Avatar with gradient */}
@@ -242,16 +244,16 @@ export default function UniversalSearch() {
                       {/* Record info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 min-w-0">
-                          <p className={`text-sm font-semibold truncate transition-colors ${isHighlighted ? 'text-blue-700' : 'text-gray-900'}`}>
+                          <p className={`text-sm font-semibold truncate transition-colors ${isHighlighted ? 'text-ryze-600 dark:text-ryze-400' : 'text-text-primary'}`}>
                             {r.displayName}
                           </p>
                           {/* Module pill */}
-                          <span className="shrink-0 text-[10px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
+                          <span className="shrink-0 text-[10px] font-semibold text-text-muted bg-black/[0.04] dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-border">
                             {r.module}
                           </span>
                         </div>
                         {keyVal && (
-                          <p className="text-xs text-gray-500 truncate mt-0.5 font-mono">{keyVal}</p>
+                          <p className="text-xs text-text-muted truncate mt-0.5 font-mono">{keyVal}</p>
                         )}
                       </div>
 
@@ -265,11 +267,11 @@ export default function UniversalSearch() {
               </div>
 
               {/* Footer */}
-              <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-                <span className="text-[10px] text-gray-400">
-                  Powered by <span className="font-semibold text-gray-500">Meilisearch</span> · typo-tolerant
+              <div className="px-4 py-2.5 bg-background border-t border-border flex items-center justify-between">
+                <span className="text-[10px] text-text-muted">
+                  Powered by <span className="font-semibold text-text-primary">Meilisearch</span> · typo-tolerant
                 </span>
-                <span className="text-[10px] text-blue-500 font-medium cursor-pointer hover:underline">
+                <span className="text-[10px] text-ryze-500 font-medium cursor-pointer hover:underline">
                   View all →
                 </span>
               </div>

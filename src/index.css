@@ -4,84 +4,152 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-background text-text-primary antialiased transition-colors duration-200;
   }
 
+  /* LeadRyze design-system tokens — additive, alongside the existing
+   * brand/secondary/accent/dark Tailwind colors (untouched). Values as
+   * "R G B" triplets so Tailwind can build rgb(var(--x) / <alpha-value>) —
+   * see tailwind.config.ts. Light on :root, dark under .dark
+   * (darkMode:'class', toggled by useTheme.ts). Only background/surface/
+   * surface-elevated/text-primary/text-muted/border actually differ by
+   * theme — the ryze/success/danger scales are theme-invariant (chosen to
+   * read on both), so they're declared once, not duplicated under .dark. */
   :root {
+    color-scheme: light;
     --sidebar-width: 260px;
+
+    --color-background:       247 250 250; /* #F7FAFA */
+    --color-surface:          255 255 255; /* #FFFFFF */
+    --color-surface-elevated: 255 255 255; /* elevation via shadow, not a separate light shade */
+    --color-text-primary:     30 30 30;    /* #1E1E1E — InnooRyze near-black */
+    --color-text-muted:       100 116 139; /* #64748B */
+    --color-border:           226 232 240; /* #E2E8F0 */
+
+    --color-ryze-50:  229 249 251; --color-ryze-500: 0 169 190;
+    --color-ryze-100: 204 243 247; --color-ryze-600: 0 158 181; /* #009EB5 — official InnooRyze teal */
+    --color-ryze-200: 153 231 239; --color-ryze-700: 0 128 143;
+    --color-ryze-300: 93 213 226;  --color-ryze-800: 0 99 110;
+    --color-ryze-400: 44 191 208;  --color-ryze-900: 0 72 80;
+
+    --color-success-500: 0 208 132;  /* #00D084 — official InnooRyze mint */
+    --color-success-600: 0 184 115;
+    --color-success-700: 0 153 98;
+    --color-danger-500:  255 76 96;  /* #FF4C60 — official InnooRyze coral */
+    --color-danger-600:  230 57 80;
+    --color-danger-700:  194 41 64;
+
+    /* Sidebar's own distinct color identity — deliberately separate from
+     * background/surface above (see Sidebar.tsx's own comment at its
+     * background call sites). Theme-invariant on purpose: the user tried a
+     * separate lighter companion palette here first, then asked twice for
+     * the sidebar to keep the same (dark teal/navy) color in light mode
+     * too — matching the reference mockups, which also show a persistently
+     * dark sidebar rail regardless of the main content's light/dark theme.
+     * Declared once in :root and not overridden under .dark below, so it
+     * applies identically in both themes. */
+    --color-sidebar-bg:         7 54 66;     /* #073642 */
+    --color-sidebar-text:       245 250 252; /* #F5FAFC */
+    --color-sidebar-text-muted: 155 179 186; /* #9BB3BA */
+    --color-sidebar-border:     20 70 82;    /* ~#144652, a lighter tint of the sidebar bg */
+    --color-sidebar-accent:     0 184 204;   /* #00B8CC */
+  }
+
+  .dark {
+    color-scheme: dark;
+    --color-background:       7 19 22;    /* #071316 */
+    --color-surface:          11 28 32;   /* #0B1C20 */
+    --color-surface-elevated: 16 39 44;   /* #10272C */
+    --color-text-primary:     244 250 250; /* #F4FAFA */
+    --color-text-muted:       148 167 170; /* #94A7AA */
+    --color-border:           25 55 60;   /* #19373C */
+    /* sidebar-* tokens are theme-invariant — declared once in :root above, not duplicated here. */
   }
 }
 
 @layer components {
   .btn-primary {
     @apply inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium text-white
-      focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2
+      focus:outline-none focus:ring-2 focus:ring-ryze-500 focus:ring-offset-2
       transition-all disabled:opacity-50 disabled:cursor-not-allowed;
-    background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-    box-shadow: 0 0 14px rgba(79,70,229,0.3);
+    background: linear-gradient(135deg, rgb(var(--color-ryze-500)) 0%, rgb(var(--color-ryze-600)) 100%);
+    box-shadow: 0 0 14px rgb(var(--color-ryze-600) / 0.3);
   }
   .btn-primary:hover:not(:disabled) {
-    background: linear-gradient(135deg, #4338CA 0%, #4F46E5 100%);
-    box-shadow: 0 0 22px rgba(79,70,229,0.45);
+    background: linear-gradient(135deg, rgb(var(--color-ryze-600)) 0%, rgb(var(--color-ryze-700)) 100%);
+    box-shadow: 0 0 22px rgb(var(--color-ryze-600) / 0.45);
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium text-text-primary bg-surface border border-border hover:bg-black/[0.04] dark:hover:bg-white/[0.06] focus:outline-none focus:ring-2 focus:ring-ryze-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-danger-600 hover:bg-danger-700 focus:outline-none focus:ring-2 focus:ring-danger-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .card {
-    @apply bg-white rounded-2xl shadow-sm border border-gray-100 p-6;
+    @apply bg-surface rounded-2xl shadow-sm border border-border p-6;
   }
 
   .input {
-    @apply block w-full rounded-lg border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm;
+    @apply block w-full rounded-lg bg-surface text-text-primary border-border shadow-sm focus:border-ryze-500 focus:ring-ryze-500 sm:text-sm;
   }
 
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+    @apply block text-sm font-medium text-text-primary mb-1;
   }
 
   .badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
 
-  .badge-green { @apply badge bg-green-100 text-green-800; }
-  .badge-blue { @apply badge bg-blue-100 text-blue-800; }
-  .badge-yellow { @apply badge bg-yellow-100 text-yellow-800; }
-  .badge-red { @apply badge bg-red-100 text-red-800; }
-  .badge-gray { @apply badge bg-gray-100 text-gray-800; }
+  .badge-green { @apply badge bg-success-500/15 text-success-700 dark:text-success-500; }
+  .badge-blue { @apply badge bg-blue-100 dark:bg-blue-500/15 text-blue-800 dark:text-blue-400; }
+  .badge-yellow { @apply badge bg-yellow-100 dark:bg-yellow-500/15 text-yellow-800 dark:text-yellow-400; }
+  .badge-red { @apply badge bg-danger-500/15 text-danger-700 dark:text-danger-500; }
+  .badge-gray { @apply badge bg-black/[0.06] dark:bg-white/[0.08] text-text-muted; }
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { @apply bg-gray-100; }
-::-webkit-scrollbar-thumb { @apply bg-gray-300 rounded-full; }
-::-webkit-scrollbar-thumb:hover { @apply bg-gray-400; }
+::-webkit-scrollbar-track { @apply bg-black/[0.04] dark:bg-white/[0.04]; }
+::-webkit-scrollbar-thumb { @apply bg-black/[0.15] dark:bg-white/[0.15] rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-black/[0.25] dark:bg-white/[0.25]; }
 
 /* ── FullCalendar premium overrides ───────────────────────────────────────── */
-.fc { --fc-border-color: #e2e8f0; --fc-today-bg-color: rgba(99,102,241,0.06); --fc-neutral-bg-color: #f8fafc; --fc-list-event-hover-bg-color: #f1f5f9; font-family: inherit; }
+.fc { --fc-border-color: rgb(var(--color-border)); --fc-today-bg-color: rgb(var(--color-ryze-600) / 0.06); --fc-neutral-bg-color: rgb(var(--color-background)); --fc-list-event-hover-bg-color: rgb(var(--color-background)); font-family: inherit; }
 .fc .fc-timegrid-slot { height: 2.75rem; }
-.fc .fc-timegrid-slot-label { font-size: 0.68rem; color: #94a3b8; font-weight: 500; }
-.fc .fc-col-header-cell { font-size: 0.75rem; font-weight: 600; color: #64748b; padding: 0.5rem 0; background: #f8fafc; border-bottom: 2px solid #e2e8f0 !important; }
+.fc .fc-timegrid-slot-label { font-size: 0.68rem; color: rgb(var(--color-text-muted)); font-weight: 500; }
+.fc .fc-col-header-cell { font-size: 0.75rem; font-weight: 600; color: rgb(var(--color-text-muted)); padding: 0.5rem 0; background: rgb(var(--color-background)); border-bottom: 2px solid rgb(var(--color-border)) !important; }
 .fc .fc-col-header-cell a { color: inherit; text-decoration: none; }
-.fc .fc-daygrid-day-number { font-size: 0.8rem; color: #475569; padding: 4px 8px; }
-.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number { background: #6366f1; color: #fff; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; margin: 4px; }
+.fc .fc-daygrid-day-number { font-size: 0.8rem; color: rgb(var(--color-text-primary) / 0.8); padding: 4px 8px; }
+.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number { background: rgb(var(--color-ryze-600)); color: #fff; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; margin: 4px; }
 .fc .fc-event { border-radius: 6px !important; border: none !important; font-size: 0.72rem !important; font-weight: 500 !important; padding: 2px 6px !important; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
 .fc .fc-event:hover { opacity: 0.9; transform: translateY(-1px); transition: all 0.15s; }
 .fc .fc-timegrid-event { border-radius: 6px !important; }
-.fc .fc-timegrid-now-indicator-line { border-color: #6366f1; border-width: 2px; }
-.fc .fc-timegrid-now-indicator-arrow { border-top-color: #6366f1; border-bottom-color: #6366f1; }
+.fc .fc-timegrid-now-indicator-line { border-color: rgb(var(--color-ryze-600)); border-width: 2px; }
+.fc .fc-timegrid-now-indicator-arrow { border-top-color: rgb(var(--color-ryze-600)); border-bottom-color: rgb(var(--color-ryze-600)); }
 .fc .fc-toolbar { display: none !important; }
-.fc th { border-color: #e2e8f0 !important; }
-.fc td { border-color: #e2e8f0 !important; }
+.fc th { border-color: rgb(var(--color-border)) !important; }
+.fc td { border-color: rgb(var(--color-border)) !important; }
 .fc .fc-scrollgrid { border: none !important; border-radius: 0; }
 .fc .fc-scrollgrid-section > * { border: none !important; }
-.fc .fc-timegrid-axis { border-color: #e2e8f0 !important; background: #f8fafc; }
-.fc .fc-list-event-title a { color: #1e293b; text-decoration: none; }
-.fc .fc-list-day-cushion { background: #f8fafc; }
-.fc .fc-list-table td { border-color: #f1f5f9; }
-.fc .fc-daygrid-more-link { font-size: 0.7rem; color: #6366f1; font-weight: 600; }
-.fc .fc-highlight { background: rgba(99,102,241,0.08) !important; }
+.fc .fc-timegrid-axis { border-color: rgb(var(--color-border)) !important; background: rgb(var(--color-background)); }
+.fc .fc-list-event-title a { color: rgb(var(--color-text-primary)); text-decoration: none; }
+.fc .fc-list-day-cushion { background: rgb(var(--color-background)); }
+.fc .fc-list-table td { border-color: rgb(var(--color-border)); }
+.fc .fc-daygrid-more-link { font-size: 0.7rem; color: rgb(var(--color-ryze-600)); font-weight: 600; }
+.fc .fc-highlight { background: rgb(var(--color-ryze-600) / 0.08) !important; }
+
+/* Kanban column expand — plays once when a collapsed column reopens (the
+   collapsed strip itself is a plain button, no animation needed there).
+   See LeadsPage.tsx's KanbanColumn. */
+@keyframes column-expand {
+  from { opacity: 0; transform: scaleX(0.85); }
+  to   { opacity: 1; transform: scaleX(1); }
+}
+.animate-column-expand { animation: column-expand 0.18s ease-out; transform-origin: left center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-column-expand { animation: none; }
+}

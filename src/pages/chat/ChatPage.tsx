@@ -21,7 +21,7 @@ function renderInline(text: string) {
     <>
       {parts.map((part, i) =>
         part.startsWith('**') && part.endsWith('**') ? (
-          <strong key={i} className="font-semibold text-gray-900">
+          <strong key={i} className="font-semibold text-text-primary">
             {part.slice(2, -2)}
           </strong>
         ) : (
@@ -48,7 +48,7 @@ function renderMarkdown(text: string) {
       const content = trimmed.replace(/^\d+\.\s/, '');
       elements.push(
         <div key={i} className="flex gap-2 items-start">
-          <span className="text-gray-400 font-mono text-xs mt-0.5 shrink-0 w-4">{num}.</span>
+          <span className="text-text-muted font-mono text-xs mt-0.5 shrink-0 w-4">{num}.</span>
           <span className="flex-1">{renderInline(content)}</span>
         </div>
       );
@@ -56,7 +56,7 @@ function renderMarkdown(text: string) {
       const content = trimmed.replace(/^[-•*]\s/, '');
       elements.push(
         <div key={i} className="flex gap-2 items-start">
-          <span className="text-gray-400 shrink-0 mt-0.5">•</span>
+          <span className="text-text-muted shrink-0 mt-0.5">•</span>
           <span className="flex-1">{renderInline(content)}</span>
         </div>
       );
@@ -100,8 +100,8 @@ export default function ChatPage() {
     <div className="flex flex-col h-full max-h-[calc(100vh-8rem)]">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">AI Chat</h1>
-          <p className="text-sm text-gray-500">Ask anything about your CRM data</p>
+          <h1 className="text-2xl font-bold text-text-primary">AI Chat</h1>
+          <p className="text-sm text-text-muted">Ask anything about your CRM data</p>
         </div>
         <button onClick={clearChat} className="btn-secondary gap-2">
           <TrashIcon className="h-4 w-4" /> Clear
@@ -115,10 +115,10 @@ export default function ChatPage() {
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full py-8 text-center">
               <ChatBubbleEmptyIcon />
-              <p className="mt-3 text-sm font-semibold text-gray-600">
+              <p className="mt-3 text-sm font-semibold text-text-muted">
                 Ask me about your CRM data
               </p>
-              <p className="text-xs text-gray-400 mt-1 mb-5">
+              <p className="text-xs text-text-muted mt-1 mb-5">
                 I can search across Zoho, HubSpot, and Salesforce
               </p>
               <div className="flex flex-wrap justify-center gap-2 max-w-lg">
@@ -126,9 +126,9 @@ export default function ChatPage() {
                   <button
                     key={q}
                     onClick={() => onSuggest(q)}
-                    className="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full
-                               hover:bg-brand-50 hover:border-brand-300 hover:text-brand-700
-                               transition-colors text-gray-600 shadow-sm"
+                    className="px-3 py-1.5 text-xs bg-surface border border-border rounded-full
+                               hover:bg-ryze-600/10 hover:border-ryze-300 dark:border-ryze-700 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300
+                               transition-colors text-text-muted shadow-sm"
                   >
                     {q}
                   </button>
@@ -144,15 +144,15 @@ export default function ChatPage() {
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {msg.role === 'assistant' && (
-                <div className="h-7 w-7 rounded-full bg-brand-600 flex items-center justify-center text-white text-xs font-bold shrink-0 mr-2 mt-1">
+                <div className="h-7 w-7 rounded-full bg-ryze-600 flex items-center justify-center text-white text-xs font-bold shrink-0 mr-2 mt-1">
                   AI
                 </div>
               )}
               <div
                 className={`max-w-xs sm:max-w-md lg:max-w-2xl rounded-2xl px-4 py-3 ${
                   msg.role === 'user'
-                    ? 'bg-brand-600 text-white rounded-tr-sm'
-                    : 'bg-gray-50 border border-gray-100 text-gray-900 rounded-tl-sm'
+                    ? 'bg-ryze-600 text-white rounded-tr-sm'
+                    : 'bg-background border border-border text-text-primary rounded-tl-sm'
                 }`}
               >
                 {msg.role === 'assistant' ? (
@@ -168,9 +168,9 @@ export default function ChatPage() {
                   </div>
                 )}
                 {msg.capturedData && Object.keys(msg.capturedData).length > 0 && (
-                  <div className="mt-2 border-t border-gray-200 pt-2">
+                  <div className="mt-2 border-t border-border pt-2">
                     {Object.entries(msg.capturedData).map(([k, v]) => (
-                      <p key={k} className="text-xs text-gray-500">
+                      <p key={k} className="text-xs text-text-muted">
                         <span className="font-medium capitalize">{k}:</span> {v}
                       </p>
                     ))}
@@ -178,7 +178,7 @@ export default function ChatPage() {
                 )}
                 <p
                   className={`text-xs mt-1.5 ${
-                    msg.role === 'user' ? 'text-blue-200' : 'text-gray-400'
+                    msg.role === 'user' ? 'text-blue-200' : 'text-text-muted'
                   }`}
                 >
                   {format(msg.timestamp, 'HH:mm')}
@@ -190,19 +190,19 @@ export default function ChatPage() {
           {/* Loading indicator */}
           {isLoading && (
             <div className="flex justify-start items-center gap-2">
-              <div className="h-7 w-7 rounded-full bg-brand-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+              <div className="h-7 w-7 rounded-full bg-ryze-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
                 AI
               </div>
-              <div className="bg-gray-50 border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-3">
+              <div className="bg-background border border-border rounded-2xl rounded-tl-sm px-4 py-3">
                 <div className="flex gap-1 items-center">
                   {[0, 1, 2].map((i) => (
                     <span
                       key={i}
-                      className="h-2 w-2 rounded-full bg-brand-400 animate-bounce"
+                      className="h-2 w-2 rounded-full bg-ryze-400 animate-bounce"
                       style={{ animationDelay: `${i * 0.15}s` }}
                     />
                   ))}
-                  <span className="text-xs text-gray-400 ml-2">Searching CRM data…</span>
+                  <span className="text-xs text-text-muted ml-2">Searching CRM data…</span>
                 </div>
               </div>
             </div>
@@ -210,7 +210,7 @@ export default function ChatPage() {
           <div ref={bottomRef} />
         </div>
 
-        <div className="border-t border-gray-100 p-4">
+        <div className="border-t border-border p-4">
           <form onSubmit={onSubmit} className="flex gap-3">
             <input
               type="text"
@@ -237,7 +237,7 @@ export default function ChatPage() {
 function ChatBubbleEmptyIcon() {
   return (
     <svg
-      className="mx-auto h-12 w-12 text-gray-300"
+      className="mx-auto h-12 w-12 text-text-muted"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"

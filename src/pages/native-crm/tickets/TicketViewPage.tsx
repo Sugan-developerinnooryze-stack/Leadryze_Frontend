@@ -28,9 +28,9 @@ const RELATED_MODULE_PATHS: Record<string, string> = {
 
 function Card({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</h3>
+    <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
+      <div className="px-5 py-3 border-b border-border bg-black/[0.015] dark:bg-white/[0.02] flex items-center justify-between">
+        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">{title}</h3>
         {action}
       </div>
       <div className="px-5 py-4">{children}</div>
@@ -40,9 +40,9 @@ function Card({ title, children, action }: { title: string; children: React.Reac
 
 function InfoRow({ label, value }: { label: string; value?: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-2 py-1.5 border-b border-gray-50 last:border-0">
-      <span className="text-xs text-gray-400 w-36 shrink-0 pt-0.5">{label}</span>
-      <span className="text-sm text-gray-800 font-medium">{value ?? '—'}</span>
+    <div className="flex items-start gap-2 py-1.5 border-b border-border last:border-0">
+      <span className="text-xs text-text-muted w-36 shrink-0 pt-0.5">{label}</span>
+      <span className="text-sm text-text-primary font-medium">{value ?? '—'}</span>
     </div>
   );
 }
@@ -70,7 +70,7 @@ function SlaCountdown({
   const hours = Math.floor(abs / 3_600_000);
   const mins = Math.floor((abs % 3_600_000) / 60_000);
   const text = `${hours}h ${mins}m`;
-  const colorClass = status === 'breached' ? 'text-red-600' : status === 'warning' ? 'text-amber-600' : 'text-gray-800';
+  const colorClass = status === 'breached' ? 'text-red-600' : status === 'warning' ? 'text-amber-600' : 'text-text-primary';
   return (
     <InfoRow
       label={label}
@@ -102,10 +102,10 @@ export default function TicketViewPage() {
 
   if (isLoading) return (
     <div className="flex items-center justify-center h-full">
-      <div className="flex gap-2">{[0, 1, 2].map((i) => <span key={i} className="h-2.5 w-2.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}</div>
+      <div className="flex gap-2">{[0, 1, 2].map((i) => <span key={i} className="h-2.5 w-2.5 rounded-full bg-ryze-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}</div>
     </div>
   );
-  if (!item) return <div className="flex items-center justify-center h-full text-gray-400">Ticket not found.</div>;
+  if (!item) return <div className="flex items-center justify-center h-full text-text-muted">Ticket not found.</div>;
 
   const staff = staffList?.items?.find((s: any) => s.staffId === item.staffId);
   const team = teamList?.items?.find((t: any) => t._id === item.teamId);
@@ -115,26 +115,26 @@ export default function TicketViewPage() {
   const customFields = Object.entries(item.customFields ?? {}).filter(([, v]) => v !== null && v !== undefined && v !== '');
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-background">
       {/* Toolbar */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3 flex-wrap shrink-0">
-        <button onClick={() => navigate('/native-crm/tickets')} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors mr-2">
+      <div className="bg-surface border-b border-border px-6 py-3 flex items-center gap-3 flex-wrap shrink-0">
+        <button onClick={() => navigate('/native-crm/tickets')} className="flex items-center gap-1.5 text-sm text-text-muted hover:text-text-primary transition-colors mr-2">
           <ArrowLeftIcon className="h-4 w-4" /> Tickets
         </button>
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="text-sm font-semibold text-gray-800">{item.ticketNumber ?? item._id}</span>
-          <span className="text-sm text-gray-600 truncate">{item.subject}</span>
+          <span className="text-sm font-semibold text-text-primary">{item.ticketNumber ?? item._id}</span>
+          <span className="text-sm text-text-muted truncate">{item.subject}</span>
           {stage && (
             <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold capitalize" style={{ backgroundColor: `${stage.color}20`, color: stage.color }}>
               {stage.label}
             </span>
           )}
-          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${PRIORITY_COLORS[item.priority] ?? 'bg-gray-100 text-gray-500'}`}>
+          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${PRIORITY_COLORS[item.priority] ?? 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'}`}>
             {item.priority ?? 'medium'}
           </span>
         </div>
         <button onClick={() => navigate('/native-crm/tickets', { state: { openDrawer: true, prefill: item } })}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50">
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-surface border border-border text-text-primary text-xs font-medium rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">
           <PencilSquareIcon className="h-4 w-4" />Edit
         </button>
       </div>
@@ -145,7 +145,7 @@ export default function TicketViewPage() {
           <Card
             title="SLA"
             action={canManageSla && (
-              <button onClick={() => navigate('/native-crm/settings/ticket-sla')} className="text-xs text-brand-600 hover:text-brand-700 font-medium">
+              <button onClick={() => navigate('/native-crm/settings/ticket-sla')} className="text-xs text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 font-medium">
                 Manage SLA Policy
               </button>
             )}
@@ -157,7 +157,7 @@ export default function TicketViewPage() {
           <Card
             title="Assignment"
             action={canAssign && (
-              <button onClick={() => setReassigning((v) => !v)} className="text-xs text-brand-600 hover:text-brand-700 font-medium">
+              <button onClick={() => setReassigning((v) => !v)} className="text-xs text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 font-medium">
                 {reassigning ? 'Cancel' : 'Reassign'}
               </button>
             )}
@@ -167,7 +167,7 @@ export default function TicketViewPage() {
                 <select
                   defaultValue={item.staffId ?? ''}
                   onChange={(e) => assign.mutate({ id: item._id, staffId: e.target.value || undefined, teamId: item.teamId })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-text-primary"
                 >
                   <option value="">Unassigned staff</option>
                   {(staffList?.items ?? []).map((s: any) => (
@@ -177,7 +177,7 @@ export default function TicketViewPage() {
                 <select
                   defaultValue={item.teamId ?? ''}
                   onChange={(e) => assign.mutate({ id: item._id, staffId: item.staffId, teamId: e.target.value || undefined })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-text-primary"
                 >
                   <option value="">No team</option>
                   {(teamList?.items ?? []).map((t: any) => <option key={t._id} value={t._id}>{t.name}</option>)}
@@ -203,16 +203,16 @@ export default function TicketViewPage() {
                   {item.relatedLabel ?? item.relatedId}
                 </button>
               ) : (
-                <span className="text-sm text-gray-700">{item.relatedLabel ?? item.relatedId}</span>
+                <span className="text-sm text-text-primary">{item.relatedLabel ?? item.relatedId}</span>
               )}
-              <span className="text-xs text-gray-400 capitalize">({item.relatedModule})</span>
+              <span className="text-xs text-text-muted capitalize">({item.relatedModule})</span>
             </div>
           </Card>
         )}
 
         {item.description && (
           <Card title="Description">
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{item.description}</p>
+            <p className="text-sm text-text-primary whitespace-pre-wrap">{item.description}</p>
           </Card>
         )}
 
@@ -222,11 +222,11 @@ export default function TicketViewPage() {
 
         <Card title="Internal Notes">
           <div className="space-y-3">
-            {(item.internalNotes ?? []).length === 0 && <p className="text-sm text-gray-400">No internal notes yet.</p>}
+            {(item.internalNotes ?? []).length === 0 && <p className="text-sm text-text-muted">No internal notes yet.</p>}
             {(item.internalNotes ?? []).map((n: any, i: number) => (
               <div key={n._id ?? i} className="px-3 py-2 bg-amber-50 border border-amber-100 rounded-lg">
-                <p className="text-sm text-gray-800 whitespace-pre-wrap">{n.text}</p>
-                <p className="text-[11px] text-gray-400 mt-1">{n.authorName ?? 'Staff'} — {new Date(n.createdAt).toLocaleString()}</p>
+                <p className="text-sm text-text-primary whitespace-pre-wrap">{n.text}</p>
+                <p className="text-[11px] text-text-muted mt-1">{n.authorName ?? 'Staff'} — {new Date(n.createdAt).toLocaleString()}</p>
               </div>
             ))}
             <div className="flex gap-2">
@@ -234,12 +234,12 @@ export default function TicketViewPage() {
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
                 placeholder="Add an internal note (staff-only)…"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-background text-text-primary"
               />
               <button
                 onClick={() => { if (noteText.trim()) { addNote.mutate({ id: item._id, text: noteText.trim() }); setNoteText(''); } }}
                 disabled={!noteText.trim() || addNote.isPending}
-                className="px-3 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-60"
+                className="px-3 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 disabled:opacity-60"
               >
                 Add
               </button>
@@ -249,13 +249,13 @@ export default function TicketViewPage() {
 
         <Card title="Timeline">
           {timeline.length === 0 ? (
-            <p className="text-sm text-gray-400">No activity yet.</p>
+            <p className="text-sm text-text-muted">No activity yet.</p>
           ) : (
             <ul className="space-y-2">
               {timeline.map((e: any) => (
                 <li key={e._id} className="flex items-start gap-2 text-sm">
-                  <span className="text-gray-400 text-xs w-32 shrink-0 pt-0.5">{new Date(e.createdAt).toLocaleString()}</span>
-                  <span className="text-gray-700">
+                  <span className="text-text-muted text-xs w-32 shrink-0 pt-0.5">{new Date(e.createdAt).toLocaleString()}</span>
+                  <span className="text-text-primary">
                     {e.eventType === 'created' && 'Ticket created'}
                     {e.eventType !== 'created' && e.field && (
                       <>{e.field} changed {e.fromValue ? `from "${e.fromValue}" ` : ''}to "{e.toValue}"</>
@@ -263,7 +263,7 @@ export default function TicketViewPage() {
                     {e.eventType === 'note_added' && !e.field && 'Internal note added'}
                     {e.eventType === 'attachment_added' && !e.field && `Attachment added: ${e.toValue}`}
                     {e.eventType === 'attachment_removed' && !e.field && `Attachment removed: ${e.fromValue}`}
-                    {e.actorName && <span className="text-gray-400"> — {e.actorName}</span>}
+                    {e.actorName && <span className="text-text-muted"> — {e.actorName}</span>}
                   </span>
                 </li>
               ))}

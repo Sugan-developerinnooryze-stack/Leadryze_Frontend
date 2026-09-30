@@ -210,19 +210,19 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
     <>
       <div className="fixed inset-0 bg-black/40 z-50" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
+        <div className="bg-surface-elevated rounded-2xl shadow-2xl w-full max-w-lg p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">{isEdit ? 'Edit Automation Rule' : 'New Automation Rule'}</h2>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400">
+            <h2 className="text-lg font-semibold text-text-primary">{isEdit ? 'Edit Automation Rule' : 'New Automation Rule'}</h2>
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted">
               <XMarkIcon className="h-5 w-5" />
             </button>
           </div>
 
           <div className="space-y-3.5">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Rule name</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Rule name</label>
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Notify customer on approval"
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400" />
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ryze-400 bg-background text-text-primary" />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -231,19 +231,19 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
                   similar module pickers for one rule. */}
               {triggerType !== 'scheduled' && (
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Module</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Module</label>
                   <select value={module} onChange={(e) => { setModule(e.target.value as AutomationModule); setTriggerStage(''); setTriggerField(''); }}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                     {triggerModuleOptions.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
                   </select>
                 </div>
               )}
               <div className={triggerType === 'scheduled' ? 'col-span-2' : ''}>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Trigger</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Trigger</label>
                 <select value={triggerType} onChange={(e) => {
                   setTriggerType(e.target.value as AutomationTriggerType); setTriggerStage(''); setTriggerField('');
                   setScheduleModule(''); setScheduleFilter([]); setScheduleStampField('');
-                }} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                }} className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                   <option value="status_changed">Status changes to…</option>
                   <option value="record_created">New record created</option>
                   <option value="record_updated">Field updated</option>
@@ -257,17 +257,17 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
               <div className="space-y-3 bg-amber-50/50 border border-amber-100 rounded-lg p-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Watch which records</label>
+                    <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Watch which records</label>
                     <select value={scheduleModule} onChange={(e) => { setScheduleModule(e.target.value as AutomationModule); setScheduleFilter([]); }}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                      className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                       <option value="">Select module…</option>
                       {EVERY_MODULE.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Check every</label>
+                    <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Check every</label>
                     <select value={scheduleCron} onChange={(e) => setScheduleCron(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                      className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                       <option value="*/5 * * * *">5 minutes</option>
                       <option value="*/15 * * * *">15 minutes</option>
                       <option value="0 * * * *">Hour</option>
@@ -279,14 +279,14 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
 
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Only matching records (optional)</label>
+                    <label className="block text-xs font-semibold text-text-muted uppercase tracking-wide">Only matching records (optional)</label>
                     <button type="button" onClick={addCondition} disabled={!scheduleModule}
-                      className="text-[11px] font-medium text-brand-600 hover:text-brand-700 disabled:opacity-40">
+                      className="text-[11px] font-medium text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 disabled:opacity-40">
                       + Add condition
                     </button>
                   </div>
                   {scheduleFilter.length === 0 && (
-                    <p className="text-[11px] text-gray-400">No conditions — every record in this module matches.</p>
+                    <p className="text-[11px] text-text-muted">No conditions — every record in this module matches.</p>
                   )}
                   <div className="space-y-2">
                     {scheduleFilter.map((c, i) => {
@@ -294,51 +294,51 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
                       return (
                         <div key={i} className="flex items-center gap-1.5">
                           <select value={c.field} onChange={(e) => patchCondition(i, { field: e.target.value })}
-                            className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded-lg">
+                            className="flex-1 px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary">
                             <option value="">Field…</option>
                             {scheduleFields.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
                           </select>
                           <select value={c.operator} onChange={(e) => patchCondition(i, { operator: e.target.value as ConditionOperator })}
-                            className="px-2 py-1.5 text-xs border border-gray-300 rounded-lg">
+                            className="px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary">
                             {CONDITION_OPERATORS.map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
                           </select>
                           {!['is_empty', 'is_not_empty'].includes(c.operator) && (
                             fieldDef?.options ? (
                               <select value={c.value ?? ''} onChange={(e) => patchCondition(i, { value: e.target.value })}
-                                className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded-lg">
+                                className="flex-1 px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary">
                                 <option value="">Value…</option>
                                 {fieldDef.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                               </select>
                             ) : (
                               <input value={c.value ?? ''} onChange={(e) => patchCondition(i, { value: e.target.value })}
                                 placeholder={c.operator === '>' || c.operator === '<' ? 'e.g. now, today, 50000' : 'Value'}
-                                className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded-lg" />
+                                className="flex-1 px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary" />
                             )
                           )}
                           {c.operator === 'between' && (
                             <input value={c.value2 ?? ''} onChange={(e) => patchCondition(i, { value2: e.target.value })}
-                              placeholder="and…" className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded-lg" />
+                              placeholder="and…" className="flex-1 px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary" />
                           )}
-                          <button type="button" onClick={() => removeCondition(i)} className="p-1.5 text-gray-300 hover:text-red-500">
+                          <button type="button" onClick={() => removeCondition(i)} className="p-1.5 text-text-muted hover:text-red-500">
                             <TrashIcon className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       );
                     })}
                   </div>
-                  <p className="text-[11px] text-gray-400 mt-1">
-                    Use <code className="bg-gray-100 px-1 rounded">now</code> or <code className="bg-gray-100 px-1 rounded">today</code> as a date value — e.g. a field "&lt;" "now" means overdue.
+                  <p className="text-[11px] text-text-muted mt-1">
+                    Use <code className="bg-black/[0.04] dark:bg-white/[0.06] px-1 rounded">now</code> or <code className="bg-black/[0.04] dark:bg-white/[0.06] px-1 rounded">today</code> as a date value — e.g. a field "&lt;" "now" means overdue.
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Prevent re-firing (optional)</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Prevent re-firing (optional)</label>
                   <select value={scheduleStampField} onChange={(e) => setScheduleStampField(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                     <option value="">Fire every time it matches</option>
                     {scheduleFields.filter((f) => f.type === 'date').map((f) => <option key={f.key} value={f.key}>{`Mark "${f.label}" once fired`}</option>)}
                   </select>
-                  <p className="text-[11px] text-gray-400 mt-1">
+                  <p className="text-[11px] text-text-muted mt-1">
                     Once this rule fires for a record, the chosen field is stamped with the current time — add a condition above like "{scheduleStampField ? scheduleFields.find((f) => f.key === scheduleStampField)?.label : 'that field'} is empty" so a record only fires once instead of every check.
                   </p>
                 </div>
@@ -347,9 +347,9 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
 
             {triggerType === 'status_changed' && (
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">When status changes to</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">When status changes to</label>
                 <select value={triggerStage} onChange={(e) => setTriggerStage(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                   <option value="">Select stage…</option>
                   {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
                 </select>
@@ -361,25 +361,25 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
               return (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Which field</label>
+                    <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Which field</label>
                     <select value={triggerField} onChange={(e) => { setTriggerField(e.target.value); setTriggerStage(''); }}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                      className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                       <option value="">Select field…</option>
                       {sourceFields.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Changes to (optional)</label>
+                    <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Changes to (optional)</label>
                     {fieldDef?.options ? (
                       <select value={triggerStage} onChange={(e) => setTriggerStage(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" disabled={!triggerField}>
+                        className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary" disabled={!triggerField}>
                         <option value="">Any change</option>
                         {fieldDef.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
                     ) : (
                       <input value={triggerStage} onChange={(e) => setTriggerStage(e.target.value)} placeholder="Any change"
                         disabled={!triggerField}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50" />
+                        className="w-full px-3 py-2 text-sm border border-border rounded-lg disabled:opacity-50 bg-background text-text-primary" />
                     )}
                   </div>
                 </div>
@@ -387,7 +387,7 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
             })()}
 
             {triggerType === 'record_deleted' && (
-              <p className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5">
+              <p className="text-xs text-text-muted bg-background border border-border rounded-lg px-3 py-2.5">
                 This rule fires whenever a {triggerModuleOptions.find((m) => m.key === module)?.label ?? 'record'} is deleted — no further setup needed here.
               </p>
             )}
@@ -395,9 +395,9 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
             <BranchScopePicker branchIds={branchIds} onChange={setBranchIds} />
 
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Action</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Action</label>
               <select value={actionType} onChange={(e) => { setActionType(e.target.value as AutomationActionType); setTemplateId(''); }}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                 <option value="send_email">Send Email</option>
                 <option value="send_sms">Send SMS</option>
                 <option value="send_whatsapp">Send WhatsApp</option>
@@ -409,15 +409,15 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
 
             {isAssignment && (
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">
                   {actionType === 'assign_staff' ? 'Rotate within team (optional)' : 'Target team'}
                 </label>
                 <select value={assignTeamId} onChange={(e) => setAssignTeamId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                   <option value="">{actionType === 'assign_staff' ? 'Whole company (all active staff)' : 'Select a team…'}</option>
                   {(teamList?.items ?? []).map((t: any) => <option key={t._id} value={t._id}>{t.name}</option>)}
                 </select>
-                <p className="text-[11px] text-gray-400 mt-1">
+                <p className="text-[11px] text-text-muted mt-1">
                   {actionType === 'assign_staff'
                     ? 'Rotates through active staff (company-wide, or just this team) and writes staffId/teamId onto the record — no notification is sent by this action alone; chain a Send Email/WhatsApp action with recipient "Assigned staff" for that.'
                     : 'Sets teamId on the record to this fixed team — not rotated.'}
@@ -430,25 +430,25 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Template</label>
+                      <label className="block text-xs font-semibold text-text-muted uppercase tracking-wide">Template</label>
                       <button type="button" onClick={() => setCreatingTemplate(true)}
-                        className="text-[11px] font-medium text-brand-600 hover:text-brand-700">
+                        className="text-[11px] font-medium text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300">
                         + New template
                       </button>
                     </div>
                     <select value={templateId} onChange={(e) => setTemplateId(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                      className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                       <option value="">Select template…</option>
                       {templates.map((t) => <option key={t._id} value={t._id}>{t.name}</option>)}
                     </select>
                     {templates.length === 0 && (
-                      <p className="text-[11px] text-gray-400 mt-1">No {templateChannel} templates yet — create one above.</p>
+                      <p className="text-[11px] text-text-muted mt-1">No {templateChannel} templates yet — create one above.</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Recipient</label>
+                    <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Recipient</label>
                     <select value={recipientStrategy} onChange={(e) => setRecipientStrategy(e.target.value as AutomationRecipientStrategy)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                      className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                       {(Object.entries(RECIPIENT_LABELS) as [AutomationRecipientStrategy, string][]).map(([v, l]) => (
                         <option key={v} value={v}>{l}</option>
                       ))}
@@ -461,49 +461,49 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
             {isLinkedRecord && (
               <>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Create a record in</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Create a record in</label>
                   <select value={targetModule} onChange={(e) => { setTargetModule(e.target.value as AutomationModule); setFieldMappings([]); setBackReferenceField(''); }}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                     <option value="">Select module…</option>
                     {EVERY_MODULE.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Field mapping</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Field mapping</label>
                   <div className="space-y-2">
                     {fieldMappings.map((m, i) => {
                       const targetDef = targetFields.find((f) => f.key === m.targetField);
                       return (
                       <div key={i} className="flex items-center gap-1.5">
                         <select value={m.targetField} onChange={(e) => patchMapping(i, { targetField: e.target.value, staticValue: '' })}
-                          className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-gray-300 rounded-lg">
+                          className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary">
                           <option value="">Target field…</option>
                           {targetFields.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
                         </select>
-                        <span className="text-xs text-gray-400 shrink-0">=</span>
+                        <span className="text-xs text-text-muted shrink-0">=</span>
                         <select value={m.sourceType} onChange={(e) => patchMapping(i, { sourceType: e.target.value as 'field' | 'static', sourceField: '', staticValue: '' })}
-                          className="shrink-0 px-2 py-1.5 text-xs border border-gray-300 rounded-lg">
+                          className="shrink-0 px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary">
                           <option value="field">Copy from field</option>
                           <option value="static">Fixed value</option>
                         </select>
                         {m.sourceType === 'field' ? (
                           <select value={m.sourceField ?? ''} onChange={(e) => patchMapping(i, { sourceField: e.target.value })}
-                            className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-gray-300 rounded-lg">
+                            className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary">
                             <option value="">Source field…</option>
                             {sourceFields.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
                           </select>
                         ) : targetDef?.options ? (
                           <select value={m.staticValue ?? ''} onChange={(e) => patchMapping(i, { staticValue: e.target.value })}
-                            className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-gray-300 rounded-lg">
+                            className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary">
                             <option value="">Select value…</option>
                             {targetDef.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                           </select>
                         ) : (
                           <input value={m.staticValue ?? ''} onChange={(e) => patchMapping(i, { staticValue: e.target.value })}
-                            placeholder="Value" className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-gray-300 rounded-lg" />
+                            placeholder="Value" className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary" />
                         )}
-                        <button onClick={() => removeMapping(i)} className="p-1 text-gray-300 hover:text-red-500 shrink-0">
+                        <button onClick={() => removeMapping(i)} className="p-1 text-text-muted hover:text-red-500 shrink-0">
                           <TrashIcon className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -511,15 +511,15 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
                     })}
                   </div>
                   <button onClick={addMapping} disabled={!targetModule}
-                    className="mt-2 text-xs font-medium text-brand-600 hover:text-brand-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                    className="mt-2 text-xs font-medium text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 disabled:opacity-40 disabled:cursor-not-allowed">
                     + Add field mapping
                   </button>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Link new record back to source (optional)</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Link new record back to source (optional)</label>
                   <select value={backReferenceField} onChange={(e) => setBackReferenceField(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" disabled={!targetModule}>
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary" disabled={!targetModule}>
                     <option value="">Don&rsquo;t link back</option>
                     {targetFields.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
                   </select>
@@ -529,19 +529,19 @@ function RuleForm({ onClose, rule, initialCanvasPosition, initialTriggerType, in
 
             <label className="flex items-center gap-2.5 cursor-pointer">
               <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
-              <span className="text-sm text-gray-700">Enabled</span>
+                className="h-4 w-4 rounded border-border text-ryze-600 dark:text-ryze-400 focus:ring-ryze-500" />
+              <span className="text-sm text-text-primary">Enabled</span>
             </label>
 
             {error && <p className="text-xs text-red-600">{error}</p>}
           </div>
 
           <div className="flex gap-3 mt-6">
-            <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
               Cancel
             </button>
             <button onClick={handleSave} disabled={!canSave || saving}
-              className="flex-1 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors">
+              className="flex-1 px-4 py-2.5 bg-ryze-600 hover:bg-ryze-700 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors">
               {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Rule'}
             </button>
           </div>
@@ -602,23 +602,23 @@ function InlineTemplateModal({ channel, onClose, onCreated }: {
     <>
       <div className="fixed inset-0 bg-black/40 z-[60]" onClick={onClose} />
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <div className="bg-surface-elevated rounded-2xl shadow-2xl w-full max-w-md p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-gray-900 capitalize">New {channel} template</h3>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400">
+            <h3 className="text-base font-semibold text-text-primary capitalize">New {channel} template</h3>
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted">
               <XMarkIcon className="h-5 w-5" />
             </button>
           </div>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Name</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Name</label>
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Deal won notification"
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400" />
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ryze-400 bg-background text-text-primary" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Purpose</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Purpose</label>
               <select value={category} onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                 <option value="custom">Custom</option>
                 <option value="followup">Follow-up</option>
                 <option value="reminder">Reminder</option>
@@ -629,27 +629,27 @@ function InlineTemplateModal({ channel, onClose, onCreated }: {
             </div>
             {channel === 'email' && (
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Subject</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Subject</label>
                 <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Update on {{title}}"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400" />
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ryze-400 bg-background text-text-primary" />
               </div>
             )}
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Message body</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Message body</label>
               <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={5} placeholder="Hi {{name}}, ..."
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-brand-400" />
-              <p className="text-[11px] text-gray-400 mt-1">
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-ryze-400 bg-background text-text-primary" />
+              <p className="text-[11px] text-text-muted mt-1">
                 Dynamic values: {'{{name}}'} {'{{title}}'} {'{{status}}'} {'{{company}}'} {'{{id}}'}
               </p>
             </div>
             {error && <p className="text-xs text-red-600">{error}</p>}
           </div>
           <div className="flex gap-3 mt-6">
-            <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
               Cancel
             </button>
             <button onClick={handleSave} disabled={!canSave || saving}
-              className="flex-1 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors">
+              className="flex-1 px-4 py-2.5 bg-ryze-600 hover:bg-ryze-700 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors">
               {saving ? 'Creating…' : 'Create Template'}
             </button>
           </div>
@@ -774,11 +774,11 @@ function PaletteItem({ kind, value, label, hint, accentClass }: {
         e.dataTransfer.setData(PALETTE_MIME, JSON.stringify(payload));
         e.dataTransfer.effectAllowed = 'copy';
       }}
-      className={`px-2.5 py-2 rounded-lg border cursor-grab active:cursor-grabbing bg-white hover:shadow-sm transition-shadow ${accentClass}`}
+      className={`px-2.5 py-2 rounded-lg border cursor-grab active:cursor-grabbing bg-surface hover:shadow-sm transition-shadow ${accentClass}`}
       title="Drag onto the canvas to start a new rule with this preset"
     >
-      <p className="text-[11.5px] font-semibold text-gray-800">{label}</p>
-      <p className="text-[10px] text-gray-400 leading-tight">{hint}</p>
+      <p className="text-[11.5px] font-semibold text-text-primary">{label}</p>
+      <p className="text-[10px] text-text-muted leading-tight">{hint}</p>
     </div>
   );
 }
@@ -859,7 +859,7 @@ function RuleCanvasView({ rules, moduleLabel, onEdit }: {
     <div className="flex gap-4 items-start">
       <div className="w-[168px] shrink-0 space-y-3">
         <div>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1.5 px-0.5">Triggers</p>
+          <p className="text-[10px] font-bold text-text-muted uppercase tracking-wide mb-1.5 px-0.5">Triggers</p>
           <div className="space-y-1.5">
             {TRIGGER_PALETTE.map((t) => (
               <PaletteItem key={t.value} kind="trigger" value={t.value} label={t.label} hint={t.hint}
@@ -868,24 +868,24 @@ function RuleCanvasView({ rules, moduleLabel, onEdit }: {
           </div>
         </div>
         <div>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1.5 px-0.5">Actions</p>
+          <p className="text-[10px] font-bold text-text-muted uppercase tracking-wide mb-1.5 px-0.5">Actions</p>
           <div className="space-y-1.5">
             {ACTION_PALETTE.map((a) => (
               <PaletteItem key={a.value} kind="action" value={a.value} label={a.label} hint={a.hint}
-                accentClass="border-gray-200 hover:border-brand-300" />
+                accentClass="border-border hover:border-ryze-300 dark:border-ryze-700" />
             ))}
           </div>
         </div>
-        <p className="text-[10.5px] text-gray-400 px-0.5 leading-relaxed">Drag one onto the canvas to start a new rule pre-set to that trigger or action.</p>
+        <p className="text-[10.5px] text-text-muted px-0.5 leading-relaxed">Drag one onto the canvas to start a new rule pre-set to that trigger or action.</p>
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-gray-500 mb-2.5">
+        <p className="text-xs text-text-muted mb-2.5">
           Click empty canvas space (or drop a node from the left) to add a rule · drag a card to reposition it · click a card to edit it.
           Dashed arrows show rules that chain into each other (one rule's action creates a record in a module another rule watches).
         </p>
         <div
-          className="relative border border-gray-200 rounded-xl bg-gray-50 overflow-auto"
+          className="relative border border-border rounded-xl bg-background overflow-auto"
           style={{
             height: '70vh',
             backgroundImage: 'radial-gradient(circle, #d1d5db 1px, transparent 1px)',
@@ -934,20 +934,20 @@ function RuleCanvasView({ rules, moduleLabel, onEdit }: {
             const midY = (a.y + b.y) / 2 + CANVAS_CARD_H / 2;
             return (
               <div
-                className="absolute z-20 bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-xs pointer-events-none"
+                className="absolute z-20 bg-surface border border-border rounded-lg shadow-lg px-3 py-2 text-xs pointer-events-none"
                 style={{ left: midX, top: midY, transform: 'translate(-50%, -110%)', minWidth: 180, maxWidth: 260 }}
               >
-                <p className="font-semibold text-gray-700 mb-1 truncate">{sourceRule?.name} → {targetRule?.name}</p>
+                <p className="font-semibold text-text-primary mb-1 truncate">{sourceRule?.name} → {targetRule?.name}</p>
                 {sourceRule?.fieldMappings && sourceRule.fieldMappings.length > 0 ? (
                   <ul className="space-y-0.5">
                     {sourceRule.fieldMappings.map((m, mi) => (
-                      <li key={mi} className="text-gray-500 truncate">
-                        {m.sourceType === 'static' ? `"${m.staticValue}"` : m.sourceField} <span className="text-gray-300">→</span> <span className="text-gray-700">{m.targetField}</span>
+                      <li key={mi} className="text-text-muted truncate">
+                        {m.sourceType === 'static' ? `"${m.staticValue}"` : m.sourceField} <span className="text-text-muted">→</span> <span className="text-text-primary">{m.targetField}</span>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-gray-400">No field mappings on this rule.</p>
+                  <p className="text-text-muted">No field mappings on this rule.</p>
                 )}
               </div>
             );
@@ -973,17 +973,17 @@ function RuleCanvasView({ rules, moduleLabel, onEdit }: {
                 }}
                 style={{ zIndex: 1 }}
               >
-                <div className={`h-full w-full bg-white rounded-xl border shadow-sm flex flex-col cursor-grab active:cursor-grabbing select-none ${rule.enabled ? 'border-gray-200' : 'border-gray-200 opacity-50'}`}>
-                  <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-gray-100 shrink-0">
-                    <p className="text-xs font-semibold text-gray-800 truncate min-w-0">{rule.name}</p>
+                <div className={`h-full w-full bg-surface rounded-xl border shadow-sm flex flex-col cursor-grab active:cursor-grabbing select-none ${rule.enabled ? 'border-border' : 'border-border opacity-50'}`}>
+                  <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border shrink-0">
+                    <p className="text-xs font-semibold text-text-primary truncate min-w-0">{rule.name}</p>
                     <div className="flex items-center gap-0.5 shrink-0">
                       <button onMouseDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onEdit(rule); }}
-                        className="p-1 text-gray-300 hover:text-brand-600" title="Edit rule">
+                        className="p-1 text-text-muted hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300" title="Edit rule">
                         <PencilSquareIcon className="h-3.5 w-3.5" />
                       </button>
                       <button onMouseDown={(e) => e.stopPropagation()}
                         onClick={(e) => { e.stopPropagation(); if (confirm(`Delete rule "${rule.name}"?`)) deleteMut.mutate(rule._id); }}
-                        className="p-1 text-gray-300 hover:text-red-500" title="Delete rule">
+                        className="p-1 text-text-muted hover:text-red-500" title="Delete rule">
                         <TrashIcon className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -994,14 +994,14 @@ function RuleCanvasView({ rules, moduleLabel, onEdit }: {
                         <p className="text-[9px] font-bold text-amber-500 uppercase tracking-wide truncate">{moduleLabel(rule.module)}</p>
                         <p className="text-[11px] text-amber-800 truncate">{describeTriggerShort(rule)}</p>
                       </div>
-                      <ArrowRightIcon className="h-3.5 w-3.5 text-gray-300 shrink-0" />
+                      <ArrowRightIcon className="h-3.5 w-3.5 text-text-muted shrink-0" />
                       <div className={`flex-1 min-w-0 rounded-lg ${accent.bg} border ${accent.border} px-2 py-1.5`}>
                         <p className={`text-[9px] font-bold uppercase tracking-wide truncate ${accent.text}`}>Action</p>
                         <p className={`text-[11px] truncate ${accent.text}`}>{describeActionShort(rule, moduleLabel)}</p>
                       </div>
                     </div>
                     {describeMappingPreview(rule) && (
-                      <p className="text-[10px] text-gray-400 truncate px-1" title={describeMappingPreview(rule) ?? undefined}>
+                      <p className="text-[10px] text-text-muted truncate px-1" title={describeMappingPreview(rule) ?? undefined}>
                         {describeMappingPreview(rule)}
                       </p>
                     )}
@@ -1041,22 +1041,22 @@ export default function AutomationRulesPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-4 shrink-0">
+      <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-4 shrink-0">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="h-9 w-9 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
             <BoltIcon className="h-5 w-5 text-amber-600" />
           </div>
           <div>
-            <h1 className="text-base font-semibold text-gray-900">Automations</h1>
-            <p className="text-xs text-gray-500">When a record is created or its status changes, send an email/SMS or create a linked record automatically</p>
+            <h1 className="text-base font-semibold text-text-primary">Automations</h1>
+            <p className="text-xs text-text-muted">When a record is created or its status changes, send an email/SMS or create a linked record automatically</p>
           </div>
         </div>
-        <div className="flex items-center gap-0.5 p-0.5 bg-gray-100 rounded-lg shrink-0">
+        <div className="flex items-center gap-0.5 p-0.5 bg-black/[0.04] dark:bg-white/[0.06] rounded-lg shrink-0">
           <button
             onClick={() => setView('list')}
             title="List view"
             className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              view === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              view === 'list' ? 'bg-surface text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'
             }`}
           >
             <ListBulletIcon className="h-3.5 w-3.5" /> List
@@ -1065,7 +1065,7 @@ export default function AutomationRulesPage() {
             onClick={() => setView('canvas')}
             title="Canvas view — see how rules chain together"
             className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              view === 'canvas' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              view === 'canvas' ? 'bg-surface text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'
             }`}
           >
             <Squares2X2Icon className="h-3.5 w-3.5" /> Canvas
@@ -1074,23 +1074,23 @@ export default function AutomationRulesPage() {
         <button
           onClick={() => navigate('/native-crm/settings/automation-flows')}
           title="Advanced Mode — branching, delays, approvals, sub-flows"
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shrink-0"
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-text-muted border border-border rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors shrink-0"
         >
           <ShareIcon className="h-3.5 w-3.5" /> Advanced Mode
         </button>
         <button
           onClick={() => setFormOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 transition-colors"
         >
           <PlusIcon className="h-4 w-4" /> New Rule
         </button>
       </div>
 
-      <div className="px-6 py-3 border-b border-gray-100 bg-white flex items-center gap-2 shrink-0 overflow-x-auto">
+      <div className="px-6 py-3 border-b border-border bg-surface flex items-center gap-2 shrink-0 overflow-x-auto">
         <button
           onClick={() => setModuleFilter('')}
           className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors shrink-0 ${
-            moduleFilter === '' ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50'
+            moduleFilter === '' ? 'bg-ryze-600/10 text-ryze-700 dark:text-ryze-400' : 'text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
           }`}
         >
           All
@@ -1100,7 +1100,7 @@ export default function AutomationRulesPage() {
             key={m.key}
             onClick={() => setModuleFilter(m.key)}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors shrink-0 ${
-              moduleFilter === m.key ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50'
+              moduleFilter === m.key ? 'bg-ryze-600/10 text-ryze-700 dark:text-ryze-400' : 'text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
             }`}
           >
             {m.label}
@@ -1112,32 +1112,32 @@ export default function AutomationRulesPage() {
         <div className={view === 'canvas' ? '' : 'max-w-4xl mx-auto'}>
           {isLoading ? (
             <div className="flex items-center justify-center py-10">
-              <div className="animate-spin h-6 w-6 border-2 border-brand-500 border-t-transparent rounded-full" />
+              <div className="animate-spin h-6 w-6 border-2 border-ryze-500 border-t-transparent rounded-full" />
             </div>
           ) : rules.length === 0 ? (
-            <div className="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center">
-              <BoltIcon className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">No automation rules yet{moduleFilter ? ` for ${moduleLabel(moduleFilter)}` : ''}.</p>
+            <div className="bg-surface rounded-xl border border-dashed border-border p-10 text-center">
+              <BoltIcon className="h-8 w-8 text-text-muted mx-auto mb-2" />
+              <p className="text-sm text-text-muted">No automation rules yet{moduleFilter ? ` for ${moduleLabel(moduleFilter)}` : ''}.</p>
             </div>
           ) : view === 'canvas' ? (
             <RuleCanvasView rules={rules} moduleLabel={moduleLabel} onEdit={setEditingRule} />
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100">
+            <div className="bg-surface rounded-xl border border-border shadow-sm divide-y divide-border">
               {rules.map((rule) => (
                 <div key={rule._id} className="flex items-center gap-3 px-4 py-3">
                   <button
                     onClick={() => updateMut.mutate({ id: rule._id, data: { enabled: !rule.enabled } })}
                     className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                      rule.enabled ? 'bg-brand-600' : 'bg-gray-200'
+                      rule.enabled ? 'bg-ryze-600' : 'bg-black/[0.06] dark:bg-white/[0.08]'
                     }`}
                   >
-                    <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform ${
+                    <span className={`inline-block h-4 w-4 rounded-full bg-surface shadow transform transition-transform ${
                       rule.enabled ? 'translate-x-4' : 'translate-x-0'
                     }`} />
                   </button>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">{rule.name}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-sm font-medium text-text-primary truncate">{rule.name}</p>
+                    <p className="text-xs text-text-muted">
                       {moduleLabel(rule.module)} ·{' '}
                       {rule.triggerType === 'record_created' ? 'on new record'
                         : rule.triggerType === 'record_deleted' ? 'on delete'
@@ -1156,14 +1156,14 @@ export default function AutomationRulesPage() {
                   </div>
                   <button
                     onClick={() => setEditingRule(rule)}
-                    className="p-1.5 text-gray-400 hover:text-brand-600 shrink-0"
+                    className="p-1.5 text-text-muted hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300 shrink-0"
                     title="Edit rule"
                   >
                     <PencilSquareIcon className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => { if (confirm(`Delete rule "${rule.name}"?`)) deleteMut.mutate(rule._id); }}
-                    className="p-1.5 text-gray-400 hover:text-red-500 shrink-0"
+                    className="p-1.5 text-text-muted hover:text-red-500 shrink-0"
                     title="Delete rule"
                   >
                     <TrashIcon className="h-4 w-4" />

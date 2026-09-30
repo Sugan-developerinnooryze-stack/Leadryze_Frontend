@@ -19,7 +19,7 @@ function extractErrorMessage(err: unknown, fallback: string): string {
 
 export function useAuth() {
   const navigate = useNavigate();
-  const { user, token, isLoading, login, register, logout } = useAuthStore();
+  const { user, token, isLoading, login, loginWithClientId, register, logout } = useAuthStore();
 
   const handleLogin = useCallback(
     async (email: string, password: string) => {
@@ -35,6 +35,26 @@ export function useAuth() {
       }
     },
     [login, navigate]
+  );
+
+  // Client-ID login path (Super-Admin-provisioned / approved tenants).
+  // Navigates the same way handleLogin does — if the account still needs
+  // its forced first-login password change, RequireAuth redirects to
+  // /change-password from wherever this lands, so no special-casing here.
+  const handleClientIdLogin = useCallback(
+    async (clientId: string, password: string) => {
+      try {
+        const loggedInUser = await loginWithClientId(clientId, password);
+        if (loggedInUser.role === 'SUPER_ADMIN') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/dashboard');
+        }
+      } catch (err: unknown) {
+        toast.error(extractErrorMessage(err, 'Login failed'));
+      }
+    },
+    [loginWithClientId, navigate]
   );
 
   const handleRegister = useCallback(
@@ -62,6 +82,7 @@ export function useAuth() {
     isLoading,
     isAuthenticated: !!token,
     handleLogin,
+    handleClientIdLogin,
     handleRegister,
     handleLogout,
   };

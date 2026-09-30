@@ -1,53 +1,57 @@
+const NEUTRAL = { bg: 'bg-black/[0.06] dark:bg-white/[0.08]', text: 'text-text-muted' };
+const SUCCESS = { bg: 'bg-success-500/15',                    text: 'text-success-700 dark:text-success-500' };
+const DANGER  = { bg: 'bg-danger-500/15',                     text: 'text-danger-700 dark:text-danger-500' };
+
 export const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   // Contact status
-  lead:                      { bg: 'bg-blue-100',    text: 'text-blue-700' },
-  contact:                   { bg: 'bg-purple-100',  text: 'text-purple-700' },
-  customer:                  { bg: 'bg-green-100',   text: 'text-green-700' },
+  lead:                      { bg: 'bg-blue-100 dark:bg-blue-500/15',     text: 'text-blue-700 dark:text-blue-400' },
+  contact:                   { bg: 'bg-purple-100 dark:bg-purple-500/15', text: 'text-purple-700 dark:text-purple-400' },
+  customer:                  SUCCESS,
   // Company status
-  active:                    { bg: 'bg-green-100',   text: 'text-green-700' },
-  inactive:                  { bg: 'bg-gray-100',    text: 'text-gray-500' },
+  active:                    SUCCESS,
+  inactive:                  NEUTRAL,
   // Deal stages
-  prospect:                  { bg: 'bg-amber-100',   text: 'text-amber-700' },
-  qualified:                 { bg: 'bg-blue-100',    text: 'text-blue-700' },
-  proposal:                  { bg: 'bg-purple-100',  text: 'text-purple-700' },
-  negotiation:               { bg: 'bg-orange-100',  text: 'text-orange-700' },
-  closed_won:                { bg: 'bg-green-100',   text: 'text-green-700' },
-  closed_lost:               { bg: 'bg-red-100',     text: 'text-red-700' },
+  prospect:                  { bg: 'bg-amber-100 dark:bg-amber-500/15',   text: 'text-amber-700 dark:text-amber-400' },
+  qualified:                 { bg: 'bg-blue-100 dark:bg-blue-500/15',     text: 'text-blue-700 dark:text-blue-400' },
+  proposal:                  { bg: 'bg-purple-100 dark:bg-purple-500/15', text: 'text-purple-700 dark:text-purple-400' },
+  negotiation:               { bg: 'bg-orange-100 dark:bg-orange-500/15', text: 'text-orange-700 dark:text-orange-400' },
+  closed_won:                SUCCESS,
+  closed_lost:               DANGER,
   // Task status
-  todo:                      { bg: 'bg-gray-100',    text: 'text-gray-600' },
-  in_progress:               { bg: 'bg-blue-100',    text: 'text-blue-700' },
-  done:                      { bg: 'bg-green-100',   text: 'text-green-700' },
-  cancelled:                 { bg: 'bg-gray-100',    text: 'text-gray-400' },
+  todo:                      NEUTRAL,
+  in_progress:               { bg: 'bg-blue-100 dark:bg-blue-500/15',     text: 'text-blue-700 dark:text-blue-400' },
+  done:                      SUCCESS,
+  cancelled:                 NEUTRAL,
   // Ticket status
-  open:                      { bg: 'bg-red-100',     text: 'text-red-700' },
-  resolved:                  { bg: 'bg-green-100',   text: 'text-green-700' },
-  closed:                    { bg: 'bg-gray-100',    text: 'text-gray-500' },
+  open:                      DANGER,
+  resolved:                  SUCCESS,
+  closed:                    NEUTRAL,
   // Call / meeting status
-  planned:                   { bg: 'bg-blue-100',    text: 'text-blue-700' },
-  completed:                 { bg: 'bg-green-100',   text: 'text-green-700' },
-  missed:                    { bg: 'bg-red-100',     text: 'text-red-700' },
-  scheduled:                 { bg: 'bg-blue-100',    text: 'text-blue-700' },
+  planned:                   { bg: 'bg-blue-100 dark:bg-blue-500/15',     text: 'text-blue-700 dark:text-blue-400' },
+  completed:                 SUCCESS,
+  missed:                    DANGER,
+  scheduled:                 { bg: 'bg-blue-100 dark:bg-blue-500/15',     text: 'text-blue-700 dark:text-blue-400' },
   // Priority
-  low:                       { bg: 'bg-gray-100',    text: 'text-gray-500' },
-  medium:                    { bg: 'bg-amber-100',   text: 'text-amber-700' },
-  high:                      { bg: 'bg-red-100',     text: 'text-red-700' },
-  critical:                  { bg: 'bg-rose-100',    text: 'text-rose-700' },
+  low:                       NEUTRAL,
+  medium:                    { bg: 'bg-amber-100 dark:bg-amber-500/15',   text: 'text-amber-700 dark:text-amber-400' },
+  high:                      DANGER,
+  critical:                  { bg: 'bg-rose-100 dark:bg-rose-500/15',     text: 'text-rose-700 dark:text-rose-400' },
   // Lifecycle stage (HubSpot-style)
-  subscriber:                { bg: 'bg-gray-100',    text: 'text-gray-600' },
-  marketing_qualified_lead:  { bg: 'bg-cyan-100',    text: 'text-cyan-700' },
-  sales_qualified_lead:      { bg: 'bg-indigo-100',  text: 'text-indigo-700' },
-  opportunity:               { bg: 'bg-purple-100',  text: 'text-purple-700' },
-  evangelist:                { bg: 'bg-pink-100',    text: 'text-pink-700' },
-  other:                     { bg: 'bg-gray-100',    text: 'text-gray-500' },
+  subscriber:                NEUTRAL,
+  marketing_qualified_lead:  { bg: 'bg-cyan-100 dark:bg-cyan-500/15',     text: 'text-cyan-700 dark:text-cyan-400' },
+  sales_qualified_lead:      { bg: 'bg-indigo-100 dark:bg-indigo-500/15', text: 'text-indigo-700 dark:text-indigo-400' },
+  opportunity:               { bg: 'bg-purple-100 dark:bg-purple-500/15', text: 'text-purple-700 dark:text-purple-400' },
+  evangelist:                { bg: 'bg-pink-100 dark:bg-pink-500/15',     text: 'text-pink-700 dark:text-pink-400' },
+  other:                     NEUTRAL,
   // Lead status
-  new:                       { bg: 'bg-blue-100',    text: 'text-blue-700' },
-  open_deal:                 { bg: 'bg-purple-100',  text: 'text-purple-700' },
-  unqualified:               { bg: 'bg-gray-100',    text: 'text-gray-500' },
-  attempted_to_contact:      { bg: 'bg-amber-100',   text: 'text-amber-700' },
-  connected:                 { bg: 'bg-green-100',   text: 'text-green-700' },
-  bad_timing:                { bg: 'bg-orange-100',  text: 'text-orange-700' },
+  new:                       { bg: 'bg-blue-100 dark:bg-blue-500/15',     text: 'text-blue-700 dark:text-blue-400' },
+  open_deal:                 { bg: 'bg-purple-100 dark:bg-purple-500/15', text: 'text-purple-700 dark:text-purple-400' },
+  unqualified:               NEUTRAL,
+  attempted_to_contact:      { bg: 'bg-amber-100 dark:bg-amber-500/15',   text: 'text-amber-700 dark:text-amber-400' },
+  connected:                 SUCCESS,
+  bad_timing:                { bg: 'bg-orange-100 dark:bg-orange-500/15', text: 'text-orange-700 dark:text-orange-400' },
 };
 
 export function statusColor(value: string) {
-  return STATUS_COLORS[value] ?? { bg: 'bg-gray-100', text: 'text-gray-600' };
+  return STATUS_COLORS[value] ?? NEUTRAL;
 }

@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { authService } from '../../services/auth.service';
+import { extractErrorMessage } from '../../utils/errorMessage';
 import toast from 'react-hot-toast';
 
 export default function ResetPasswordPage() {
@@ -23,9 +24,7 @@ export default function ResetPasswordPage() {
       toast.success('Password reset! You can now sign in.');
       navigate('/login');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        || 'Reset failed. The link may have expired.';
-      toast.error(msg);
+      toast.error(extractErrorMessage(err, 'Reset failed. The link may have expired.'));
     } finally {
       setLoading(false);
     }
@@ -33,10 +32,10 @@ export default function ResetPasswordPage() {
 
   if (!token || !email) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-blue-100 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="text-center">
           <div className="text-5xl mb-4">❌</div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Invalid reset link</h2>
+          <h2 className="text-xl font-bold text-text-primary mb-2">Invalid reset link</h2>
           <Link to="/forgot-password" className="btn-primary inline-block mt-4">Request new link</Link>
         </div>
       </div>
@@ -44,11 +43,11 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-blue-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-brand-600">LeadRyze AI</h1>
-          <p className="text-gray-500 mt-2">Set your new password</p>
+          <h1 className="text-3xl font-bold text-ryze-600 dark:text-ryze-400">LeadRyze AI</h1>
+          <p className="text-text-muted mt-2">Set your new password</p>
         </div>
         <div className="card">
           <form onSubmit={onSubmit} className="space-y-5">

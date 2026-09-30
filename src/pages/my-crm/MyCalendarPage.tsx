@@ -82,12 +82,12 @@ function MiniCalendar({ month, events, selectedDate, onDateClick, onMonthChange 
       {/* Month navigation */}
       <div className="flex items-center justify-between mb-3 px-1">
         <button onClick={() => onMonthChange(subMonths(month, 1))}
-          className="p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
+          className="p-1 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted hover:text-text-primary transition-colors">
           <ChevronLeftIcon className="h-3.5 w-3.5" />
         </button>
-        <span className="text-xs font-semibold text-gray-700">{format(month, 'MMMM yyyy')}</span>
+        <span className="text-xs font-semibold text-text-primary">{format(month, 'MMMM yyyy')}</span>
         <button onClick={() => onMonthChange(addMonths(month, 1))}
-          className="p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
+          className="p-1 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted hover:text-text-primary transition-colors">
           <ChevronRightIcon className="h-3.5 w-3.5" />
         </button>
       </div>
@@ -95,7 +95,7 @@ function MiniCalendar({ month, events, selectedDate, onDateClick, onMonthChange 
       {/* Day-of-week headers */}
       <div className="grid grid-cols-7 mb-1">
         {['S','M','T','W','T','F','S'].map((d, i) => (
-          <div key={i} className="text-center text-[10px] font-medium text-gray-400 py-1">{d}</div>
+          <div key={i} className="text-center text-[10px] font-medium text-text-muted py-1">{d}</div>
         ))}
       </div>
 
@@ -121,15 +121,15 @@ function MiniCalendar({ month, events, selectedDate, onDateClick, onMonthChange 
                   key={key}
                   onClick={() => onDateClick(day)}
                   className={`relative flex flex-col items-center justify-center py-0.5 rounded-full transition-colors text-[11px] font-medium w-7 h-7 mx-auto
-                    ${isToday ? 'bg-brand-600 text-white' : ''}
-                    ${isSelected && !isToday ? 'bg-brand-100 text-brand-700' : ''}
-                    ${!isToday && !isSelected && isCurrentMonth ? 'text-gray-700 hover:bg-gray-100' : ''}
-                    ${!isCurrentMonth ? 'text-gray-300' : ''}
+                    ${isToday ? 'bg-ryze-600 text-white' : ''}
+                    ${isSelected && !isToday ? 'bg-ryze-600/15 text-ryze-700 dark:text-ryze-400' : ''}
+                    ${!isToday && !isSelected && isCurrentMonth ? 'text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06]' : ''}
+                    ${!isCurrentMonth ? 'text-text-muted' : ''}
                   `}
                 >
                   {format(day, 'd')}
                   {hasEvent && !isToday && (
-                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-brand-400" />
+                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-ryze-400" />
                   )}
                 </button>
               );
@@ -158,7 +158,7 @@ function EventDetailPopup({ event, onClose, onEdit, onDelete }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div className="relative bg-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         <div className="h-1.5" style={{ backgroundColor: event.backgroundColor || '#6366f1' }} />
         <div className="px-6 py-4">
           <div className="flex items-start justify-between gap-3 mb-4">
@@ -171,11 +171,11 @@ function EventDetailPopup({ event, onClose, onEdit, onDelete }: {
                   </span>
                 )}
                 {props.channel && (
-                  <span className="text-xs text-gray-400">{CHANNEL_LABELS[props.channel] || props.channel}</span>
+                  <span className="text-xs text-text-muted">{CHANNEL_LABELS[props.channel] || props.channel}</span>
                 )}
               </div>
-              <h2 className="text-base font-semibold text-gray-900 leading-tight">{event.title}</h2>
-              <p className="text-sm text-gray-500 mt-0.5">
+              <h2 className="text-base font-semibold text-text-primary leading-tight">{event.title}</h2>
+              <p className="text-sm text-text-muted mt-0.5">
                 {event.start?.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                 {event.start && event.end && !event.allDay && (
                   <> · {event.start.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
@@ -184,38 +184,38 @@ function EventDetailPopup({ event, onClose, onEdit, onDelete }: {
                 {event.allDay && ' · All day'}
               </p>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 shrink-0 transition-colors">
+            <button onClick={onClose} className="text-text-muted hover:text-text-primary shrink-0 transition-colors">
               <XMarkIcon className="h-5 w-5" />
             </button>
           </div>
 
           {props.description && (
-            <p className="text-sm text-gray-600 mb-3 bg-gray-50 rounded-lg px-3 py-2">{props.description}</p>
+            <p className="text-sm text-text-muted mb-3 bg-background rounded-lg px-3 py-2">{props.description}</p>
           )}
           {props.location && (
-            <p className="text-xs text-gray-500 mb-3">📍 {props.location}</p>
+            <p className="text-xs text-text-muted mb-3">📍 {props.location}</p>
           )}
           {isCRM && displayFields.length > 0 && (
             <div className="space-y-1.5 max-h-56 overflow-y-auto">
               {displayFields.map(([k, v]) => (
                 <div key={k} className="flex gap-2 text-sm">
-                  <span className="text-gray-400 shrink-0 w-36 truncate capitalize">{k.replace(/_/g, ' ')}</span>
-                  <span className="text-gray-700 flex-1 min-w-0 truncate">{String(v)}</span>
+                  <span className="text-text-muted shrink-0 w-36 truncate capitalize">{k.replace(/_/g, ' ')}</span>
+                  <span className="text-text-primary flex-1 min-w-0 truncate">{String(v)}</span>
                 </div>
               ))}
             </div>
           )}
           {props.linkedRecord && (
-            <div className="mt-3 text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
-              Linked: <span className="font-medium text-gray-700">{props.linkedRecord.displayName}</span>
+            <div className="mt-3 text-xs text-text-muted bg-background rounded-lg px-3 py-2">
+              Linked: <span className="font-medium text-text-primary">{props.linkedRecord.displayName}</span>
               {' · '}{props.linkedRecord.module}
             </div>
           )}
           {!isCRM && (
-            <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+            <div className="flex gap-2 mt-4 pt-4 border-t border-border">
               {props.sourceType === 'activity' && (
                 <button onClick={onEdit}
-                  className="flex-1 text-sm font-medium text-brand-600 hover:text-brand-700 py-1.5 rounded-lg hover:bg-brand-50 transition-colors">
+                  className="flex-1 text-sm font-medium text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 py-1.5 rounded-lg hover:bg-ryze-600/10 transition-colors">
                   Edit
                 </button>
               )}
@@ -459,37 +459,37 @@ export default function MyCalendarPage() {
 
   /* ── Render ─────────────────────────────────────────────────────────────── */
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-background">
 
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-4 px-5 py-3 bg-white border-b border-gray-200 shrink-0">
+      <div className="flex items-center gap-4 px-5 py-3 bg-surface border-b border-border shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-brand-100 rounded-xl flex items-center justify-center">
-            <CalendarDaysIcon className="h-4.5 w-4.5 text-brand-600" style={{ height: '1.1rem', width: '1.1rem' }} />
+          <div className="w-8 h-8 bg-ryze-600/15 rounded-xl flex items-center justify-center">
+            <CalendarDaysIcon className="h-4.5 w-4.5 text-ryze-600 dark:text-ryze-400" style={{ height: '1.1rem', width: '1.1rem' }} />
           </div>
-          <span className="text-base font-bold text-gray-900">My Calendar</span>
+          <span className="text-base font-bold text-text-primary">My Calendar</span>
         </div>
 
         {/* Search */}
         <div className="flex-1 max-w-sm relative">
-          <MagnifyingGlassIcon className="absolute left-3 top-2 h-4 w-4 text-gray-400" />
+          <MagnifyingGlassIcon className="absolute left-3 top-2 h-4 w-4 text-text-muted" />
           <input
             type="text"
             value={searchQ}
             onChange={e => setSearchQ(e.target.value)}
             placeholder="Search events…"
-            className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-gray-50"
+            className="w-full pl-9 pr-3 py-1.5 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ryze-500 bg-background"
           />
         </div>
 
         <div className="flex items-center gap-2 ml-auto">
           {loading && (
-            <div className="w-4 h-4 rounded-full border-2 border-brand-400 border-t-transparent animate-spin" />
+            <div className="w-4 h-4 rounded-full border-2 border-ryze-400 border-t-transparent animate-spin" />
           )}
           {/* Channel legend dots */}
           <div className="hidden sm:flex items-center gap-3">
             {channels.map(ch => (
-              <div key={ch} className="flex items-center gap-1 text-xs text-gray-500">
+              <div key={ch} className="flex items-center gap-1 text-xs text-text-muted">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CHANNEL_COLORS[ch] || '#64748b' }} />
                 {CHANNEL_LABELS[ch] || ch}
               </div>
@@ -497,7 +497,7 @@ export default function MyCalendarPage() {
           </div>
           <button
             onClick={() => { setEditActivityData(undefined); setPrefillDate(undefined); setActivityModalOpen(true); }}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-white bg-ryze-600 hover:bg-ryze-700 rounded-lg transition-colors shadow-sm"
           >
             <PlusIcon className="h-4 w-4" />
             Add New
@@ -509,7 +509,7 @@ export default function MyCalendarPage() {
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* LEFT PANEL */}
-        <aside className="w-60 shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
+        <aside className="w-60 shrink-0 bg-surface border-r border-border flex flex-col overflow-y-auto">
           <div className="px-4 pt-4 pb-2">
             <MiniCalendar
               month={miniMonth}
@@ -520,15 +520,15 @@ export default function MyCalendarPage() {
             />
           </div>
 
-          <div className="px-4 py-3 border-t border-gray-100">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Filter by module</p>
+          <div className="px-4 py-3 border-t border-border">
+            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-2">Filter by module</p>
             <div className="flex flex-wrap gap-1.5">
               <button
                 onClick={() => setActiveModules(new Set())}
                 className={`text-[11px] px-2.5 py-1 rounded-full font-medium transition-colors border ${
                   activeModules.size === 0
-                    ? 'bg-brand-600 text-white border-brand-600'
-                    : 'text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
+                    ? 'bg-ryze-600 text-white border-ryze-600'
+                    : 'text-text-muted border-border hover:border-border hover:text-text-primary'
                 }`}
               >
                 All
@@ -539,8 +539,8 @@ export default function MyCalendarPage() {
                   onClick={() => toggleModule(mod)}
                   className={`text-[11px] px-2.5 py-1 rounded-full font-medium transition-colors border ${
                     activeModules.has(mod)
-                      ? 'bg-brand-600 text-white border-brand-600'
-                      : 'text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
+                      ? 'bg-ryze-600 text-white border-ryze-600'
+                      : 'text-text-muted border-border hover:border-border hover:text-text-primary'
                   }`}
                 >
                   {mod}
@@ -550,22 +550,22 @@ export default function MyCalendarPage() {
           </div>
 
           {/* Upcoming events */}
-          <div className="px-4 py-3 border-t border-gray-100 flex-1">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Upcoming</p>
+          <div className="px-4 py-3 border-t border-border flex-1">
+            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-2">Upcoming</p>
             {upcomingEvents.length === 0 && (
-              <p className="text-xs text-gray-400 italic">No upcoming events</p>
+              <p className="text-xs text-text-muted italic">No upcoming events</p>
             )}
             <div className="space-y-1.5">
               {upcomingEvents.map(ev => (
                 <button
                   key={ev.id}
                   onClick={() => { calApi()?.gotoDate(new Date(ev.start)); setSelectedDate(new Date(ev.start)); }}
-                  className="w-full flex items-center gap-2 text-left px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors group"
+                  className="w-full flex items-center gap-2 text-left px-2 py-1.5 rounded-lg hover:bg-background transition-colors group"
                 >
                   <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: ev.color || '#64748b' }} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-gray-700 truncate group-hover:text-brand-700">{truncate(ev.title, 18)}</p>
-                    <p className="text-[10px] text-gray-400">{relativeTime(ev.start)}</p>
+                    <p className="text-xs font-medium text-text-primary truncate group-hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300">{truncate(ev.title, 18)}</p>
+                    <p className="text-[10px] text-text-muted">{relativeTime(ev.start)}</p>
                   </div>
                 </button>
               ))}
@@ -574,40 +574,40 @@ export default function MyCalendarPage() {
         </aside>
 
         {/* CENTER — Calendar */}
-        <main className="flex-1 flex flex-col min-w-0 bg-white">
+        <main className="flex-1 flex flex-col min-w-0 bg-surface">
           {/* Custom toolbar */}
-          <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 shrink-0">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
             <div className="flex items-center gap-1">
               <button
                 onClick={() => calApi()?.prev()}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted transition-colors"
               >
                 <ChevronLeftIcon className="h-4 w-4" />
               </button>
               <button
                 onClick={() => { calApi()?.today(); setSelectedDate(new Date()); setMiniMonth(new Date()); }}
-                className="px-3 py-1 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-3 py-1 text-xs font-semibold text-text-muted border border-border rounded-lg hover:bg-background transition-colors"
               >
                 Today
               </button>
               <button
                 onClick={() => calApi()?.next()}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted transition-colors"
               >
                 <ChevronRightIcon className="h-4 w-4" />
               </button>
-              <h2 className="ml-3 text-base font-bold text-gray-900">{viewTitle}</h2>
+              <h2 className="ml-3 text-base font-bold text-text-primary">{viewTitle}</h2>
             </div>
 
-            <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+            <div className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] p-1 rounded-xl">
               {Object.entries(VIEW_LABELS).map(([view, label]) => (
                 <button
                   key={view}
                   onClick={() => { calApi()?.changeView(view); setActiveView(view); }}
                   className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${
                     activeView === view
-                      ? 'bg-white text-brand-700 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'bg-surface text-ryze-700 dark:text-ryze-400 shadow-sm'
+                      : 'text-text-muted hover:text-text-primary'
                   }`}
                 >
                   {label}
@@ -646,50 +646,50 @@ export default function MyCalendarPage() {
         </main>
 
         {/* RIGHT PANEL — AI Assistant */}
-        <aside className="w-[268px] shrink-0 bg-white border-l border-gray-200 flex flex-col overflow-y-auto">
+        <aside className="w-[268px] shrink-0 bg-surface border-l border-border flex flex-col overflow-y-auto">
           {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-brand-100 flex items-center justify-center">
-              <SparklesIcon className="h-3.5 w-3.5 text-brand-600" />
+          <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-ryze-600/15 flex items-center justify-center">
+              <SparklesIcon className="h-3.5 w-3.5 text-ryze-600 dark:text-ryze-400" />
             </div>
-            <span className="text-sm font-bold text-gray-900">AI Assistant</span>
+            <span className="text-sm font-bold text-text-primary">AI Assistant</span>
           </div>
 
           {/* Stats strip */}
-          <div className="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-100">
+          <div className="grid grid-cols-3 divide-x divide-border border-b border-border">
             {[
               { label: 'Total', value: events.length },
               { label: 'Bookings', value: manualCount },
               { label: 'Sources', value: channels.length },
             ].map(s => (
               <div key={s.label} className="flex flex-col items-center py-2.5">
-                <span className="text-lg font-bold text-gray-900">{s.value}</span>
-                <span className="text-[10px] text-gray-400">{s.label}</span>
+                <span className="text-lg font-bold text-text-primary">{s.value}</span>
+                <span className="text-[10px] text-text-muted">{s.label}</span>
               </div>
             ))}
           </div>
 
           {/* Today's Events */}
-          <div className="px-4 py-3 border-b border-gray-100">
+          <div className="px-4 py-3 border-b border-border">
             <div className="flex items-center gap-1.5 mb-2">
-              <ClockIcon className="h-3.5 w-3.5 text-brand-500" />
-              <p className="text-[11px] font-semibold text-gray-600 uppercase tracking-wider">Today</p>
-              <span className="ml-auto text-[10px] bg-brand-100 text-brand-700 px-1.5 py-0.5 rounded-full font-semibold">{todayEvents.length}</span>
+              <ClockIcon className="h-3.5 w-3.5 text-ryze-500" />
+              <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Today</p>
+              <span className="ml-auto text-[10px] bg-ryze-600/15 text-ryze-700 dark:text-ryze-400 px-1.5 py-0.5 rounded-full font-semibold">{todayEvents.length}</span>
             </div>
             {todayEvents.length === 0 ? (
-              <p className="text-xs text-gray-400 italic">No events today</p>
+              <p className="text-xs text-text-muted italic">No events today</p>
             ) : (
               <div className="space-y-1.5">
                 {todayEvents.slice(0, 4).map(ev => (
                   <button
                     key={ev.id}
                     onClick={() => { calApi()?.gotoDate(new Date(ev.start)); calApi()?.changeView('timeGridDay'); setActiveView('timeGridDay'); }}
-                    className="w-full flex items-center gap-2 text-left px-2 py-1.5 rounded-lg hover:bg-gray-50 group transition-colors"
+                    className="w-full flex items-center gap-2 text-left px-2 py-1.5 rounded-lg hover:bg-background group transition-colors"
                   >
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: ev.color }} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-gray-700 truncate group-hover:text-brand-700">{truncate(ev.title, 20)}</p>
-                      <p className="text-[10px] text-gray-400">
+                      <p className="text-xs font-medium text-text-primary truncate group-hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300">{truncate(ev.title, 20)}</p>
+                      <p className="text-[10px] text-text-muted">
                         {ev.start ? format(new Date(ev.start), 'h:mm a') : ''}
                         {ev.extendedProps.module ? ` · ${ev.extendedProps.module}` : ''}
                       </p>
@@ -701,14 +701,14 @@ export default function MyCalendarPage() {
           </div>
 
           {/* High Priority */}
-          <div className="px-4 py-3 border-b border-gray-100">
+          <div className="px-4 py-3 border-b border-border">
             <div className="flex items-center gap-1.5 mb-2">
               <BoltIcon className="h-3.5 w-3.5 text-amber-500" />
-              <p className="text-[11px] font-semibold text-gray-600 uppercase tracking-wider">High Priority</p>
+              <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">High Priority</p>
               <span className="ml-auto text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-semibold">{priorityEvents.length}</span>
             </div>
             {priorityEvents.length === 0 ? (
-              <p className="text-xs text-gray-400 italic">No high-priority records</p>
+              <p className="text-xs text-text-muted italic">No high-priority records</p>
             ) : (
               <div className="space-y-1.5">
                 {priorityEvents.map(ev => (
@@ -719,8 +719,8 @@ export default function MyCalendarPage() {
                   >
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: ev.color }} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-gray-700 truncate group-hover:text-amber-700">{truncate(ev.title, 20)}</p>
-                      <p className="text-[10px] text-gray-400">{ev.extendedProps.module} · {relativeTime(ev.start)}</p>
+                      <p className="text-xs font-medium text-text-primary truncate group-hover:text-amber-700">{truncate(ev.title, 20)}</p>
+                      <p className="text-[10px] text-text-muted">{ev.extendedProps.module} · {relativeTime(ev.start)}</p>
                     </div>
                   </button>
                 ))}
@@ -732,11 +732,11 @@ export default function MyCalendarPage() {
           <div className="px-4 py-3">
             <div className="flex items-center gap-1.5 mb-2">
               <ExclamationCircleIcon className="h-3.5 w-3.5 text-red-400" />
-              <p className="text-[11px] font-semibold text-gray-600 uppercase tracking-wider">Follow-ups</p>
+              <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Follow-ups</p>
               <span className="ml-auto text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-semibold">{followUpEvents.length}</span>
             </div>
             {followUpEvents.length === 0 ? (
-              <p className="text-xs text-gray-400 italic">All caught up!</p>
+              <p className="text-xs text-text-muted italic">All caught up!</p>
             ) : (
               <div className="space-y-1.5">
                 {followUpEvents.map(ev => (
@@ -752,8 +752,8 @@ export default function MyCalendarPage() {
                   >
                     <span className="w-2 h-2 rounded-full shrink-0 bg-red-400" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-gray-700 truncate group-hover:text-red-700">{truncate(ev.title, 20)}</p>
-                      <p className="text-[10px] text-gray-400">{ev.extendedProps.module} · {format(new Date(ev.start), 'MMM d')}</p>
+                      <p className="text-xs font-medium text-text-primary truncate group-hover:text-red-700">{truncate(ev.title, 20)}</p>
+                      <p className="text-[10px] text-text-muted">{ev.extendedProps.module} · {format(new Date(ev.start), 'MMM d')}</p>
                     </div>
                   </button>
                 ))}

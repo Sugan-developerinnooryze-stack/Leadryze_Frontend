@@ -11,11 +11,18 @@ import {
 import { useCustomFormTemplatesQuery } from '../../../modules/native-crm/queries/custom-form-templates.queries';
 import { useCustomModulesQuery } from '../../../modules/native-crm/queries/custom-modules.queries';
 
-const FS_MODULES = [
-  'leads', 'deals', 'tasks', 'tickets',
-  'customers', 'sites', 'workorders', 'quotations', 'contracts', 'invoices',
+// Mirrors the sidebar's own two sections (Sidebar.tsx's NATIVE_MODULES and
+// FIELD_SERVICE_MODULES) — 'deals' lives only under Field Service here,
+// matching the sidebar's own placement (Native CRM's module list
+// deliberately excludes it to avoid a duplicate nav entry for the same
+// /deals collection).
+const NATIVE_CRM_MODULES = ['contacts', 'companies', 'tasks', 'tickets', 'calls', 'meetings'];
+const FIELD_SERVICE_MODULES = [
+  'leads', 'deals', 'categories', 'services', 'teams', 'staffs',
+  'customers', 'sites', 'parts', 'quotations', 'workorders', 'contracts', 'invoices',
   'receipts', 'expenses', 'activities', 'products', 'assets', 'vehicles',
 ];
+const FS_MODULES = [...NATIVE_CRM_MODULES, ...FIELD_SERVICE_MODULES];
 
 const FIELD_TYPES = [
   { value: 'text',         label: 'Text' },
@@ -86,10 +93,17 @@ export default function CustomFieldsAdminPage() {
   // custom-field.model.ts's `module` field is free-text, so it already
   // accepts this without any backend change.
   const { data: customModules = [] } = useCustomModulesQuery();
-  const moduleOptions = [
-    ...FS_MODULES.map((m) => ({ key: m, label: m.charAt(0).toUpperCase() + m.slice(1) })),
-    ...customModules.map((m) => ({ key: `custom:${m.slug}`, label: m.name })),
-  ];
+  const label = (m: string) => m.charAt(0).toUpperCase() + m.slice(1);
+  const moduleGroups = [
+    { group: 'Native CRM', items: NATIVE_CRM_MODULES.map((m) => ({ key: m, label: label(m) })) },
+    { group: 'Field Service', items: FIELD_SERVICE_MODULES.map((m) => ({ key: m, label: label(m) })) },
+    // Custom Modules already have their own, separate field-builder (see
+    // isCustomModule below) — kept selectable here so they're still
+    // reachable from this page, not because fields are managed here.
+    { group: 'Custom Modules', items: customModules.map((m) => ({ key: `custom:${m.slug}`, label: m.name })) },
+  ].filter((g) => g.items.length > 0);
+  const moduleOptions = moduleGroups.flatMap((g) => g.items);
+  const isCustomModule = selectedModule.startsWith('custom:');
 
   const set = (key: keyof FormState) => (val: any) => setForm((prev) => ({ ...prev, [key]: val }));
 
@@ -140,103 +154,128 @@ export default function CustomFieldsAdminPage() {
     setShowForm(false);
   };
 
-  const BASE_INPUT = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400';
+  const BASE_INPUT = 'w-full rounded-lg bg-surface text-text-primary border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ryze-400';
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-background">
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar for Modules */}
-        <div className="w-64 bg-white border-r border-gray-200 overflow-y-auto shrink-0 flex flex-col">
-          <div className="p-5 border-b border-gray-100">
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <AdjustmentsHorizontalIcon className="h-5 w-5 text-brand-600" />
+        <div className="w-64 bg-surface border-r border-border overflow-y-auto shrink-0 flex flex-col">
+          <div className="p-5 border-b border-border">
+            <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
+              <AdjustmentsHorizontalIcon className="h-5 w-5 text-ryze-600 dark:text-ryze-400" />
               Custom Fields
             </h2>
-            <p className="text-xs text-gray-500 mt-1">Configure additional data fields per module</p>
+            <p className="text-xs text-text-muted mt-1">Configure additional data fields per module</p>
           </div>
-          <nav className="p-3 space-y-1">
-            {moduleOptions.map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => { setSelectedModule(key); setShowForm(false); }}
-                className={`w-full text-left px-3 py-2.5 text-sm rounded-lg transition-all ${
-                  selectedModule === key
-                    ? 'bg-brand-50 text-brand-700 font-semibold shadow-sm'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium'
-                }`}
-              >
-                {label}
-              </button>
+          <nav className="p-3 space-y-4">
+            {moduleGroups.map((grp) => (
+              <div key={grp.group}>
+                <p className="px-3 mb-1 text-[11px] font-semibold text-text-muted uppercase tracking-wider">{grp.group}</p>
+                <div className="space-y-1">
+                  {grp.items.map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => { setSelectedModule(key); setShowForm(false); }}
+                      className={`w-full text-left px-3 py-2.5 text-sm rounded-lg transition-all ${
+                        selectedModule === key
+                          ? 'bg-ryze-600/10 text-ryze-700 dark:text-ryze-400 font-semibold shadow-sm'
+                          : 'text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] hover:text-text-primary font-medium'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </nav>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col min-w-0 bg-gray-50">
-          <div className="bg-white border-b border-gray-200 px-8 py-5 flex items-center justify-between shrink-0">
+        <div className="flex-1 flex flex-col min-w-0 bg-background">
+          <div className="bg-surface border-b border-border px-8 py-5 flex items-center justify-between shrink-0">
             <div>
-              <h1 className="text-xl font-bold text-gray-900">{moduleOptions.find((m) => m.key === selectedModule)?.label ?? selectedModule} Fields</h1>
-              <p className="text-sm text-gray-500 mt-0.5">Manage custom fields for the {moduleOptions.find((m) => m.key === selectedModule)?.label ?? selectedModule} module</p>
+              <h1 className="text-xl font-bold text-text-primary">{moduleOptions.find((m) => m.key === selectedModule)?.label ?? selectedModule} Fields</h1>
+              <p className="text-sm text-text-muted mt-0.5">Manage custom fields for the {moduleOptions.find((m) => m.key === selectedModule)?.label ?? selectedModule} module</p>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => navigate('/native-crm/custom-fields/form-templates')}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
-              >
-                <DocumentTextIcon className="h-4 w-4" />
-                Form Templates
-              </button>
-              <button
-                onClick={openCreate}
-                className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors shadow-sm"
-              >
-                <PlusIcon className="h-4 w-4" />
-                Add Field
-              </button>
-            </div>
+            {!isCustomModule && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate('/native-crm/custom-fields/form-templates')}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-surface border border-border text-text-primary text-sm font-medium rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors shadow-sm"
+                >
+                  <DocumentTextIcon className="h-4 w-4" />
+                  Form Templates
+                </button>
+                <button
+                  onClick={openCreate}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 transition-colors shadow-sm"
+                >
+                  <PlusIcon className="h-4 w-4" />
+                  Add Field
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="flex-1 flex overflow-hidden">
             {/* Field List */}
             <div className="flex-1 min-w-0 overflow-y-auto p-8">
-              {isLoading ? (
+              {isCustomModule ? (
+                <div className="text-center py-20 bg-surface rounded-2xl border border-dashed border-border max-w-xl mx-auto">
+                  <div className="h-16 w-16 bg-ryze-600/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <AdjustmentsHorizontalIcon className="h-8 w-8 text-ryze-500" />
+                  </div>
+                  <h3 className="text-base font-semibold text-text-primary mb-1">Fields are managed in the Custom Module Builder</h3>
+                  <p className="text-sm text-text-muted mb-4 max-w-sm mx-auto">
+                    {moduleOptions.find((m) => m.key === selectedModule)?.label ?? selectedModule} is a custom module — its fields (including relationship, table, and category-select types this page doesn't support) live directly on the module definition, not here.
+                  </p>
+                  <button
+                    onClick={() => navigate('/native-crm/custom-modules')}
+                    className="text-ryze-600 dark:text-ryze-400 font-medium text-sm hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 transition-colors bg-ryze-600/10 px-4 py-2 rounded-lg"
+                  >
+                    Open Custom Module Builder →
+                  </button>
+                </div>
+              ) : isLoading ? (
                 <div className="flex items-center justify-center h-32">
-                  <div className="flex gap-2">{[0,1,2].map(i => <span key={i} className="h-2.5 w-2.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}</div>
+                  <div className="flex gap-2">{[0,1,2].map(i => <span key={i} className="h-2.5 w-2.5 rounded-full bg-ryze-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}</div>
                 </div>
               ) : fields.length === 0 ? (
-                <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-300">
-                  <div className="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <AdjustmentsHorizontalIcon className="h-8 w-8 text-gray-400" />
+                <div className="text-center py-20 bg-surface rounded-2xl border border-dashed border-border">
+                  <div className="h-16 w-16 bg-background rounded-full flex items-center justify-center mx-auto mb-4">
+                    <AdjustmentsHorizontalIcon className="h-8 w-8 text-text-muted" />
                   </div>
-                  <h3 className="text-base font-semibold text-gray-900 mb-1">No custom fields</h3>
-                  <p className="text-sm text-gray-500 mb-4 max-w-sm mx-auto">You haven't defined any custom fields for the {moduleOptions.find((m) => m.key === selectedModule)?.label ?? selectedModule} module yet.</p>
-                  <button onClick={openCreate} className="text-brand-600 font-medium text-sm hover:text-brand-700 transition-colors bg-brand-50 px-4 py-2 rounded-lg">Create First Field</button>
+                  <h3 className="text-base font-semibold text-text-primary mb-1">No custom fields</h3>
+                  <p className="text-sm text-text-muted mb-4 max-w-sm mx-auto">You haven't defined any custom fields for the {moduleOptions.find((m) => m.key === selectedModule)?.label ?? selectedModule} module yet.</p>
+                  <button onClick={openCreate} className="text-ryze-600 dark:text-ryze-400 font-medium text-sm hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 transition-colors bg-ryze-600/10 px-4 py-2 rounded-lg">Create First Field</button>
                 </div>
               ) : (
                 <div className="space-y-3 max-w-4xl">
                   {fields.map((field) => (
-                    <div key={field._id} className="group flex items-center gap-4 bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-brand-300 transition-all">
+                    <div key={field._id} className="group flex items-center gap-4 bg-surface border border-border rounded-xl p-4 shadow-sm hover:shadow-md hover:border-ryze-300 dark:border-ryze-700 transition-all">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-base font-semibold text-gray-900">{field.label}</span>
+                          <span className="text-base font-semibold text-text-primary">{field.label}</span>
                           {field.required && <span className="px-2 py-0.5 bg-red-50 text-red-600 text-[10px] font-bold uppercase tracking-wider rounded-full">Required</span>}
                         </div>
                         <div className="flex items-center gap-3 text-sm">
-                          <div className="flex items-center gap-1.5 text-gray-500">
-                            <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">{field.fieldKey}</span>
+                          <div className="flex items-center gap-1.5 text-text-muted">
+                            <span className="font-mono text-xs bg-black/[0.04] dark:bg-white/[0.06] px-2 py-1 rounded text-text-muted">{field.fieldKey}</span>
                           </div>
-                          <div className="h-4 w-px bg-gray-200" />
-                          <span className="text-gray-600 font-medium capitalize">{field.fieldType.replace('_', ' ')}</span>
+                          <div className="h-4 w-px bg-black/[0.06] dark:bg-white/[0.08]" />
+                          <span className="text-text-muted font-medium capitalize">{field.fieldType.replace('_', ' ')}</span>
                           
                           {field.options && field.options.length > 0 && (
                             <>
-                              <div className="h-4 w-px bg-gray-200" />
+                              <div className="h-4 w-px bg-black/[0.06] dark:bg-white/[0.08]" />
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 {field.options.slice(0, 3).map((opt: string) => (
-                                  <span key={opt} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-md">{opt}</span>
+                                  <span key={opt} className="px-2 py-0.5 bg-black/[0.04] dark:bg-white/[0.06] text-text-muted text-xs rounded-md">{opt}</span>
                                 ))}
                                 {field.options.length > 3 && (
-                                  <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-md">+{field.options.length - 3}</span>
+                                  <span className="px-2 py-0.5 bg-black/[0.04] dark:bg-white/[0.06] text-text-muted text-xs rounded-md">+{field.options.length - 3}</span>
                                 )}
                               </div>
                             </>
@@ -245,17 +284,17 @@ export default function CustomFieldsAdminPage() {
                       </div>
                       
                       <div className="flex flex-col gap-1 items-end shrink-0">
-                         <span className="text-xs text-gray-400 mb-2 font-medium">Order: {field.order}</span>
+                         <span className="text-xs text-text-muted mb-2 font-medium">Order: {field.order}</span>
                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => openEdit(field)}
-                              className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-200 text-gray-700 hover:text-brand-600 hover:border-brand-200 hover:bg-brand-50 rounded-lg transition-colors flex items-center gap-1.5"
+                              className="px-3 py-1.5 text-xs font-medium bg-surface border border-border text-text-primary hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300 hover:border-ryze-200 dark:border-ryze-800 hover:bg-ryze-600/10 rounded-lg transition-colors flex items-center gap-1.5"
                             >
                               <PencilIcon className="h-3.5 w-3.5" /> Edit
                             </button>
                             <button
                               onClick={() => deleteMutation.mutate(field._id)}
-                              className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-200 text-gray-700 hover:text-red-600 hover:border-red-200 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1.5"
+                              className="px-3 py-1.5 text-xs font-medium bg-surface border border-border text-text-primary hover:text-red-600 hover:border-red-200 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1.5"
                             >
                               <TrashIcon className="h-3.5 w-3.5" /> Delete
                             </button>
@@ -269,24 +308,24 @@ export default function CustomFieldsAdminPage() {
 
             {/* Side panel form */}
             {showForm && (
-              <div className="w-96 border-l border-gray-200 bg-white flex flex-col overflow-y-auto shrink-0 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)]">
-                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gray-50 sticky top-0 z-10">
-                  <h3 className="text-base font-bold text-gray-900">{editId ? 'Edit Field' : 'New Field'}</h3>
-                  <button onClick={() => setShowForm(false)} className="p-1.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+              <div className="w-96 border-l border-border bg-surface flex flex-col overflow-y-auto shrink-0 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)]">
+                <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-black/[0.015] dark:bg-white/[0.02] sticky top-0 z-10">
+                  <h3 className="text-base font-bold text-text-primary">{editId ? 'Edit Field' : 'New Field'}</h3>
+                  <button onClick={() => setShowForm(false)} className="p-1.5 text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] rounded-lg transition-colors">
                     <XMarkIcon className="h-5 w-5" />
                   </button>
                 </div>
                 
                 <div className="p-6 space-y-5">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Module</label>
-                    <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 font-medium">
+                    <label className="block text-sm font-semibold text-text-primary mb-1.5">Module</label>
+                    <div className="px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-muted font-medium">
                       {moduleOptions.find((m) => m.key === form.module)?.label ?? form.module}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Label <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-semibold text-text-primary mb-1.5">Label <span className="text-red-500">*</span></label>
                     <input
                       type="text"
                       value={form.label}
@@ -302,19 +341,19 @@ export default function CustomFieldsAdminPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Field Key <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-semibold text-text-primary mb-1.5">Field Key <span className="text-red-500">*</span></label>
                     <input
                       type="text"
                       value={form.fieldKey}
                       onChange={(e) => set('fieldKey')(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                      className={`${BASE_INPUT} font-mono bg-gray-50`}
+                      className={`${BASE_INPUT} font-mono bg-background`}
                       placeholder="contract_type"
                     />
-                    <p className="text-xs text-gray-500 mt-1.5">Unique identifier, lowercase + underscores</p>
+                    <p className="text-xs text-text-muted mt-1.5">Unique identifier, lowercase + underscores</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Field Type</label>
+                    <label className="block text-sm font-semibold text-text-primary mb-1.5">Field Type</label>
                     <select value={form.fieldType} onChange={(e) => set('fieldType')(e.target.value)} className={BASE_INPUT}>
                       {FIELD_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
@@ -322,7 +361,7 @@ export default function CustomFieldsAdminPage() {
 
                   {form.fieldType === 'custom_form' && (
                     <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Form Template <span className="text-red-500">*</span></label>
+                      <label className="block text-sm font-semibold text-text-primary mb-2">Form Template <span className="text-red-500">*</span></label>
                       <select
                         value={form.formTemplateId}
                         onChange={(e) => set('formTemplateId')(e.target.value)}
@@ -344,8 +383,8 @@ export default function CustomFieldsAdminPage() {
                   )}
 
                   {TYPES_WITH_OPTIONS.includes(form.fieldType) && (
-                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Dropdown Options</label>
+                    <div className="bg-background p-4 rounded-xl border border-border">
+                      <label className="block text-sm font-semibold text-text-primary mb-2">Dropdown Options</label>
                       <div className="flex gap-2 mb-3">
                         <input
                           type="text"
@@ -355,29 +394,29 @@ export default function CustomFieldsAdminPage() {
                           className={`${BASE_INPUT} flex-1`}
                           placeholder="Type option and press Enter"
                         />
-                        <button onClick={addOption} className="px-3 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 shadow-sm transition-colors">
+                        <button onClick={addOption} className="px-3 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 shadow-sm transition-colors">
                           Add
                         </button>
                       </div>
                       {form.options.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {form.options.map((o) => (
-                            <span key={o} className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg shadow-sm">
+                            <span key={o} className="flex items-center gap-1.5 px-2.5 py-1 bg-surface border border-border text-text-primary text-sm font-medium rounded-lg shadow-sm">
                               {o}
-                              <button onClick={() => removeOption(o)} className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded p-0.5 transition-colors">
+                              <button onClick={() => removeOption(o)} className="text-text-muted hover:text-red-500 hover:bg-red-50 rounded p-0.5 transition-colors">
                                 <XMarkIcon className="h-3.5 w-3.5" />
                               </button>
                             </span>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-gray-500 italic">No options added yet.</p>
+                        <p className="text-xs text-text-muted italic">No options added yet.</p>
                       )}
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Display Order</label>
+                    <label className="block text-sm font-semibold text-text-primary mb-1.5">Display Order</label>
                     <input
                       type="number"
                       value={form.order}
@@ -387,30 +426,30 @@ export default function CustomFieldsAdminPage() {
                     />
                   </div>
 
-                  <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                  <label className="flex items-center gap-3 p-4 border border-border rounded-xl cursor-pointer hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
                     <input
                       type="checkbox"
                       checked={form.required}
                       onChange={(e) => set('required')(e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                      className="h-4 w-4 rounded border-border text-ryze-600 dark:text-ryze-400 focus:ring-ryze-500"
                     />
                     <div>
-                      <span className="block text-sm font-semibold text-gray-900">Required Field</span>
-                      <span className="block text-xs text-gray-500">Users must fill this field before saving</span>
+                      <span className="block text-sm font-semibold text-text-primary">Required Field</span>
+                      <span className="block text-xs text-text-muted">Users must fill this field before saving</span>
                     </div>
                   </label>
 
-                  <div className="pt-6 mt-6 border-t border-gray-100 flex gap-3">
+                  <div className="pt-6 mt-6 border-t border-border flex gap-3">
                     <button
                       onClick={() => setShowForm(false)}
-                      className="flex-1 py-2.5 rounded-lg border border-gray-300 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="flex-1 py-2.5 rounded-lg border border-border text-sm font-bold text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleSave}
                       disabled={createMutation.isPending || updateMutation.isPending}
-                      className="flex-1 py-2.5 rounded-lg bg-brand-600 text-white text-sm font-bold hover:bg-brand-700 disabled:opacity-60 flex items-center justify-center gap-2 transition-colors shadow-sm"
+                      className="flex-1 py-2.5 rounded-lg bg-ryze-600 text-white text-sm font-bold hover:bg-ryze-700 disabled:opacity-60 flex items-center justify-center gap-2 transition-colors shadow-sm"
                     >
                       <CheckIcon className="h-5 w-5" />
                       {createMutation.isPending || updateMutation.isPending ? 'Saving…' : 'Save Field'}

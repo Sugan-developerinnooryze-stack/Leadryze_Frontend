@@ -29,7 +29,7 @@ function RejectedRows({ rejected, labelOf }: { rejected: ImportSummary['rejected
   if (rejected.length === 0) return null;
   return (
     <div>
-      <button onClick={() => setShow((v) => !v)} className="text-xs text-brand-600 hover:text-brand-700 font-medium">
+      <button onClick={() => setShow((v) => !v)} className="text-xs text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 font-medium">
         {show ? 'Hide' : 'Show'} rejected rows
       </button>
       {show && (
@@ -37,7 +37,7 @@ function RejectedRows({ rejected, labelOf }: { rejected: ImportSummary['rejected
           {rejected.map((r) => (
             <div key={r.row} className="text-xs bg-red-50 rounded-lg px-3 py-2">
               <span className="font-semibold text-red-700">Row {r.row}</span>
-              <span className="text-gray-600"> — {labelOf(r.data)}: </span>
+              <span className="text-text-muted"> — {labelOf(r.data)}: </span>
               <span className="text-red-600">{r.errors.join('; ')}</span>
             </div>
           ))}
@@ -50,16 +50,16 @@ function RejectedRows({ rejected, labelOf }: { rejected: ImportSummary['rejected
 /* ── Leads ──────────────────────────────────────────────────────────────────── */
 function LeadSummaryCard({ summary }: { summary: ImportSummary }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-      <p className="text-sm font-semibold text-gray-900 mb-3">Import complete — batch {summary.batchId.slice(-8)}</p>
+    <div className="bg-surface rounded-xl border border-border shadow-sm p-5">
+      <p className="text-sm font-semibold text-text-primary mb-3">Import complete — batch {summary.batchId.slice(-8)}</p>
       <div className="grid grid-cols-4 gap-3 mb-3">
         <div className="bg-emerald-50 rounded-lg px-3 py-2.5">
           <p className="text-lg font-bold text-emerald-700 tabular-nums">{summary.created}</p>
           <p className="text-[11px] text-emerald-700">Created</p>
         </div>
-        <div className="bg-gray-50 rounded-lg px-3 py-2.5">
-          <p className="text-lg font-bold text-gray-700 tabular-nums">{summary.duplicates}</p>
-          <p className="text-[11px] text-gray-500">Duplicates skipped</p>
+        <div className="bg-background rounded-lg px-3 py-2.5">
+          <p className="text-lg font-bold text-text-primary tabular-nums">{summary.duplicates}</p>
+          <p className="text-[11px] text-text-muted">Duplicates skipped</p>
         </div>
         <div className="bg-amber-50 rounded-lg px-3 py-2.5">
           <p className="text-lg font-bold text-amber-700 tabular-nums">{summary.triage}</p>
@@ -82,36 +82,36 @@ function TriageQueue() {
   if (isLoading) return null;
   if (items.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-dashed border-gray-300 p-8 text-center">
-        <UserGroupIcon className="h-7 w-7 text-gray-300 mx-auto mb-2" />
-        <p className="text-sm text-gray-500">No leads waiting for review.</p>
+      <div className="bg-surface rounded-xl border border-dashed border-border p-8 text-center">
+        <UserGroupIcon className="h-7 w-7 text-text-muted mx-auto mb-2" />
+        <p className="text-sm text-text-muted">No leads waiting for review.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100">
+    <div className="bg-surface rounded-xl border border-border shadow-sm divide-y divide-border">
       {items.map((item) => {
         const row = item.rawRow;
         return (
           <div key={item._id} className="flex items-center gap-3 px-4 py-3">
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-gray-900 truncate">
+              <p className="text-sm font-medium text-text-primary truncate">
                 {[row.firstName, row.lastName].filter(Boolean).join(' ')} {row.company ? `· ${row.company}` : ''}
               </p>
-              <p className="text-xs text-gray-500 truncate">
+              <p className="text-xs text-text-muted truncate">
                 {row.email || row.phone} — matches {item.matchedLeadIds.length} existing lead(s) at this email domain
               </p>
             </div>
             <button
               onClick={() => resolveMut.mutate({ id: item._id, action: 'skip' })}
-              className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 shrink-0"
+              className="text-xs px-3 py-1.5 rounded-lg border border-border text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] shrink-0"
             >
               Skip
             </button>
             <button
               onClick={() => resolveMut.mutate({ id: item._id, action: 'create' })}
-              className="text-xs px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 shrink-0"
+              className="text-xs px-3 py-1.5 rounded-lg bg-ryze-600 text-white hover:bg-ryze-700 shrink-0"
             >
               Create as new lead
             </button>
@@ -153,10 +153,10 @@ function LeadImportSection() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+      <div className="bg-surface rounded-xl border border-border shadow-sm p-5">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-semibold text-gray-900">1. Upload a file</p>
-          <button onClick={() => downloadTemplate(LEAD_IMPORT_COLUMNS, 'leads_import_template.xlsx')} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700">
+          <p className="text-sm font-semibold text-text-primary">1. Upload a file</p>
+          <button onClick={() => downloadTemplate(LEAD_IMPORT_COLUMNS, 'leads_import_template.xlsx')} className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary">
             <DocumentArrowDownIcon className="h-4 w-4" /> Download template
           </button>
         </div>
@@ -164,17 +164,17 @@ function LeadImportSection() {
           type="file"
           accept=".xlsx,.xls,.csv"
           onChange={handleFile}
-          className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer"
+          className="w-full text-sm text-text-muted file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-black/[0.04] dark:bg-white/[0.06] file:text-text-primary hover:file:bg-black/[0.06] dark:bg-white/[0.08] cursor-pointer"
         />
         {rows && (
-          <div className="mt-3 flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2.5">
-            <span className="text-xs text-gray-600 flex items-center gap-1.5">
+          <div className="mt-3 flex items-center justify-between bg-background rounded-lg px-3 py-2.5">
+            <span className="text-xs text-text-muted flex items-center gap-1.5">
               <CheckCircleIcon className="h-4 w-4 text-emerald-500" /> {fileName} — {rows.length} row(s) parsed
             </span>
             <button
               onClick={handleImport}
               disabled={importMut.isPending}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-ryze-600 text-white text-xs font-medium rounded-lg hover:bg-ryze-700 disabled:opacity-50"
             >
               <ArrowUpTrayIcon className="h-3.5 w-3.5" /> {importMut.isPending ? 'Importing…' : `Import ${rows.length} lead(s)`}
             </button>
@@ -189,13 +189,13 @@ function LeadImportSection() {
 
       {summary && (
         <div>
-          <p className="text-sm font-semibold text-gray-900 mb-3">2. Result</p>
+          <p className="text-sm font-semibold text-text-primary mb-3">2. Result</p>
           <LeadSummaryCard summary={summary} />
         </div>
       )}
 
       <div>
-        <p className="text-sm font-semibold text-gray-900 mb-3">Admin triage queue</p>
+        <p className="text-sm font-semibold text-text-primary mb-3">Admin triage queue</p>
         <TriageQueue />
       </div>
     </div>
@@ -205,16 +205,16 @@ function LeadImportSection() {
 /* ── Deals ──────────────────────────────────────────────────────────────────── */
 function DealSummaryCard({ summary }: { summary: DealImportSummary }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-      <p className="text-sm font-semibold text-gray-900 mb-3">Import complete — batch {summary.batchId.slice(-8)}</p>
+    <div className="bg-surface rounded-xl border border-border shadow-sm p-5">
+      <p className="text-sm font-semibold text-text-primary mb-3">Import complete — batch {summary.batchId.slice(-8)}</p>
       <div className="grid grid-cols-3 gap-3 mb-3">
         <div className="bg-emerald-50 rounded-lg px-3 py-2.5">
           <p className="text-lg font-bold text-emerald-700 tabular-nums">{summary.created}</p>
           <p className="text-[11px] text-emerald-700">Created</p>
         </div>
-        <div className="bg-gray-50 rounded-lg px-3 py-2.5">
-          <p className="text-lg font-bold text-gray-700 tabular-nums">{summary.duplicates}</p>
-          <p className="text-[11px] text-gray-500">Duplicates skipped</p>
+        <div className="bg-background rounded-lg px-3 py-2.5">
+          <p className="text-lg font-bold text-text-primary tabular-nums">{summary.duplicates}</p>
+          <p className="text-[11px] text-text-muted">Duplicates skipped</p>
         </div>
         <div className="bg-red-50 rounded-lg px-3 py-2.5">
           <p className="text-lg font-bold text-red-700 tabular-nums">{summary.rejected.length}</p>
@@ -257,10 +257,10 @@ function DealImportSection() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+      <div className="bg-surface rounded-xl border border-border shadow-sm p-5">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-semibold text-gray-900">1. Upload a file</p>
-          <button onClick={() => downloadTemplate(DEAL_IMPORT_COLUMNS, 'deals_import_template.xlsx')} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700">
+          <p className="text-sm font-semibold text-text-primary">1. Upload a file</p>
+          <button onClick={() => downloadTemplate(DEAL_IMPORT_COLUMNS, 'deals_import_template.xlsx')} className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary">
             <DocumentArrowDownIcon className="h-4 w-4" /> Download template
           </button>
         </div>
@@ -268,17 +268,17 @@ function DealImportSection() {
           type="file"
           accept=".xlsx,.xls,.csv"
           onChange={handleFile}
-          className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer"
+          className="w-full text-sm text-text-muted file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-black/[0.04] dark:bg-white/[0.06] file:text-text-primary hover:file:bg-black/[0.06] dark:bg-white/[0.08] cursor-pointer"
         />
         {rows && (
-          <div className="mt-3 flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2.5">
-            <span className="text-xs text-gray-600 flex items-center gap-1.5">
+          <div className="mt-3 flex items-center justify-between bg-background rounded-lg px-3 py-2.5">
+            <span className="text-xs text-text-muted flex items-center gap-1.5">
               <CheckCircleIcon className="h-4 w-4 text-emerald-500" /> {fileName} — {rows.length} row(s) parsed
             </span>
             <button
               onClick={handleImport}
               disabled={importMut.isPending}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-ryze-600 text-white text-xs font-medium rounded-lg hover:bg-ryze-700 disabled:opacity-50"
             >
               <ArrowUpTrayIcon className="h-3.5 w-3.5" /> {importMut.isPending ? 'Importing…' : `Import ${rows.length} deal(s)`}
             </button>
@@ -293,7 +293,7 @@ function DealImportSection() {
 
       {summary && (
         <div>
-          <p className="text-sm font-semibold text-gray-900 mb-3">2. Result</p>
+          <p className="text-sm font-semibold text-text-primary mb-3">2. Result</p>
           <DealSummaryCard summary={summary} />
         </div>
       )}
@@ -309,24 +309,24 @@ export default function ImportExportPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3 shrink-0">
+      <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-3 shrink-0">
         <div className="h-9 w-9 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
           <ArrowsRightLeftIcon className="h-5 w-5 text-green-600" />
         </div>
         <div>
-          <h1 className="text-base font-semibold text-gray-900">Import Leads &amp; Deals</h1>
-          <p className="text-xs text-gray-500">Validated CSV import — exact duplicates are skipped automatically{tab === 'leads' ? ', ambiguous matches wait for your review below' : ''}</p>
+          <h1 className="text-base font-semibold text-text-primary">Import Leads &amp; Deals</h1>
+          <p className="text-xs text-text-muted">Validated CSV import — exact duplicates are skipped automatically{tab === 'leads' ? ', ambiguous matches wait for your review below' : ''}</p>
         </div>
       </div>
 
       <div className="px-6 pt-4 shrink-0">
-        <div className="flex gap-1 border-b border-gray-200 max-w-3xl mx-auto">
+        <div className="flex gap-1 border-b border-border max-w-3xl mx-auto">
           {(['leads', 'deals'] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={`px-4 py-2 text-sm font-medium capitalize border-b-2 -mb-px transition-colors ${
-                tab === t ? 'border-brand-600 text-brand-700' : 'border-transparent text-gray-500 hover:text-gray-700'
+                tab === t ? 'border-ryze-600 text-ryze-700 dark:text-ryze-400' : 'border-transparent text-text-muted hover:text-text-primary'
               }`}
             >
               {t}

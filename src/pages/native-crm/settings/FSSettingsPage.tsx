@@ -146,8 +146,8 @@ const SECTION_TOGGLES = [
 
 function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-3 gap-4 items-start py-3 border-b border-gray-100 last:border-0">
-      <label className="text-sm font-medium text-gray-700 pt-2">{label}</label>
+    <div className="grid grid-cols-3 gap-4 items-start py-3 border-b border-border last:border-0">
+      <label className="text-sm font-medium text-text-primary pt-2">{label}</label>
       <div className="col-span-2">{children}</div>
     </div>
   );
@@ -160,7 +160,7 @@ function TextInput({ value, onChange, placeholder }: { value: string; onChange: 
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400"
+      className="w-full px-3 py-2 text-sm bg-surface text-text-primary border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ryze-400"
     />
   );
 }
@@ -171,7 +171,7 @@ function TextareaInput({ value, onChange, rows = 3 }: { value: string; onChange:
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value)}
       rows={rows}
-      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 resize-none"
+      className="w-full px-3 py-2 text-sm bg-surface text-text-primary border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ryze-400 resize-none"
     />
   );
 }
@@ -189,14 +189,14 @@ function ImageUpload({ field, currentUrl, label }: { field: string; currentUrl?:
   return (
     <div className="flex items-center gap-3">
       {currentUrl && (
-        <img src={currentUrl} alt={label} className="h-12 w-12 object-contain rounded border border-gray-200 bg-gray-50" />
+        <img src={currentUrl} alt={label} className="h-12 w-12 object-contain rounded border border-border bg-background" />
       )}
       <button
         onClick={() => inputRef.current?.click()}
         disabled={uploadMutation.isPending}
-        className="flex items-center gap-2 px-3 py-2 border border-gray-300 text-sm rounded-lg hover:bg-gray-50 transition-colors"
+        className="flex items-center gap-2 px-3 py-2 border border-border text-sm rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
       >
-        <CloudArrowUpIcon className="h-4 w-4 text-gray-500" />
+        <CloudArrowUpIcon className="h-4 w-4 text-text-muted" />
         {uploadMutation.isPending ? 'Uploading…' : `Upload ${label}`}
       </button>
       {uploadMutation.isSuccess && <CheckIcon className="h-4 w-4 text-green-500" />}
@@ -239,12 +239,12 @@ function LockAuditLog() {
     : 'No audit entries yet. Lock or unlock any record to see activity here.';
 
   return (
-    <div className="pt-4 border-t border-gray-100">
+    <div className="pt-4 border-t border-border">
       {/* Header row */}
       <div className="flex items-start justify-between mb-1">
         <div>
-          <p className="text-xs font-semibold text-gray-800">Lock / Unlock Audit Log</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">
+          <p className="text-xs font-semibold text-text-primary">Lock / Unlock Audit Log</p>
+          <p className="text-[11px] text-text-muted mt-0.5">
             Records actual lock &amp; unlock events on individual records — not config changes.
             Toggling auto-lock above only enables the feature; entries appear here when a record is actually locked.
           </p>
@@ -252,7 +252,7 @@ function LockAuditLog() {
         <button
           onClick={() => refetch()}
           disabled={isFetching}
-          className="shrink-0 ml-3 px-2.5 py-1.5 text-[11px] font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 flex items-center gap-1.5"
+          className="shrink-0 ml-3 px-2.5 py-1.5 text-[11px] font-medium text-text-muted border border-border rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-50 flex items-center gap-1.5"
         >
           <svg className={`h-3 w-3 ${isFetching ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -263,12 +263,12 @@ function LockAuditLog() {
 
       {/* Filter row */}
       <div className="flex items-center gap-2 mb-3 mt-3">
-        <span className="text-[11px] text-gray-500">Filter by module:</span>
+        <span className="text-[11px] text-text-muted">Filter by module:</span>
         <div className="flex flex-wrap gap-1.5">
           <button
             onClick={() => { setModuleFilter(''); setPage(1); }}
             className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
-              moduleFilter === '' ? 'bg-brand-500 text-white border-brand-500' : 'border-gray-200 text-gray-500 hover:border-gray-300'
+              moduleFilter === '' ? 'bg-ryze-600/100 text-white border-ryze-500' : 'border-border text-text-muted hover:border-border'
             }`}
           >All</button>
           {Object.entries(MODULE_LABELS).map(([k, v]) => (
@@ -276,7 +276,7 @@ function LockAuditLog() {
               key={k}
               onClick={() => { setModuleFilter(k); setPage(1); }}
               className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
-                moduleFilter === k ? 'bg-brand-500 text-white border-brand-500' : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                moduleFilter === k ? 'bg-ryze-600/100 text-white border-ryze-500' : 'border-border text-text-muted hover:border-border'
               }`}
             >{v}</button>
           ))}
@@ -285,29 +285,29 @@ function LockAuditLog() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
-          <div className="h-5 w-5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
+          <div className="h-5 w-5 border-2 border-ryze-400 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-200 py-8 px-4 text-center">
-          <p className="text-xs text-gray-400">{emptyMsg}</p>
+        <div className="rounded-lg border border-dashed border-border py-8 px-4 text-center">
+          <p className="text-xs text-text-muted">{emptyMsg}</p>
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border border-gray-100">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-xs">
-              <thead className="bg-gray-50 border-b border-gray-100">
+              <thead className="bg-background border-b border-border">
                 <tr>
-                  <th className="text-left font-medium text-gray-500 px-3 py-2">Module</th>
-                  <th className="text-left font-medium text-gray-500 px-3 py-2">Action</th>
-                  <th className="text-left font-medium text-gray-500 px-3 py-2">Reason</th>
-                  <th className="text-left font-medium text-gray-500 px-3 py-2">Performed By</th>
-                  <th className="text-left font-medium text-gray-500 px-3 py-2">When</th>
+                  <th className="text-left font-medium text-text-muted px-3 py-2">Module</th>
+                  <th className="text-left font-medium text-text-muted px-3 py-2">Action</th>
+                  <th className="text-left font-medium text-text-muted px-3 py-2">Reason</th>
+                  <th className="text-left font-medium text-text-muted px-3 py-2">Performed By</th>
+                  <th className="text-left font-medium text-text-muted px-3 py-2">When</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {items.map((entry: any, i: number) => (
-                  <tr key={i} className="hover:bg-gray-50/60">
-                    <td className="px-3 py-2.5 font-medium text-gray-700">
+                  <tr key={i} className="hover:bg-black/[0.04] dark:hover:bg-white/[0.06]/60">
+                    <td className="px-3 py-2.5 font-medium text-text-primary">
                       {MODULE_LABELS[entry.entityModule] ?? entry.entityModule}
                     </td>
                     <td className="px-3 py-2.5">
@@ -319,19 +319,19 @@ function LockAuditLog() {
                         {entry.action === 'locked' ? '🔒' : '🔓'} {entry.action}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 text-gray-600 max-w-[200px] truncate" title={entry.reason}>
+                    <td className="px-3 py-2.5 text-text-muted max-w-[200px] truncate" title={entry.reason}>
                       {entry.reason}
                     </td>
                     <td className="px-3 py-2.5">
                       {entry.performedBy === 'system' ? (
                         <span className="inline-flex items-center px-1.5 py-0.5 bg-violet-50 text-violet-600 rounded text-[10px] font-medium">&#9881; system</span>
                       ) : (
-                        <span className="text-gray-500 font-mono text-[10px]" title={entry.performedBy}>
+                        <span className="text-text-muted font-mono text-[10px]" title={entry.performedBy}>
                           {entry.performedBy.length > 16 ? entry.performedBy.slice(0, 8) + '...' + entry.performedBy.slice(-4) : entry.performedBy}
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-2.5 text-gray-400 whitespace-nowrap">{fmt(entry.performedAt)}</td>
+                    <td className="px-3 py-2.5 text-text-muted whitespace-nowrap">{fmt(entry.performedAt)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -339,19 +339,19 @@ function LockAuditLog() {
           </div>
 
           <div className="flex items-center justify-between mt-3">
-            <span className="text-[11px] text-gray-400">{total} total {total === 1 ? 'entry' : 'entries'}</span>
+            <span className="text-[11px] text-text-muted">{total} total {total === 1 ? 'entry' : 'entries'}</span>
             {totalPages > 1 && (
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="px-2.5 py-1 text-[11px] rounded border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50"
+                  className="px-2.5 py-1 text-[11px] rounded border border-border text-text-muted disabled:opacity-40 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
                 >Prev</button>
-                <span className="text-[11px] text-gray-500">{page} / {totalPages}</span>
+                <span className="text-[11px] text-text-muted">{page} / {totalPages}</span>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className="px-2.5 py-1 text-[11px] rounded border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50"
+                  className="px-2.5 py-1 text-[11px] rounded border border-border text-text-muted disabled:opacity-40 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
                 >Next</button>
               </div>
             )}
@@ -441,28 +441,28 @@ export default function FSSettingsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-spin h-6 w-6 border-2 border-brand-500 border-t-transparent rounded-full" />
+        <div className="animate-spin h-6 w-6 border-2 border-ryze-500 border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-4 shrink-0">
+      <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-4 shrink-0">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="h-9 w-9 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-            <Cog6ToothIcon className="h-5 w-5 text-slate-600" />
+          <div className="h-9 w-9 rounded-lg bg-black/[0.06] dark:bg-white/[0.08] flex items-center justify-center shrink-0">
+            <Cog6ToothIcon className="h-5 w-5 text-text-muted" />
           </div>
           <div>
-            <h1 className="text-base font-semibold text-gray-900">Field Service Settings</h1>
-            <p className="text-xs text-gray-500">Company info, branding, prefixes, and bank details</p>
+            <h1 className="text-base font-semibold text-text-primary">Field Service Settings</h1>
+            <p className="text-xs text-text-muted">Company info, branding, prefixes, and bank details</p>
           </div>
         </div>
         {activeTab !== 5 && (
           <button
             onClick={handleSave}
             disabled={updateMutation.isPending || Object.keys(form).length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 disabled:opacity-50 transition-colors"
           >
             {saved ? <><CheckIcon className="h-4 w-4" /> Saved</> : updateMutation.isPending ? 'Saving…' : 'Save Changes'}
           </button>
@@ -470,14 +470,14 @@ export default function FSSettingsPage() {
       </div>
 
       {/* Company tabs — switch between Default Company and each branch */}
-      <div className="bg-gray-50 border-b border-gray-200 px-6 shrink-0">
+      <div className="bg-background border-b border-border px-6 shrink-0">
         <div className="flex items-center gap-0.5 pt-3 overflow-x-auto">
           <button
             onClick={() => handleCompanySwitch(null)}
             className={`shrink-0 px-4 py-2 text-sm font-medium rounded-t-lg border border-b-0 -mb-px transition-colors whitespace-nowrap ${
               !currentBranch
-                ? 'bg-white border-gray-200 text-gray-900 shadow-sm'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/60'
+                ? 'bg-surface border-border text-text-primary shadow-sm'
+                : 'border-transparent text-text-muted hover:text-text-primary hover:bg-white/60'
             }`}
           >
             Default Company
@@ -488,8 +488,8 @@ export default function FSSettingsPage() {
               onClick={() => handleCompanySwitch(branch)}
               className={`shrink-0 px-4 py-2 text-sm font-medium rounded-t-lg border border-b-0 -mb-px transition-colors whitespace-nowrap ${
                 currentBranch?._id === branch._id
-                  ? 'bg-white border-gray-200 text-gray-900 shadow-sm'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/60'
+                  ? 'bg-surface border-border text-text-primary shadow-sm'
+                  : 'border-transparent text-text-muted hover:text-text-primary hover:bg-white/60'
               }`}
             >
               {branch.branchName}
@@ -497,14 +497,14 @@ export default function FSSettingsPage() {
           ))}
           <button
             onClick={() => setAddCompanyOpen(true)}
-            className="shrink-0 px-3 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-800 rounded-t-lg transition-colors whitespace-nowrap"
+            className="shrink-0 px-3 py-2 text-sm font-medium text-ryze-600 dark:text-ryze-400 hover:text-ryze-800 dark:hover:text-ryze-300 rounded-t-lg transition-colors whitespace-nowrap"
           >
             + Add Company
           </button>
         </div>
       </div>
 
-      <div className="border-b border-gray-200 bg-white px-6 shrink-0">
+      <div className="border-b border-border bg-surface px-6 shrink-0">
         <nav className="flex gap-1">
           {TABS.map((tab, i) => (
             <button
@@ -512,8 +512,8 @@ export default function FSSettingsPage() {
               onClick={() => setActiveTab(i)}
               className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === i
-                  ? 'border-brand-500 text-brand-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-ryze-500 text-ryze-600 dark:text-ryze-400'
+                  : 'border-transparent text-text-muted hover:text-text-primary'
               }`}
             >
               {tab}
@@ -523,7 +523,7 @@ export default function FSSettingsPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-2xl mx-auto bg-white rounded-xl border border-gray-200 p-6">
+        <div className="max-w-2xl mx-auto bg-surface rounded-xl border border-border p-6">
 
           {/* Tab 0: Company Info */}
           {activeTab === 0 && (
@@ -532,13 +532,13 @@ export default function FSSettingsPage() {
               {/* {merged.clientId && (
                 <div className="mb-5 flex items-center justify-between rounded-xl bg-gradient-to-r from-gray-50 to-blue-50 border border-blue-100 px-5 py-4">
                   <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Your Client ID</p>
-                    <p className="text-2xl font-mono font-bold text-gray-900 tracking-widest">{merged.clientId}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Unique identifier for your account</p>
+                    <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-0.5">Your Client ID</p>
+                    <p className="text-2xl font-mono font-bold text-text-primary tracking-widest">{merged.clientId}</p>
+                    <p className="text-xs text-text-muted mt-0.5">Unique identifier for your account</p>
                   </div>
                   <button
                     onClick={() => navigator.clipboard.writeText(merged.clientId)}
-                    className="flex items-center gap-1.5 px-3 py-2 border border-blue-200 bg-white text-sm text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-2 border border-blue-200 bg-surface text-sm text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
                     title="Copy Client ID"
                   >
                     <ClipboardDocumentIcon className="h-4 w-4" />
@@ -563,7 +563,7 @@ export default function FSSettingsPage() {
                 <select
                   value={merged.defaultCountryCode ?? '+91'}
                   onChange={(e) => set('defaultCountryCode')(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400"
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400"
                 >
                   {COUNTRY_CODE_OPTIONS.map((c) => (
                     <option key={`${c.iso2}-${c.dialCode}`} value={c.dialCode}>
@@ -571,7 +571,7 @@ export default function FSSettingsPage() {
                     </option>
                   ))}
                 </select>
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-text-muted">
                   Pre-selected country code for every new phone field across Customers, Leads, Staff, Sites, and more. Each field can still be changed individually.
                 </p>
               </FieldRow>
@@ -589,7 +589,7 @@ export default function FSSettingsPage() {
               <FieldRow label="Postal Code"><TextInput value={merged.postalCode} onChange={set('postalCode')} /></FieldRow>
               <FieldRow label="Timezone">
                 <select value={merged.timezone ?? 'UTC'} onChange={(e) => set('timezone')(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400">
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ryze-400 bg-background text-text-primary">
                   {['UTC','Australia/Sydney','Australia/Melbourne','Australia/Brisbane','Australia/Perth','Asia/Kolkata','America/New_York','America/Los_Angeles','Europe/London'].map(tz => (
                     <option key={tz} value={tz}>{tz}</option>
                   ))}
@@ -597,7 +597,7 @@ export default function FSSettingsPage() {
               </FieldRow>
               <FieldRow label="Currency">
                 <select value={merged.currency ?? 'AUD'} onChange={(e) => set('currency')(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400">
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ryze-400 bg-background text-text-primary">
                   {['AUD','USD','GBP','EUR','INR','CAD','NZD','SGD'].map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
@@ -619,7 +619,7 @@ export default function FSSettingsPage() {
                 <input type="number" min={0} max={100} step={0.01}
                   value={merged.taxPercentage ?? 0}
                   onChange={(e) => setForm((prev) => ({ ...prev, taxPercentage: parseFloat(e.target.value) || 0 }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400"
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ryze-400 bg-background text-text-primary"
                 />
               </FieldRow>
             </div>
@@ -696,23 +696,23 @@ export default function FSSettingsPage() {
             };
 
             const STEP_COLORS: Record<string, string> = {
-              quotation: 'bg-blue-50 border-blue-200 text-blue-700',
-              contract:  'bg-purple-50 border-purple-200 text-purple-700',
-              workorder: 'bg-amber-50 border-amber-200 text-amber-700',
-              invoice:   'bg-green-50 border-green-200 text-green-700',
+              quotation: 'bg-blue-50 dark:bg-blue-500/15 border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-400',
+              contract:  'bg-purple-50 dark:bg-purple-500/15 border-purple-200 dark:border-purple-500/30 text-purple-700 dark:text-purple-400',
+              workorder: 'bg-amber-50 dark:bg-amber-500/15 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-400',
+              invoice:   'bg-success-500/15 border-success-500/30 text-success-700 dark:text-success-500',
             };
 
             return (
               <div className="space-y-8">
                 {/* Workflow Builder shortcut */}
-                <div className="flex items-center justify-between p-4 rounded-xl border border-brand-200 bg-brand-50 dark:bg-brand-900/20 dark:border-brand-800">
+                <div className="flex items-center justify-between p-4 rounded-xl border border-ryze-200 dark:border-ryze-800 bg-ryze-600/10 dark:bg-ryze-900/20">
                   <div>
-                    <p className="text-sm font-semibold text-brand-700 dark:text-brand-300">Visual Workflow Builder</p>
-                    <p className="text-xs text-brand-600/70 dark:text-brand-400/70 mt-0.5">Create named pipeline templates with drag-and-drop</p>
+                    <p className="text-sm font-semibold text-ryze-700 dark:text-ryze-400">Visual Workflow Builder</p>
+                    <p className="text-xs text-ryze-600 dark:text-ryze-400/70 mt-0.5">Create named pipeline templates with drag-and-drop</p>
                   </div>
                   <Link
                     to="/native-crm/workflow-builder"
-                    className="flex-shrink-0 px-4 py-2 text-sm rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-medium"
+                    className="flex-shrink-0 px-4 py-2 text-sm rounded-lg bg-ryze-600 hover:bg-ryze-700 text-white font-medium"
                   >
                     Open Workflow Builder →
                   </Link>
@@ -720,8 +720,8 @@ export default function FSSettingsPage() {
 
                 {/* Document Workflow Order */}
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-800 mb-1">Document Workflow Order</h3>
-                  <p className="text-xs text-gray-500 mb-4">
+                  <h3 className="text-sm font-semibold text-text-primary mb-1">Document Workflow Order</h3>
+                  <p className="text-xs text-text-muted mb-4">
                     Select which documents are part of your pipeline and drag them into order. "Create from" buttons on each document will follow this sequence.
                   </p>
 
@@ -743,7 +743,7 @@ export default function FSSettingsPage() {
                             <ChevronDownIcon className="h-3.5 w-3.5" />
                           </button>
                           <button onClick={() => toggleStep(key)}
-                            className="text-[10px] font-semibold px-2 py-0.5 rounded bg-white/70 hover:bg-white transition-colors opacity-70 hover:opacity-100">
+                            className="text-[10px] font-semibold px-2 py-0.5 rounded bg-white/70 hover:bg-surface transition-colors opacity-70 hover:opacity-100">
                             Remove
                           </button>
                         </div>
@@ -755,24 +755,24 @@ export default function FSSettingsPage() {
                   <div className="flex flex-wrap gap-2">
                     {ALL_STEPS.filter((s) => !isActive(s.key)).map((step) => (
                       <button key={step.key} onClick={() => toggleStep(step.key)}
-                        className="px-3 py-1.5 text-xs font-medium border border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors">
+                        className="px-3 py-1.5 text-xs font-medium border border-dashed border-border rounded-lg text-text-muted hover:border-border hover:text-text-primary transition-colors">
                         + Add {step.label}
                       </button>
                     ))}
                     {ALL_STEPS.every((s) => isActive(s.key)) && (
-                      <span className="text-xs text-gray-400 italic">All steps included</span>
+                      <span className="text-xs text-text-muted italic">All steps included</span>
                     )}
                   </div>
                 </div>
 
                 {/* Divider */}
-                <div className="border-t border-gray-100" />
+                <div className="border-t border-border" />
 
                 {/* Auto-generate Work Orders */}
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-800">Auto-generate Work Orders from Contracts</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-sm font-semibold text-text-primary">Auto-generate Work Orders from Contracts</p>
+                    <p className="text-xs text-text-muted mt-0.5">
                       When ON, the system automatically creates a Work Order each time a contract's service date arrives.
                       When OFF, you create Work Orders manually from the contract.
                     </p>
@@ -780,10 +780,10 @@ export default function FSSettingsPage() {
                   <button
                     onClick={() => setForm((prev) => ({ ...prev, autoGenerateWorkOrders: !autoGenerate }))}
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                      autoGenerate ? 'bg-brand-500' : 'bg-gray-200'
+                      autoGenerate ? 'bg-ryze-600/100' : 'bg-black/[0.06] dark:bg-white/[0.08]'
                     }`}
                   >
-                    <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform ${
+                    <span className={`inline-block h-5 w-5 rounded-full bg-surface shadow transform transition-transform ${
                       autoGenerate ? 'translate-x-5' : 'translate-x-0'
                     }`} />
                   </button>
@@ -792,8 +792,8 @@ export default function FSSettingsPage() {
                 {/* Staff Hard Block */}
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-800">Staff Hard Block</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-sm font-semibold text-text-primary">Staff Hard Block</p>
+                    <p className="text-xs text-text-muted mt-0.5">
                       When ON, busy staff are hidden from the dropdown when assigning a scheduled date.
                       When OFF, busy staff are shown with a red "Busy" badge as a soft warning.
                     </p>
@@ -801,10 +801,10 @@ export default function FSSettingsPage() {
                   <button
                     onClick={() => setForm((prev) => ({ ...prev, staffHardBlock: !hardBlock }))}
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                      hardBlock ? 'bg-brand-500' : 'bg-gray-200'
+                      hardBlock ? 'bg-ryze-600/100' : 'bg-black/[0.06] dark:bg-white/[0.08]'
                     }`}
                   >
-                    <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform ${
+                    <span className={`inline-block h-5 w-5 rounded-full bg-surface shadow transform transition-transform ${
                       hardBlock ? 'translate-x-5' : 'translate-x-0'
                     }`} />
                   </button>
@@ -813,8 +813,8 @@ export default function FSSettingsPage() {
                 {/* Default Work Order Duration */}
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-800">Default Work Order Duration</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-sm font-semibold text-text-primary">Default Work Order Duration</p>
+                    <p className="text-xs text-text-muted mt-0.5">
                       Pre-filled duration for new work orders. When a scheduled date &amp; time is set,
                       staff are blocked only for this window (plus the same buffer before and after)
                       instead of the whole day.
@@ -829,7 +829,7 @@ export default function FSSettingsPage() {
                       const joined = h >= 24 ? 24 : h + m / 60;
                       setForm((prev) => ({ ...prev, defaultDurationHours: joined }));
                     };
-                    const sel = 'text-sm border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-400 shrink-0';
+                    const sel = 'text-sm bg-surface border border-border rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400 shrink-0';
                     return (
                       <div className="flex items-center gap-2 shrink-0">
                         <select value={dHrs} onChange={(e) => setHM(parseInt(e.target.value, 10), dMins)} className={sel}>
@@ -841,7 +841,7 @@ export default function FSSettingsPage() {
                           value={dHrs === 24 ? 0 : dMins}
                           disabled={dHrs === 24}
                           onChange={(e) => setHM(dHrs, parseInt(e.target.value, 10))}
-                          className={`${sel} disabled:bg-gray-50 disabled:text-gray-400`}
+                          className={`${sel} disabled:bg-background disabled:text-text-muted`}
                         >
                           {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => (
                             <option key={m} value={m}>{m} min</option>
@@ -858,7 +858,7 @@ export default function FSSettingsPage() {
           {/* Tab 5: PDF Templates */}
           {activeTab === 5 && (
             <div className="space-y-8">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-text-muted">
                 Choose the default PDF layout for each document type. You can still override this per-document when downloading.
               </p>
               {DOC_TYPES.map(({ key, label }) => {
@@ -868,7 +868,7 @@ export default function FSSettingsPage() {
                 };
                 return (
                   <div key={key}>
-                    <h3 className="text-sm font-semibold text-gray-800 mb-3">{label}</h3>
+                    <h3 className="text-sm font-semibold text-text-primary mb-3">{label}</h3>
                     <div className="grid grid-cols-4 gap-4">
                       {VARIANTS.map(v => {
                         const isActive  = current === v.value;
@@ -879,31 +879,31 @@ export default function FSSettingsPage() {
                             onClick={() => handleSetDefault(key, v.value)}
                             className={`relative cursor-pointer rounded-xl border-2 transition-all overflow-hidden ${
                               isActive
-                                ? 'border-brand-500 shadow-md'
-                                : 'border-gray-200 hover:border-gray-300'
+                                ? 'border-ryze-500 shadow-md'
+                                : 'border-border hover:border-border'
                             }`}
                           >
                             {/* Thumbnail */}
-                            <div className="h-24 bg-gray-50 flex items-center justify-center p-2">
+                            <div className="h-24 bg-background flex items-center justify-center p-2">
                               {v.preview}
                             </div>
                             {/* Label + action */}
-                            <div className="px-3 py-2 bg-white border-t border-gray-100">
-                              <p className="text-xs font-semibold text-gray-800">{v.label}</p>
-                              <p className="text-[10px] text-gray-400 mt-0.5 leading-snug">{v.desc}</p>
+                            <div className="px-3 py-2 bg-surface border-t border-border">
+                              <p className="text-xs font-semibold text-text-primary">{v.label}</p>
+                              <p className="text-[10px] text-text-muted mt-0.5 leading-snug">{v.desc}</p>
                               <div className="mt-2">
                                 {isActive ? (
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-brand-600">
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-ryze-600 dark:text-ryze-400">
                                     <CheckIcon className="h-3 w-3" />
                                     {justSaved ? 'Saved!' : 'Default'}
                                   </span>
                                 ) : (
-                                  <span className="text-[10px] text-gray-400">Click to set default</span>
+                                  <span className="text-[10px] text-text-muted">Click to set default</span>
                                 )}
                               </div>
                             </div>
                             {isActive && (
-                              <div className="absolute top-2 right-2 h-5 w-5 rounded-full bg-brand-500 flex items-center justify-center">
+                              <div className="absolute top-2 right-2 h-5 w-5 rounded-full bg-ryze-600/100 flex items-center justify-center">
                                 <CheckIcon className="h-3 w-3 text-white" />
                               </div>
                             )}
@@ -913,10 +913,10 @@ export default function FSSettingsPage() {
                     </div>
                     <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
                       {SECTION_TOGGLES.map(({ key: sectionKey, label: sectionLabel }) => (
-                        <label key={sectionKey} className="inline-flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                        <label key={sectionKey} className="inline-flex items-center gap-2 text-xs text-text-muted cursor-pointer">
                           <input
                             type="checkbox"
-                            className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                            className="bg-surface text-text-primary h-3.5 w-3.5 rounded border-border text-ryze-600 dark:text-ryze-400 focus:ring-ryze-500"
                             checked={sections[sectionKey] ?? true}
                             onChange={(e) => handleToggleSection(key, sectionKey, e.target.checked)}
                           />
@@ -944,8 +944,8 @@ export default function FSSettingsPage() {
             return (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-800">Record Locking</h3>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <h3 className="text-sm font-semibold text-text-primary">Record Locking</h3>
+                  <p className="text-xs text-text-muted mt-1">
                     When auto-lock is ON for a module, records are automatically locked when they reach the trigger status.
                     Locked records are read-only for regular users. Admins can unlock with a mandatory reason.
                   </p>
@@ -954,11 +954,11 @@ export default function FSSettingsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-100">
-                        <th className="text-left text-xs font-medium text-gray-500 pb-2 pr-4">Module</th>
-                        <th className="text-left text-xs font-medium text-gray-500 pb-2 px-4">Auto-Lock</th>
-                        <th className="text-left text-xs font-medium text-gray-500 pb-2 px-4">Trigger Status</th>
-                        <th className="text-left text-xs font-medium text-gray-500 pb-2 pl-4">Who Can Unlock</th>
+                      <tr className="border-b border-border">
+                        <th className="text-left text-xs font-medium text-text-muted pb-2 pr-4">Module</th>
+                        <th className="text-left text-xs font-medium text-text-muted pb-2 px-4">Auto-Lock</th>
+                        <th className="text-left text-xs font-medium text-text-muted pb-2 px-4">Trigger Status</th>
+                        <th className="text-left text-xs font-medium text-text-muted pb-2 pl-4">Who Can Unlock</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -975,29 +975,29 @@ export default function FSSettingsPage() {
                         const liveLabel = liveStage?.label ?? statusLabel;
                         return (
                           <tr key={module} className="py-3">
-                            <td className="py-3 pr-4 font-medium text-gray-800">{label}</td>
+                            <td className="py-3 pr-4 font-medium text-text-primary">{label}</td>
                             <td className="py-3 px-4">
                               <button
                                 onClick={() => setRule(module, { autoLock: !rule.autoLock, autoLockOnStatus: liveKey || rule.autoLockOnStatus })}
                                 className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                                  rule.autoLock ? 'bg-brand-500' : 'bg-gray-200'
+                                  rule.autoLock ? 'bg-ryze-600/100' : 'bg-black/[0.06] dark:bg-white/[0.08]'
                                 }`}
                               >
-                                <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform ${
+                                <span className={`inline-block h-4 w-4 rounded-full bg-surface shadow transform transition-transform ${
                                   rule.autoLock ? 'translate-x-4' : 'translate-x-0'
                                 }`} />
                               </button>
                             </td>
-                            <td className="py-3 px-4 text-gray-600 text-xs">
+                            <td className="py-3 px-4 text-text-muted text-xs">
                               {autoLockOnStatus ? (
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                                  rule.autoLock ? 'bg-brand-50 text-brand-700' : 'bg-gray-100 text-gray-500'
+                                  rule.autoLock ? 'bg-ryze-600/10 text-ryze-700 dark:text-ryze-400' : 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'
                                 }`}>{liveLabel}</span>
                               ) : (
-                                <span className="text-gray-400">Manual only</span>
+                                <span className="text-text-muted">Manual only</span>
                               )}
                             </td>
-                            <td className="py-3 pl-4 text-xs text-gray-500">Admin</td>
+                            <td className="py-3 pl-4 text-xs text-text-muted">Admin</td>
                           </tr>
                         );
                       })}
@@ -1005,33 +1005,33 @@ export default function FSSettingsPage() {
                   </table>
                 </div>
 
-                <div className="pt-2 border-t border-gray-100">
-                  <p className="text-xs font-medium text-gray-700 mb-2">Who can unlock records?</p>
+                <div className="pt-2 border-t border-border">
+                  <p className="text-xs font-medium text-text-primary mb-2">Who can unlock records?</p>
                   <div className="flex gap-4">
                     {['TENANT_ADMIN', 'SUPER_ADMIN'].map((role) => (
-                      <label key={role} className="flex items-center gap-2 text-xs text-gray-600 cursor-default">
+                      <label key={role} className="flex items-center gap-2 text-xs text-text-muted cursor-default">
                         <input type="checkbox" checked readOnly className="rounded accent-brand-500" />
                         {role}
                       </label>
                     ))}
                   </div>
-                  <p className="text-[11px] text-gray-400 mt-1">Unlock rights are fixed to admin roles and cannot be changed.</p>
+                  <p className="text-[11px] text-text-muted mt-1">Unlock rights are fixed to admin roles and cannot be changed.</p>
                 </div>
 
                 {/* PII & Field Visibility */}
-                <div className="pt-4 border-t border-gray-100">
-                  <h3 className="text-sm font-semibold text-gray-800">PII & Field Visibility</h3>
-                  <p className="text-xs text-gray-500 mt-1 mb-4">
+                <div className="pt-4 border-t border-border">
+                  <h3 className="text-sm font-semibold text-text-primary">PII & Field Visibility</h3>
+                  <p className="text-xs text-text-muted mt-1 mb-4">
                     Controls which roles can see sensitive fields (phone, email, address, GST, PAN).
                     Admins always see full values. Toggle on to allow Managers to view them too.
                   </p>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-gray-100">
-                          <th className="text-left text-xs font-medium text-gray-500 pb-2 pr-4">Module</th>
-                          <th className="text-left text-xs font-medium text-gray-500 pb-2 px-4">Fields Protected</th>
-                          <th className="text-left text-xs font-medium text-gray-500 pb-2 pl-4">Managers Can View</th>
+                        <tr className="border-b border-border">
+                          <th className="text-left text-xs font-medium text-text-muted pb-2 pr-4">Module</th>
+                          <th className="text-left text-xs font-medium text-text-muted pb-2 px-4">Fields Protected</th>
+                          <th className="text-left text-xs font-medium text-text-muted pb-2 pl-4">Managers Can View</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50">
@@ -1057,16 +1057,16 @@ export default function FSSettingsPage() {
                           };
                           return (
                             <tr key={mod.key} className="py-3">
-                              <td className="py-3 pr-4 font-medium text-gray-800">{mod.label}</td>
-                              <td className="py-3 px-4 text-xs text-gray-400">{mod.fields}</td>
+                              <td className="py-3 pr-4 font-medium text-text-primary">{mod.label}</td>
+                              <td className="py-3 px-4 text-xs text-text-muted">{mod.fields}</td>
                               <td className="py-3 pl-4">
                                 <button
                                   onClick={toggleManager}
                                   className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                                    managerCanView ? 'bg-indigo-500' : 'bg-gray-200'
+                                    managerCanView ? 'bg-ryze-500' : 'bg-black/[0.06] dark:bg-white/[0.08]'
                                   }`}
                                 >
-                                  <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform ${
+                                  <span className={`inline-block h-4 w-4 rounded-full bg-surface shadow transform transition-transform ${
                                     managerCanView ? 'translate-x-4' : 'translate-x-0'
                                   }`} />
                                 </button>
@@ -1077,7 +1077,7 @@ export default function FSSettingsPage() {
                       </tbody>
                     </table>
                   </div>
-                  <p className="text-[11px] text-gray-400 mt-3">Agents and regular users always see masked values. Changes apply after Save.</p>
+                  <p className="text-[11px] text-text-muted mt-3">Agents and regular users always see masked values. Changes apply after Save.</p>
                 </div>
 
                 <LockAuditLog />
@@ -1091,24 +1091,24 @@ export default function FSSettingsPage() {
       {/* Add Company mini-modal */}
       {addCompanyOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
-            <h3 className="text-base font-semibold text-gray-900 mb-4">Add Company / Branch</h3>
+          <div className="bg-surface-elevated rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
+            <h3 className="text-base font-semibold text-text-primary mb-4">Add Company / Branch</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Name *</label>
+                <label className="block text-xs font-medium text-text-muted mb-1">Name *</label>
                 <input
                   value={newBranchName}
                   onChange={(e) => setNewBranchName(e.target.value)}
                   placeholder="e.g. Chennai Office"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400"
+                  className="w-full px-3 py-2 text-sm bg-surface text-text-primary border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ryze-400"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Type</label>
+                <label className="block text-xs font-medium text-text-muted mb-1">Type</label>
                 <select
                   value={newBranchType}
                   onChange={(e) => setNewBranchType(e.target.value as any)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400"
+                  className="w-full px-3 py-2 text-sm bg-surface text-text-primary border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ryze-400"
                 >
                   <option value="branch">Branch Office</option>
                   <option value="headquarters">Headquarters</option>
@@ -1119,14 +1119,14 @@ export default function FSSettingsPage() {
             <div className="flex gap-2 mt-5">
               <button
                 onClick={() => { setAddCompanyOpen(false); setNewBranchName(''); }}
-                className="flex-1 px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50"
+                className="flex-1 px-4 py-2 text-sm border border-border rounded-lg text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddCompany}
                 disabled={addCompanySaving || !newBranchName.trim()}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-lg transition-colors"
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-ryze-600 hover:bg-ryze-700 disabled:opacity-50 rounded-lg transition-colors"
               >
                 {addCompanySaving ? 'Creating…' : 'Create & Switch'}
               </button>

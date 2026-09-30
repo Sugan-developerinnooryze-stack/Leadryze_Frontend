@@ -124,13 +124,13 @@ export default function BookingModal({ open, onClose, onSaved, initialDate, init
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div className="relative bg-surface rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h2 className="text-lg font-semibold text-text-primary">
             {editEvent ? 'Edit Booking' : 'New Booking'}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+          <button onClick={onClose} className="text-text-muted hover:text-text-primary transition-colors">
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
@@ -142,13 +142,13 @@ export default function BookingModal({ open, onClose, onSaved, initialDate, init
 
           {/* Title */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Title *</label>
+            <label className="block text-xs font-medium text-text-muted mb-1">Title *</label>
             <input
               type="text" required
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
               placeholder="Meeting title, appointment..."
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 bg-background text-text-primary"
             />
           </div>
 
@@ -157,62 +157,62 @@ export default function BookingModal({ open, onClose, onSaved, initialDate, init
             <button
               type="button"
               onClick={() => setForm(f => ({ ...f, allDay: !f.allDay }))}
-              className={`relative w-10 h-5 rounded-full transition-colors ${form.allDay ? 'bg-brand-600' : 'bg-gray-200'}`}
+              className={`relative w-10 h-5 rounded-full transition-colors ${form.allDay ? 'bg-ryze-600' : 'bg-black/[0.06] dark:bg-white/[0.08]'}`}
             >
-              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.allDay ? 'translate-x-5' : ''}`} />
+              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-surface rounded-full shadow transition-transform ${form.allDay ? 'translate-x-5' : ''}`} />
             </button>
-            <span className="text-sm text-gray-700">All Day</span>
+            <span className="text-sm text-text-primary">All Day</span>
           </div>
 
           {/* Start / End */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Start *</label>
+              <label className="block text-xs font-medium text-text-muted mb-1">Start *</label>
               <input
                 type={form.allDay ? 'date' : 'datetime-local'} required
                 value={form.allDay ? form.startDate.slice(0, 10) : form.startDate}
                 onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 bg-background text-text-primary"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">End</label>
+              <label className="block text-xs font-medium text-text-muted mb-1">End</label>
               <input
                 type={form.allDay ? 'date' : 'datetime-local'}
                 value={form.allDay ? form.endDate.slice(0, 10) : form.endDate}
                 onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 bg-background text-text-primary"
               />
             </div>
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
+            <label className="block text-xs font-medium text-text-muted mb-1">Description</label>
             <textarea
               rows={2}
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Notes, agenda..."
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 resize-none bg-background text-text-primary"
             />
           </div>
 
           {/* Location */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Location</label>
+            <label className="block text-xs font-medium text-text-muted mb-1">Location</label>
             <input
               type="text"
               value={form.location}
               onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
               placeholder="Office, Zoom link, address..."
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 bg-background text-text-primary"
             />
           </div>
 
           {/* Color */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-2">Color</label>
+            <label className="block text-xs font-medium text-text-muted mb-2">Color</label>
             <div className="flex gap-2">
               {COLORS.map(c => (
                 <button
@@ -227,33 +227,33 @@ export default function BookingModal({ open, onClose, onSaved, initialDate, init
 
           {/* Link to CRM Record */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Link to CRM Record (optional)</label>
+            <label className="block text-xs font-medium text-text-muted mb-1">Link to CRM Record (optional)</label>
             {form.linkedRecord ? (
-              <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 text-sm">
+              <div className="flex items-center gap-2 bg-background rounded-lg px-3 py-2 text-sm">
                 <span className="flex-1 truncate">{form.linkedRecord.displayName} · {form.linkedRecord.module}</span>
-                <button type="button" onClick={() => setForm(f => ({ ...f, linkedRecord: undefined }))} className="text-gray-400 hover:text-gray-600">
+                <button type="button" onClick={() => setForm(f => ({ ...f, linkedRecord: undefined }))} className="text-text-muted hover:text-text-primary">
                   <XMarkIcon className="h-4 w-4" />
                 </button>
               </div>
             ) : (
               <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-4 w-4 text-text-muted" />
                 <input
                   type="text" value={search}
                   onChange={e => handleSearch(e.target.value)}
                   placeholder="Search contacts, deals..."
-                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full border border-border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 bg-background text-text-primary"
                 />
-                {searching && <span className="absolute right-3 top-2.5 text-xs text-gray-400">...</span>}
+                {searching && <span className="absolute right-3 top-2.5 text-xs text-text-muted">...</span>}
                 {searchResults.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <div className="absolute z-10 w-full mt-1 bg-surface border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
                     {searchResults.map((r, i) => (
                       <button key={i} type="button"
                         onClick={() => { setForm(f => ({ ...f, linkedRecord: r })); setSearch(''); setSearchResults([]); }}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-background flex items-center gap-2"
                       >
                         <span className="truncate flex-1">{r.displayName}</span>
-                        <span className="text-xs text-gray-400 shrink-0">{r.module}</span>
+                        <span className="text-xs text-text-muted shrink-0">{r.module}</span>
                       </button>
                     ))}
                   </div>
@@ -265,11 +265,11 @@ export default function BookingModal({ open, onClose, onSaved, initialDate, init
           {/* Actions */}
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+              className="flex-1 px-4 py-2 text-sm font-medium text-text-primary bg-black/[0.04] dark:bg-white/[0.06] rounded-lg hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-colors">
               Cancel
             </button>
             <button type="submit" disabled={saving}
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-60 transition-colors">
+              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-ryze-600 rounded-lg hover:bg-ryze-700 disabled:opacity-60 transition-colors">
               {saving ? 'Saving...' : editEvent ? 'Save Changes' : 'Create Booking'}
             </button>
           </div>

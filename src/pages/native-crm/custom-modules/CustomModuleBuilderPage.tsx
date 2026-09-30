@@ -85,13 +85,13 @@ const GROUP_COLOR: Record<string, string> = {
   table:  'border-teal-400',
 };
 const GROUP_BADGE: Record<string, string> = {
-  text:   'bg-blue-50 text-blue-700',
-  number: 'bg-purple-50 text-purple-700',
-  choice: 'bg-green-50 text-green-700',
-  date:   'bg-amber-50 text-amber-700',
-  media:  'bg-pink-50 text-pink-700',
-  link:   'bg-indigo-50 text-indigo-700',
-  table:  'bg-teal-50 text-teal-700',
+  text:   'bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400',
+  number: 'bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400',
+  choice: 'bg-success-500/15 text-success-700 dark:text-success-500',
+  date:   'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400',
+  media:  'bg-pink-50 dark:bg-pink-500/15 text-pink-700 dark:text-pink-400',
+  link:   'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400',
+  table:  'bg-teal-50 dark:bg-teal-500/15 text-teal-700 dark:text-teal-400',
 };
 
 function typeGroup(t: CustomModuleFieldType): string {
@@ -194,10 +194,10 @@ function InlineOptionsEditor({ options, onChange }: { options: string[]; onChang
 
   return (
     <div className="space-y-1.5">
-      <p className="text-xs font-medium text-gray-500 mb-1">Options</p>
+      <p className="text-xs font-medium text-text-muted mb-1">Options</p>
       {options.map((opt, i) => (
         <div key={i} className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-gray-300 shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full bg-black/[0.08] dark:bg-white/[0.1] shrink-0" />
           <input
             ref={(el) => { inputRefs.current[i] = el; }}
             value={opt}
@@ -207,14 +207,14 @@ function InlineOptionsEditor({ options, onChange }: { options: string[]; onChang
               if (e.key === 'Backspace' && opt === '' && options.length > 1) { e.preventDefault(); remove(i); inputRefs.current[Math.max(0, i - 1)]?.focus(); }
             }}
             placeholder={`Option ${i + 1}`}
-            className="flex-1 text-sm border-0 border-b border-gray-200 focus:border-brand-400 focus:outline-none py-0.5 bg-transparent"
+            className="flex-1 text-sm border-0 border-b border-border focus:border-ryze-400 focus:outline-none py-0.5 bg-transparent"
           />
-          <button onClick={() => remove(i)} className="text-gray-300 hover:text-red-400">
+          <button onClick={() => remove(i)} className="text-text-muted hover:text-red-400">
             <TrashIcon className="h-3.5 w-3.5" />
           </button>
         </div>
       ))}
-      <button onClick={add} className="text-xs text-brand-600 hover:text-brand-700 font-medium mt-1">
+      <button onClick={add} className="text-xs text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 font-medium mt-1">
         + Add option
       </button>
     </div>
@@ -247,10 +247,10 @@ function nodeDel(tree: CascadeNode[], path: number[]): CascadeNode[] {
 }
 
 const CASCADE_DEPTH_STYLES = [
-  { border: 'border-indigo-200', bg: 'bg-white',      labelCls: 'bg-indigo-100 text-indigo-700', label: 'Category',    btn: 'border-indigo-300 text-indigo-700 hover:bg-indigo-50', addLabel: 'Add Category'    },
-  { border: 'border-blue-200',   bg: 'bg-blue-50/50', labelCls: 'bg-blue-100 text-blue-700',    label: 'Subcategory', btn: 'border-blue-300 text-blue-700 hover:bg-blue-50',       addLabel: 'Add Subcategory' },
-  { border: 'border-sky-200',    bg: 'bg-sky-50/50',  labelCls: 'bg-sky-100 text-sky-700',      label: 'Sub-level',   btn: 'border-sky-300 text-sky-700 hover:bg-sky-50',         addLabel: 'Add Sub-level'   },
-  { border: 'border-gray-200',   bg: 'bg-gray-50',    labelCls: 'bg-gray-100 text-gray-600',    label: 'Level',       btn: 'border-gray-300 text-gray-600 hover:bg-gray-100',     addLabel: 'Add Item'        },
+  { border: 'border-indigo-200 dark:border-indigo-500/30', bg: 'bg-surface',      labelCls: 'bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400', label: 'Category',    btn: 'border-indigo-300 dark:border-indigo-500/40 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10', addLabel: 'Add Category'    },
+  { border: 'border-blue-200 dark:border-blue-500/30',   bg: 'bg-blue-50/50 dark:bg-blue-500/10', labelCls: 'bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400',    label: 'Subcategory', btn: 'border-blue-300 dark:border-blue-500/40 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10',       addLabel: 'Add Subcategory' },
+  { border: 'border-sky-200 dark:border-sky-500/30',    bg: 'bg-sky-50/50 dark:bg-sky-500/10',  labelCls: 'bg-sky-100 dark:bg-sky-500/15 text-sky-700 dark:text-sky-400',      label: 'Sub-level',   btn: 'border-sky-300 dark:border-sky-500/40 text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-500/10',         addLabel: 'Add Sub-level'   },
+  { border: 'border-border',   bg: 'bg-background',    labelCls: 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted',    label: 'Level',       btn: 'border-border text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06]',     addLabel: 'Add Item'        },
 ];
 
 function CascadeTreeEditor({
@@ -263,7 +263,7 @@ function CascadeTreeEditor({
   function renderLevel(nodes: CascadeNode[], path: number[], depth: number): React.ReactNode {
     const s = CASCADE_DEPTH_STYLES[Math.min(depth, CASCADE_DEPTH_STYLES.length - 1)];
     return (
-      <div className={depth === 0 ? 'space-y-2' : 'mt-1.5 ml-3 space-y-1.5 pl-2 border-l-2 border-gray-100'}>
+      <div className={depth === 0 ? 'space-y-2' : 'mt-1.5 ml-3 space-y-1.5 pl-2 border-l-2 border-border'}>
         {nodes.map((node, i) => {
           const nPath = [...path, i];
           return (
@@ -291,7 +291,7 @@ function CascadeTreeEditor({
                 <button
                   type="button"
                   onClick={() => onChange(nodeDel(tree, nPath))}
-                  className="shrink-0 text-gray-300 hover:text-red-400"
+                  className="shrink-0 text-text-muted hover:text-red-400"
                 >
                   <TrashIcon className="h-3.5 w-3.5" />
                 </button>
@@ -320,8 +320,8 @@ function CascadeTreeEditor({
 
   return (
     <div className="space-y-1.5">
-      <p className="text-xs font-medium text-gray-500">Category Tree</p>
-      <div className="border border-gray-200 rounded-xl p-3 bg-gray-50/50 max-h-72 overflow-y-auto">
+      <p className="text-xs font-medium text-text-muted">Category Tree</p>
+      <div className="border border-border rounded-xl p-3 bg-background/50 max-h-72 overflow-y-auto">
         {tree.length === 0 ? (
           <button
             type="button"
@@ -355,11 +355,11 @@ function TypePickerPopup({ current, onSelect, onClose }: {
   return (
     <div
       ref={ref}
-      className="absolute z-50 top-full left-0 mt-1 w-72 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden"
+      className="absolute z-50 top-full left-0 mt-1 w-72 bg-surface-elevated rounded-xl shadow-xl border border-border overflow-hidden"
     >
       {FIELD_TYPE_GROUPS.map((g) => (
         <div key={g.label} className="px-3 py-2">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{g.label}</p>
+          <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1.5">{g.label}</p>
           <div className="grid grid-cols-2 gap-1">
             {g.types.map((t) => (
               <button
@@ -367,8 +367,8 @@ function TypePickerPopup({ current, onSelect, onClose }: {
                 onClick={() => { onSelect(t.value); onClose(); }}
                 className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-colors ${
                   current === t.value
-                    ? 'bg-brand-50 text-brand-700'
-                    : 'text-gray-700 hover:bg-gray-50'
+                    ? 'bg-ryze-600/10 text-ryze-700 dark:text-ryze-400'
+                    : 'text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
                 }`}
               >
                 {current === t.value && <CheckIcon className="h-3 w-3 shrink-0" />}
@@ -413,30 +413,30 @@ function FieldCard({
         onDragEnd={onDragEnd}
         onDragOver={(e) => e.preventDefault()}
         onClick={onActivate}
-        className="group flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-gray-200 hover:border-brand-300 hover:shadow-sm transition-all cursor-pointer"
+        className="group flex items-center gap-3 px-4 py-3 bg-surface rounded-xl border border-border hover:border-ryze-300 dark:border-ryze-700 hover:shadow-sm transition-all cursor-pointer"
       >
-        <span className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing text-lg leading-none select-none" title="Drag to reorder">⠿</span>
-        <span className="flex-1 text-sm text-gray-700 truncate">
-          {field.label || <span className="text-gray-400 italic">Untitled field</span>}
+        <span className="text-text-muted hover:text-text-primary cursor-grab active:cursor-grabbing text-lg leading-none select-none" title="Drag to reorder">⠿</span>
+        <span className="flex-1 text-sm text-text-primary truncate">
+          {field.label || <span className="text-text-muted italic">Untitled field</span>}
         </span>
         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${GROUP_BADGE[group]}`}>
           {typeLabel(field.fieldType)}
         </span>
         <label
-          className="flex items-center gap-1 text-xs text-gray-500 shrink-0"
+          className="flex items-center gap-1 text-xs text-text-muted shrink-0"
           onClick={(e) => e.stopPropagation()}
         >
           <input
             type="checkbox"
             checked={field.required ?? false}
             onChange={(e) => onChange({ required: e.target.checked })}
-            className="w-3.5 h-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-400"
+            className="w-3.5 h-3.5 rounded border-border text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
           />
           Req
         </label>
         <button
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          className="p-1 rounded text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="p-1 rounded text-text-muted hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
         >
           <TrashIcon className="h-4 w-4" />
         </button>
@@ -446,16 +446,16 @@ function FieldCard({
 
   return (
     <div
-      className={`bg-white rounded-xl border-2 border-brand-300 shadow-md border-l-[5px] ${GROUP_COLOR[group]} transition-all`}
+      className={`bg-surface rounded-xl border-2 border-ryze-300 dark:border-ryze-700 shadow-md border-l-[5px] ${GROUP_COLOR[group]} transition-all`}
       onDragOver={(e) => e.preventDefault()}
     >
       <div className="p-4 space-y-3">
         {/* Label */}
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Field Label</label>
+          <label className="text-xs font-medium text-text-muted mb-1 block">Field Label</label>
           <input
             autoFocus
-            className="w-full text-sm font-medium border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400"
+            className="bg-surface text-text-primary w-full text-sm font-medium border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ryze-400"
             value={field.label}
             onChange={(e) => {
               const label = e.target.value;
@@ -469,11 +469,11 @@ function FieldCard({
 
         {/* Key pill */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-400">Key:</span>
+          <span className="text-xs text-text-muted">Key:</span>
           {editKey ? (
             <input
               autoFocus
-              className="text-xs font-mono border border-gray-200 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-brand-400"
+              className="bg-surface text-text-primary text-xs font-mono border border-border rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-ryze-400"
               value={field.key}
               onChange={(e) => onChange({ key: e.target.value, _keyManual: true } as any)}
               onBlur={() => setEditKey(false)}
@@ -482,7 +482,7 @@ function FieldCard({
           ) : (
             <button
               onClick={() => setEditKey(true)}
-              className="text-xs font-mono bg-gray-100 text-gray-600 rounded px-2 py-0.5 hover:bg-gray-200 transition-colors"
+              className="text-xs font-mono bg-black/[0.04] dark:bg-white/[0.06] text-text-muted rounded px-2 py-0.5 hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-colors"
             >
               {field.key || 'auto'}
             </button>
@@ -491,7 +491,7 @@ function FieldCard({
 
         {/* Type picker */}
         <div className="relative">
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Field Type</label>
+          <label className="text-xs font-medium text-text-muted mb-1 block">Field Type</label>
           <button
             onClick={() => setShowTypePicker((p) => !p)}
             className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-medium transition-colors w-full text-left ${GROUP_BADGE[group]} border-transparent`}
@@ -522,9 +522,9 @@ function FieldCard({
         {field.fieldType === 'relationship' && (
           <>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Links to Module</label>
+              <label className="text-xs font-medium text-text-muted mb-1 block">Links to Module</label>
               <select
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400"
+                className="bg-surface text-text-primary w-full text-sm border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ryze-400"
                 value={field.meta?.targetModule ?? ''}
                 onChange={(e) => onChange({ meta: { ...field.meta, targetModule: e.target.value, subFields: [] } })}
               >
@@ -550,14 +550,14 @@ function FieldCard({
               if (!target || available.length === 0) return null;
               return (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-medium text-gray-500">
+                  <p className="text-xs font-medium text-text-muted">
                     Sub-fields to show in table &amp; export
                   </p>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                     {available.map((af) => {
                       const checked = selected.includes(af.key);
                       return (
-                        <label key={af.key} className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer select-none">
+                        <label key={af.key} className="flex items-center gap-1.5 text-xs text-text-muted cursor-pointer select-none">
                           <input
                             type="checkbox"
                             checked={checked}
@@ -567,7 +567,7 @@ function FieldCard({
                                 : [...selected, af.key];
                               onChange({ meta: { ...field.meta, subFields: next } });
                             }}
-                            className="rounded border-gray-300 accent-brand-600"
+                            className="rounded border-border accent-brand-600"
                           />
                           {af.label}
                         </label>
@@ -582,11 +582,11 @@ function FieldCard({
 
         {field.fieldType === 'rating' && (
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Max Stars</label>
+            <label className="text-xs font-medium text-text-muted mb-1 block">Max Stars</label>
             <input
               type="number"
               min={3} max={10}
-              className="w-24 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400"
+              className="bg-surface text-text-primary w-24 text-sm border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ryze-400"
               value={(field.meta as any)?.maxStars ?? 5}
               onChange={(e) => onChange({ meta: { ...field.meta, maxStars: parseInt(e.target.value) || 5 } as any })}
             />
@@ -612,11 +612,11 @@ function FieldCard({
               />
               {depth > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-medium text-gray-500">Level Labels <span className="text-gray-400 font-normal">(rename each level)</span></p>
+                  <p className="text-xs font-medium text-text-muted">Level Labels <span className="text-text-muted font-normal">(rename each level)</span></p>
                   <div className="space-y-1">
                     {Array.from({ length: depth }, (_, i) => (
                       <div key={i} className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400 shrink-0 w-14">Level {i + 1}</span>
+                        <span className="text-xs text-text-muted shrink-0 w-14">Level {i + 1}</span>
                         <input
                           value={levelNames[i] ?? ''}
                           placeholder={defaults[Math.min(i, defaults.length - 1)]}
@@ -625,7 +625,7 @@ function FieldCard({
                             next[i] = e.target.value;
                             onChange({ meta: { ...field.meta, levelNames: next } });
                           }}
-                          className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand-400"
+                          className="flex-1 text-sm border border-border rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ryze-400 bg-background text-text-primary"
                         />
                       </div>
                     ))}
@@ -644,7 +644,7 @@ function FieldCard({
         )}
 
         {(field.fieldType === 'image' || field.fieldType === 'images') && (
-          <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">
+          <p className="text-xs text-text-muted bg-background rounded-lg px-3 py-2">
             📎 Supports JPG, PNG, PDF up to 5 MB.
             {field.fieldType === 'images' ? ' Multiple files allowed.' : ' Single file.'}
           </p>
@@ -652,13 +652,13 @@ function FieldCard({
       </div>
 
       {/* Card footer */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-100 bg-gray-50 rounded-b-xl">
-        <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+      <div className="flex items-center justify-between px-4 py-2.5 border-t border-border bg-background rounded-b-xl">
+        <label className="flex items-center gap-2 text-xs text-text-muted cursor-pointer">
           <input
             type="checkbox"
             checked={field.required ?? false}
             onChange={(e) => onChange({ required: e.target.checked })}
-            className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-400"
+            className="w-4 h-4 rounded border-border text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
           />
           Required field
         </label>
@@ -672,7 +672,7 @@ function FieldCard({
           </button>
           <button
             onClick={onDone}
-            className="text-xs px-3 py-1.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium"
+            className="text-xs px-3 py-1.5 bg-ryze-600 text-white rounded-lg hover:bg-ryze-700 transition-colors font-medium"
           >
             Done
           </button>
@@ -686,11 +686,11 @@ function FieldCard({
 
 function TypePalette({ onAdd }: { onAdd: (type: CustomModuleFieldType) => void }) {
   return (
-    <div className="w-44 shrink-0 bg-gray-50 border-l border-gray-200 overflow-y-auto py-4 px-3 space-y-4">
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Field Types</p>
+    <div className="w-44 shrink-0 bg-background border-l border-border overflow-y-auto py-4 px-3 space-y-4">
+      <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-1">Field Types</p>
       {FIELD_TYPE_GROUPS.map((g) => (
         <div key={g.label}>
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 px-1">{g.label}</p>
+          <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1.5 px-1">{g.label}</p>
           <div className="space-y-1">
             {g.types.map((t) => (
               <div
@@ -845,30 +845,30 @@ export default function CustomModuleBuilderPage() {
     if (type) addField(type);
   };
 
-  const inp = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent';
+  const inp = 'w-full rounded-lg bg-surface text-text-primary border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ryze-400 focus:border-transparent';
 
   return (
     <div className="flex h-full">
       {/* ── Left Panel: module list ─────────────────────────────────────── */}
-      <div className="w-64 shrink-0 border-r border-gray-200 bg-gray-50 flex flex-col">
-        <div className="px-4 py-4 border-b border-gray-200 flex items-center gap-2">
-          <Cog6ToothIcon className="h-5 w-5 text-gray-500" />
-          <h2 className="text-sm font-semibold text-gray-800">Custom Modules</h2>
+      <div className="w-64 shrink-0 border-r border-border bg-background flex flex-col">
+        <div className="px-4 py-4 border-b border-border flex items-center gap-2">
+          <Cog6ToothIcon className="h-5 w-5 text-text-muted" />
+          <h2 className="text-sm font-semibold text-text-primary">Custom Modules</h2>
         </div>
         <div className="flex-1 overflow-y-auto">
           {/* ── Custom modules list ─────────────────────────────────────── */}
           <div className="py-2">
-            {isLoading && <p className="px-4 py-3 text-xs text-gray-400">Loading…</p>}
+            {isLoading && <p className="px-4 py-3 text-xs text-text-muted">Loading…</p>}
             {!isLoading && modules.length === 0 && (
-              <p className="px-4 py-3 text-xs text-gray-400">No modules yet. Create your first one.</p>
+              <p className="px-4 py-3 text-xs text-text-muted">No modules yet. Create your first one.</p>
             )}
             {modules.map((mod) => (
               <div
                 key={mod._id}
                 className={`group flex items-center gap-2 px-3 py-2 transition-colors text-sm ${
                   selectedId === mod._id
-                    ? 'bg-brand-50 text-brand-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-ryze-600/10 text-ryze-700 dark:text-ryze-400 font-medium'
+                    : 'text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
                 }`}
               >
                 <button
@@ -880,7 +880,7 @@ export default function CustomModuleBuilderPage() {
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); setDelTarget(mod); }}
-                  className="shrink-0 p-1 rounded text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="shrink-0 p-1 rounded text-text-muted hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                   title="Delete module"
                 >
                   <TrashIcon className="h-3.5 w-3.5" />
@@ -890,8 +890,8 @@ export default function CustomModuleBuilderPage() {
           </div>
 
           {/* ── Modules palette (drag to add relationship fields) ────────── */}
-          <div className="border-t border-gray-200 pt-3 pb-2 px-3">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Modules</p>
+          <div className="border-t border-border pt-3 pb-2 px-3">
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2">Modules</p>
             <div className="space-y-1">
               {RELATIONSHIP_TARGETS.map((t) => (
                 <div
@@ -929,10 +929,10 @@ export default function CustomModuleBuilderPage() {
           </div>
         </div>
 
-        <div className="p-3 border-t border-gray-200">
+        <div className="p-3 border-t border-border">
           <button
             onClick={() => setSelectedId('new')}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 transition-colors"
           >
             <PlusIcon className="h-4 w-4" />
             New Module
@@ -944,8 +944,8 @@ export default function CustomModuleBuilderPage() {
       {selectedId === null && (
         <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-8">
           <span className="text-5xl">📋</span>
-          <p className="text-gray-600 font-medium">Select a module to edit, or create a new one</p>
-          <p className="text-xs text-gray-400 max-w-xs">Custom modules appear in the sidebar with full CRUD — table, form, import/export</p>
+          <p className="text-text-muted font-medium">Select a module to edit, or create a new one</p>
+          <p className="text-xs text-text-muted max-w-xs">Custom modules appear in the sidebar with full CRUD — table, form, import/export</p>
         </div>
       )}
 
@@ -957,47 +957,47 @@ export default function CustomModuleBuilderPage() {
 
               {/* Module Info */}
               <section>
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Module Info</h3>
+                <h3 className="text-xs font-bold text-text-muted uppercase tracking-widest mb-4">Module Info</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Module Name (plural) *</label>
+                    <label className="block text-xs font-medium text-text-muted mb-1">Module Name (plural) *</label>
                     <input className={inp} value={name} onChange={(e) => {
                       setName(e.target.value);
                       if (!singularName) setSingularName(e.target.value.replace(/s$/i, ''));
                     }} placeholder="e.g. Vehicle Inspections" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Singular Name</label>
+                    <label className="block text-xs font-medium text-text-muted mb-1">Singular Name</label>
                     <input className={inp} value={singularName} onChange={(e) => setSingularName(e.target.value)} placeholder="e.g. Vehicle Inspection" />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-xs font-medium text-gray-600 mb-2">Icon (emoji)</label>
-                    <div className="max-h-36 overflow-y-auto border border-gray-200 rounded-xl p-2 mb-2 bg-white">
+                    <label className="block text-xs font-medium text-text-muted mb-2">Icon (emoji)</label>
+                    <div className="max-h-36 overflow-y-auto border border-border rounded-xl p-2 mb-2 bg-surface">
                       <div className="grid grid-cols-10 gap-1">
                         {PRESET_ICONS.map((em) => (
                           <button key={em} type="button" onClick={() => setIcon(em)}
-                            className={`text-xl p-1 rounded-lg transition-colors aspect-square flex items-center justify-center ${icon === em ? 'ring-2 ring-brand-500 bg-brand-50' : 'hover:bg-gray-100'}`}
+                            className={`text-xl p-1 rounded-lg transition-colors aspect-square flex items-center justify-center ${icon === em ? 'ring-2 ring-ryze-500 bg-ryze-600/10' : 'hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
                           >{em}</button>
                         ))}
                       </div>
                     </div>
-                    <input className="w-40 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+                    <input className="bg-surface text-text-primary w-40 rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ryze-400"
                       value={icon} onChange={(e) => setIcon(e.target.value)} placeholder="Or type emoji" maxLength={4} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Color</label>
+                    <label className="block text-xs font-medium text-text-muted mb-1">Color</label>
                     <div className="flex items-center gap-3">
                       <input type="color" value={color} onChange={(e) => setColor(e.target.value)}
-                        className="h-10 w-14 rounded border border-gray-300 cursor-pointer" />
+                        className="h-10 w-14 rounded border border-border cursor-pointer" />
                       <input className={`${inp} flex-1`} value={color} onChange={(e) => setColor(e.target.value)} placeholder="#6366f1" />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Menu Order</label>
+                    <label className="block text-xs font-medium text-text-muted mb-1">Menu Order</label>
                     <input type="number" className={inp} value={menuOrder} onChange={(e) => setMenuOrder(parseInt(e.target.value) || 0)} min={0} />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Pipeline field (optional)</label>
+                    <label className="block text-xs font-medium text-text-muted mb-1">Pipeline field (optional)</label>
                     <select
                       className={inp}
                       value={pipelineFieldKey}
@@ -1008,15 +1008,15 @@ export default function CustomModuleBuilderPage() {
                         <option key={f._id} value={f.key || labelToKey(f.label)}>{f.label}</option>
                       ))}
                     </select>
-                    <p className="text-[11px] text-gray-400 mt-1">
+                    <p className="text-[11px] text-text-muted mt-1">
                       Turns this field into a tenant-configurable pipeline — its options come from Configuration → Pipelines & Stages instead of the static list below, and Automations can trigger off it.
                     </p>
                   </div>
                   <div className="flex items-center col-span-2">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={showInSidebar} onChange={(e) => setShowInSidebar(e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-400" />
-                      <span className="text-sm text-gray-700">Show in sidebar</span>
+                        className="w-4 h-4 rounded border-border text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400" />
+                      <span className="text-sm text-text-primary">Show in sidebar</span>
                     </label>
                   </div>
                 </div>
@@ -1025,8 +1025,8 @@ export default function CustomModuleBuilderPage() {
               {/* Field Builder Canvas */}
               <section>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Form Fields</h3>
-                  <p className="text-xs text-gray-400">Drag to reorder · Click field to edit</p>
+                  <h3 className="text-xs font-bold text-text-muted uppercase tracking-widest">Form Fields</h3>
+                  <p className="text-xs text-text-muted">Drag to reorder · Click field to edit</p>
                 </div>
 
                 <div
@@ -1063,7 +1063,7 @@ export default function CustomModuleBuilderPage() {
                   ))}
 
                   {fields.length === 0 && (
-                    <div className="border-2 border-dashed border-gray-200 rounded-xl py-10 text-center text-sm text-gray-400">
+                    <div className="border-2 border-dashed border-border rounded-xl py-10 text-center text-sm text-text-muted">
                       Drag a field type from the right panel, or click "+ Add Field"
                     </div>
                   )}
@@ -1071,7 +1071,7 @@ export default function CustomModuleBuilderPage() {
 
                 <button
                   onClick={() => addField('text')}
-                  className="mt-3 flex items-center gap-2 text-sm text-brand-600 hover:text-brand-700 font-medium"
+                  className="mt-3 flex items-center gap-2 text-sm text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 font-medium"
                 >
                   <PlusIcon className="h-4 w-4" />
                   Add Field
@@ -1094,7 +1094,7 @@ export default function CustomModuleBuilderPage() {
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-5 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50"
+                    className="px-5 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 transition-colors disabled:opacity-50"
                   >
                     {saving ? 'Saving…' : selectedId === 'new' ? 'Create Module' : 'Save Changes'}
                   </button>

@@ -83,6 +83,7 @@ export default function QuotationsPage() {
     { key: 'validUntil',  label: 'Valid Until', render: (r) => r.validUntil ? new Date(r.validUntil).toLocaleDateString() : '—' },
     { key: 'status',   label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
     { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
+    { key: 'createdAt', label: 'Created Date', render: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—' },
   ], [customerNames]);
 
   // Open drawer pre-filled when navigated here from another module
@@ -107,32 +108,32 @@ export default function QuotationsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-4 shrink-0">
+      <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-4 shrink-0">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="h-9 w-9 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-            <DocumentTextIcon className="h-5 w-5 text-blue-600" />
+          <div className="h-9 w-9 rounded-lg bg-blue-100 dark:bg-blue-500/15 flex items-center justify-center shrink-0">
+            <DocumentTextIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-base font-semibold text-gray-900">Quotations</h1>
-            <p className="text-xs text-gray-500">{meta.total} total</p>
+            <h1 className="text-base font-semibold text-text-primary">Quotations</h1>
+            <p className="text-xs text-text-muted">{meta.total} total</p>
           </div>
         </div>
 
         <div className="relative">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search quotations…"
-            className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
+            className="pl-9 pr-4 py-2 text-sm bg-surface border border-border rounded-lg w-52 text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400"
           />
         </div>
 
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="text-sm border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-400"
+          className="text-sm bg-surface border border-border rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400"
         >
           <option value="">All Status</option>
           {statusOptions.map((s) => (
@@ -142,7 +143,7 @@ export default function QuotationsPage() {
 
         <button
           onClick={() => setDrawer({ open: true, record: null })}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors shrink-0"
+          className="flex items-center gap-2 px-4 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 transition-colors shrink-0"
         >
           <PlusIcon className="h-4 w-4" />
           New Quotation
@@ -175,6 +176,21 @@ export default function QuotationsPage() {
           const nextStep = steps[idx + 1] as any;
           const path = STEP_PATH[nextStep];
           if (!path) return null;
+          // Already converted — the backend marks workflowState='complete' on
+          // this row the moment a child document is created from it
+          // (workflow.engine.ts's advanceWorkflow). Without this check the
+          // button stayed clickable forever, and clicking it again created a
+          // second, unrelated child document from the same source.
+          if ((row as any).workflowState === 'complete') {
+            return (
+              <span
+                title={`Already converted to a ${STEP_LABEL[nextStep]}`}
+                className="px-2 py-1 rounded text-xs font-semibold bg-black/[0.06] dark:bg-white/[0.08] text-text-muted"
+              >
+                Converted
+              </span>
+            );
+          }
           return (
             <button
               onClick={(e) => {
@@ -182,7 +198,7 @@ export default function QuotationsPage() {
                 navigate(path, { state: { openDrawer: true, prefill: buildPrefill(row, 'quotation', nextStep) } });
               }}
               title={`Create ${STEP_LABEL[nextStep]} from this quotation`}
-              className="px-2 py-1 rounded text-xs font-semibold bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+              className="px-2 py-1 rounded text-xs font-semibold bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition-colors"
             >
               {'→'} {STEP_LABEL[nextStep]}
             </button>

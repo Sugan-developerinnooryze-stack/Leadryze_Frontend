@@ -133,15 +133,18 @@ export function useLeadConversionsQuery(id: string) {
   });
 }
 
-export function useLeadsStatsQuery() {
+export function useLeadsStatsQuery(range?: string, customFrom?: string, customTo?: string) {
   return useQuery({
-    queryKey: [...KEY, 'stats'],
-    queryFn: () => api.get(`${BASE}/stats`).then((r) => r.data.data as {
+    queryKey: [...KEY, 'stats', range, customFrom, customTo],
+    queryFn: () => api.get(`${BASE}/stats`, { params: range ? { range, customFrom, customTo } : undefined }).then((r) => r.data.data as {
       pipeline: { _id: string; count: number; revenue: number }[];
       total: number;
+      allTimeTotal: number;
       converted: number;
       totalRevenue: number;
       conversionRate: number;
+      priorTotal: number | null;
+      daily: { date: string; count: number }[];
     }),
   });
 }

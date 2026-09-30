@@ -82,7 +82,7 @@ const RELATIONSHIP_AVAILABLE_FIELDS: Record<string, Array<{ key: string; label: 
 
 /* ── Shared input style ───────────────────────────────────────────────────── */
 
-const inp = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent';
+const inp = 'w-full rounded-lg bg-surface border border-border px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400 focus:border-transparent';
 
 /* ── TableFieldGrid — the Table/Grid runtime widget ──────────────────────────
    Renders an editable grid from a field's meta.columns definition. Value is
@@ -108,17 +108,17 @@ function TableFieldGrid({ columns, value, onChange }: {
     onChange(rows.map((r, j) => (j === i ? { ...r, [colKey]: v } : r)));
 
   if (!columns.length) {
-    return <p className="text-xs text-gray-400 italic px-1">No columns defined — configure this field in Manage Modules first.</p>;
+    return <p className="text-xs text-text-muted italic px-1">No columns defined — configure this field in Manage Modules first.</p>;
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
+    <div className="border border-border rounded-lg overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-background">
             <tr>
               {columns.map((c) => (
-                <th key={c.key} className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
+                <th key={c.key} className="px-3 py-2 text-left text-xs font-semibold text-text-muted uppercase tracking-wide whitespace-nowrap">
                   {c.label}
                   {c.type === 'formula' && (
                     <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700 normal-case">fx</span>
@@ -128,7 +128,7 @@ function TableFieldGrid({ columns, value, onChange }: {
               <th className="w-10" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-border">
             {rows.map((row, i) => (
               <tr key={i}>
                 {columns.map((c) => (
@@ -139,7 +139,7 @@ function TableFieldGrid({ columns, value, onChange }: {
                       <select
                         value={row[c.key] ?? ''}
                         onChange={(e) => setCell(i, c.key, e.target.value)}
-                        className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand-400"
+                        className="w-full text-xs border border-border rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ryze-400 bg-background text-text-primary"
                       >
                         <option value="">Select…</option>
                         {(c.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
@@ -149,13 +149,13 @@ function TableFieldGrid({ columns, value, onChange }: {
                         type={c.type === 'number' ? 'number' : 'text'}
                         value={row[c.key] ?? ''}
                         onChange={(e) => setCell(i, c.key, e.target.value)}
-                        className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand-400"
+                        className="w-full text-xs border border-border rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ryze-400 bg-background text-text-primary"
                       />
                     )}
                   </td>
                 ))}
                 <td className="px-2 text-center">
-                  <button type="button" onClick={() => delRow(i)} className="text-gray-300 hover:text-red-400">
+                  <button type="button" onClick={() => delRow(i)} className="text-text-muted hover:text-red-400">
                     <TrashIcon className="h-4 w-4" />
                   </button>
                 </td>
@@ -167,7 +167,7 @@ function TableFieldGrid({ columns, value, onChange }: {
       <button
         type="button"
         onClick={addRow}
-        className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-brand-600 hover:bg-brand-50 border-t border-gray-100 transition-colors"
+        className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-ryze-600 dark:text-ryze-400 hover:bg-ryze-600/10 border-t border-border transition-colors"
       >
         <PlusIcon className="h-3.5 w-3.5" /> Add Row
       </button>
@@ -232,11 +232,11 @@ function ImageUploader({
             <div key={url} className="relative group">
               {isPdf(url) ? (
                 <a href={url} target="_blank" rel="noreferrer"
-                  className="w-20 h-20 flex items-center justify-center bg-gray-100 rounded-lg border border-gray-200 text-xs text-gray-500 hover:bg-gray-200 transition-colors">
+                  className="w-20 h-20 flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.06] rounded-lg border border-border text-xs text-text-muted hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-colors">
                   PDF
                 </a>
               ) : (
-                <img src={url} alt="" className="w-20 h-20 object-cover rounded-lg border border-gray-200" />
+                <img src={url} alt="" className="w-20 h-20 object-cover rounded-lg border border-border" />
               )}
               <button
                 onClick={() => removeUrl(url)}
@@ -262,7 +262,7 @@ function ImageUploader({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={upload.isPending}
-            className="flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-brand-400 hover:text-brand-600 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-3 py-2 border border-dashed border-border rounded-lg text-sm text-text-muted hover:border-ryze-400 hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300 transition-colors disabled:opacity-50"
           >
             {upload.isPending ? (
               <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -298,11 +298,11 @@ function StarRating({ value, max = 5, onChange }: { value: number; max?: number;
         >
           {star <= (hover || value)
             ? <StarSolid  className="h-6 w-6 text-amber-400" />
-            : <StarIcon   className="h-6 w-6 text-gray-300" />}
+            : <StarIcon   className="h-6 w-6 text-text-muted" />}
         </button>
       ))}
       {value > 0 && (
-        <span className="ml-1 text-xs text-gray-400">{value}/{max}</span>
+        <span className="ml-1 text-xs text-text-muted">{value}/{max}</span>
       )}
     </div>
   );
@@ -463,7 +463,7 @@ export default function CustomModuleFormDrawer({
 
     const wrap = (content: React.ReactNode) => (
       <div key={f.key} className="space-y-1.5">
-        <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
+        <label className="block text-xs font-semibold text-text-muted uppercase tracking-wide">
           {f.label}
           {f.required && <span className="text-red-500 ml-0.5">*</span>}
         </label>
@@ -491,7 +491,7 @@ export default function CustomModuleFormDrawer({
       case 'currency':
         return wrap(
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm">$</span>
             <input type="number" step="0.01" className={`${inp} pl-7`} value={val as string ?? ''} onChange={(e) => set(f.key, e.target.value)} />
           </div>
         );
@@ -510,11 +510,11 @@ export default function CustomModuleFormDrawer({
           <label className="flex items-center gap-2 cursor-pointer">
             <div
               onClick={() => set(f.key, !val)}
-              className={`relative w-10 h-6 rounded-full transition-colors cursor-pointer ${val ? 'bg-brand-500' : 'bg-gray-300'}`}
+              className={`relative w-10 h-6 rounded-full transition-colors cursor-pointer ${val ? 'bg-ryze-600/100' : 'bg-black/[0.08] dark:bg-white/[0.1]'}`}
             >
-              <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${val ? 'translate-x-4' : ''}`} />
+              <span className={`absolute top-1 left-1 w-4 h-4 bg-surface rounded-full shadow transition-transform ${val ? 'translate-x-4' : ''}`} />
             </div>
-            <span className="text-sm text-gray-600">{val ? 'Yes' : 'No'}</span>
+            <span className="text-sm text-text-muted">{val ? 'Yes' : 'No'}</span>
           </label>
         );
 
@@ -539,13 +539,13 @@ export default function CustomModuleFormDrawer({
                   type="checkbox"
                   checked={selected.includes(o)}
                   onChange={(e) => set(f.key, e.target.checked ? [...selected, o] : selected.filter((s) => s !== o))}
-                  className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-400"
+                  className="w-4 h-4 rounded border-border text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
                 />
-                <span className="text-sm text-gray-700">{o}</span>
+                <span className="text-sm text-text-primary">{o}</span>
               </label>
             ))}
             {(!f.options || f.options.length === 0) && (
-              <p className="text-xs text-gray-400">No options defined for this field.</p>
+              <p className="text-xs text-text-muted">No options defined for this field.</p>
             )}
           </div>
         );
@@ -584,7 +584,7 @@ export default function CustomModuleFormDrawer({
         return wrap(
           <div className="space-y-3">
             {totalLevels === 0 && (
-              <p className="text-xs text-gray-400 italic">No categories configured for this field.</p>
+              <p className="text-xs text-text-muted italic">No categories configured for this field.</p>
             )}
             {Array.from({ length: totalLevels }, (_, level) => {
               const isEnabled   = level === 0 || !!selected[level - 1];
@@ -593,9 +593,9 @@ export default function CustomModuleFormDrawer({
               const parentLabel = level > 0 ? getLevelLabel(level - 1).toLowerCase() : '';
               return (
                 <div key={level}>
-                  <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>
+                  <p className="text-xs font-medium text-text-muted mb-1">{label}</p>
                   <select
-                    className={`${inp} ${!isEnabled ? 'opacity-50 bg-gray-50 cursor-not-allowed' : ''}`}
+                    className={`${inp} ${!isEnabled ? 'opacity-50 bg-background cursor-not-allowed' : ''}`}
                     value={selected[level] ?? ''}
                     disabled={!isEnabled}
                     onChange={(e) => {
@@ -631,14 +631,14 @@ export default function CustomModuleFormDrawer({
           : undefined;
 
         const subFieldPanel = subFields.length > 0 && selectedRec ? (
-          <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 p-3 bg-gray-50 rounded-lg border border-gray-100">
+          <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 p-3 bg-background rounded-lg border border-border">
             {subFields.map((sfKey) => {
               const sfDef = (RELATIONSHIP_AVAILABLE_FIELDS[target] ?? []).find((a) => a.key === sfKey);
               const sfVal = selectedRec[sfKey];
               return (
                 <div key={sfKey}>
-                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{sfDef?.label ?? sfKey}</p>
-                  <p className="text-xs text-gray-800 mt-0.5">
+                  <p className="text-[10px] font-medium text-text-muted uppercase tracking-wide">{sfDef?.label ?? sfKey}</p>
+                  <p className="text-xs text-text-primary mt-0.5">
                     {sfVal !== undefined && sfVal !== null && sfVal !== '' ? String(sfVal) : '—'}
                   </p>
                 </div>
@@ -717,20 +717,20 @@ export default function CustomModuleFormDrawer({
       <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40" onClick={onClose} />
 
       {/* Drawer */}
-      <div className={`fixed right-0 top-0 h-full w-full max-w-[52vw] min-w-[600px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-out ${visible ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed right-0 top-0 h-full w-full max-w-[52vw] min-w-[600px] bg-surface shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-out ${visible ? 'translate-x-0' : 'translate-x-full'}`}>
         {/* Header */}
-        <div className="flex items-center justify-between px-7 py-5 border-b border-gray-100 shrink-0">
+        <div className="flex items-center justify-between px-7 py-5 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-1 h-8 rounded-full bg-brand-500 shrink-0" />
+            <div className="w-1 h-8 rounded-full bg-ryze-600/100 shrink-0" />
             <div>
-              <h2 className="text-base font-semibold text-gray-900 leading-tight">{title}</h2>
-              <p className="text-xs text-gray-400 mt-0.5">{record?._id ? 'Edit record' : 'Create new record'}</p>
+              <h2 className="text-base font-semibold text-text-primary leading-tight">{title}</h2>
+              <p className="text-xs text-text-muted mt-0.5">{record?._id ? 'Edit record' : 'Create new record'}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-xl text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
           >
             <XMarkIcon className="h-5 w-5" />
           </button>
@@ -744,23 +744,23 @@ export default function CustomModuleFormDrawer({
             )}
             {fields.map((f) => renderField(f))}
             {fields.length === 0 && (
-              <p className="text-sm text-gray-400 text-center py-8">No fields defined for this module yet.</p>
+              <p className="text-sm text-text-muted text-center py-8">No fields defined for this module yet.</p>
             )}
           </div>
 
           {/* Footer */}
-          <div className="px-7 py-5 border-t border-gray-100 flex items-center justify-center gap-3 shrink-0 bg-gray-50/60">
+          <div className="px-7 py-5 border-t border-border flex items-center justify-center gap-3 shrink-0 bg-black/[0.015] dark:bg-white/[0.02]">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+              className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-60 transition-colors flex items-center gap-2 min-w-[120px] justify-center"
+              className="px-6 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-60 transition-colors flex items-center gap-2 min-w-[120px] justify-center"
             >
               {saving && (
                 <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">

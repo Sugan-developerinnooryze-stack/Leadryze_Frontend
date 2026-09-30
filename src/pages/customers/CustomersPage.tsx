@@ -61,8 +61,8 @@ const str = (v: unknown): string => {
   return String(v);
 };
 
-const INPUT = 'w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-300';
-const LBL   = 'block text-xs font-medium text-gray-500 mb-1';
+const INPUT = 'w-full px-2.5 py-1.5 bg-surface text-text-primary border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ryze-300';
+const LBL   = 'block text-xs font-medium text-text-muted mb-1';
 
 /* ─── Avatar ─────────────────────────────────────────────────────────── */
 function Avatar({ name }: { name: string }) {
@@ -294,8 +294,8 @@ export default function CustomersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-          <p className="text-sm text-gray-500">{filtered.length} records</p>
+          <h1 className="text-2xl font-bold text-text-primary">Customers</h1>
+          <p className="text-sm text-text-muted">{filtered.length} records</p>
         </div>
         {canCreate && (
           <button className="btn-primary gap-2" onClick={() => setShowModal(true)}>
@@ -305,13 +305,13 @@ export default function CustomersPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-0 border-b border-gray-200">
+      <div className="flex gap-0 border-b border-border">
         {TABS.map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
               tab === t.id
-                ? 'border-brand-500 text-brand-700 bg-brand-50'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                ? 'border-ryze-500 text-ryze-700 dark:text-ryze-400 bg-ryze-600/10'
+                : 'border-transparent text-text-muted hover:text-text-primary hover:bg-background'
             }`}>
             {t.label}
           </button>
@@ -321,12 +321,12 @@ export default function CustomersPage() {
       {/* Filters bar */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-48 max-w-sm">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
           <input className="input pl-9 py-2 text-sm" placeholder="Search name, email, company…"
             value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <div className="flex items-center gap-2">
-          <FunnelIcon className="h-4 w-4 text-gray-400" />
+          <FunnelIcon className="h-4 w-4 text-text-muted" />
           <select className="input py-2 text-sm w-36" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="">All Status</option>
             <option value="new">New</option>
@@ -343,37 +343,37 @@ export default function CustomersPage() {
               onClick={() => setShowColPicker((v) => !v)}
               className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border transition-colors ${
                 extraCols.length > 0
-                  ? 'bg-brand-50 border-brand-300 text-brand-700'
-                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                  ? 'bg-ryze-600/10 border-ryze-300 dark:border-ryze-700 text-ryze-700 dark:text-ryze-400'
+                  : 'bg-surface border-border text-text-muted hover:bg-background'
               }`}
             >
               <Cog6ToothIcon className="h-4 w-4" />
               Columns
               {extraCols.length > 0 && (
-                <span className="bg-brand-600 text-white text-xs rounded-full px-1.5 py-0.5 leading-none">
+                <span className="bg-ryze-600 text-white text-xs rounded-full px-1.5 py-0.5 leading-none">
                   {extraCols.length}
                 </span>
               )}
             </button>
 
             {showColPicker && (
-              <div className="absolute right-0 top-full mt-2 z-30 bg-white border border-gray-200 rounded-xl shadow-xl w-64 p-3">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              <div className="absolute right-0 top-full mt-2 z-30 bg-surface border border-border rounded-xl shadow-xl w-64 p-3">
+                <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
                   CRM fields — toggle to show as column
                 </p>
-                <p className="text-xs text-gray-400 mb-3">
+                <p className="text-xs text-text-muted mb-3">
                   Synced from Zoho/HubSpot. New fields appear here after sync.
                 </p>
                 <div className="space-y-1 max-h-64 overflow-y-auto">
                   {allCustomFieldKeys.map((key) => (
-                    <label key={key} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <label key={key} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-background cursor-pointer">
                       <input
                         type="checkbox"
                         checked={extraCols.includes(key)}
                         onChange={() => toggleCol(key)}
-                        className="rounded text-brand-600"
+                        className="rounded text-ryze-600 dark:text-ryze-400"
                       />
-                      <span className="text-sm text-gray-700">{key.replace(/_/g, ' ')}</span>
+                      <span className="text-sm text-text-primary">{key.replace(/_/g, ' ')}</span>
                     </label>
                   ))}
                 </div>
@@ -392,21 +392,21 @@ export default function CustomersPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden overflow-x-auto">
+      <div className="bg-surface rounded-2xl border border-border overflow-hidden overflow-x-auto">
         {isLoading ? (
           <div className="animate-pulse p-4 space-y-3">
-            {[...Array(8)].map((_, i) => <div key={i} className="h-12 bg-gray-100 rounded-lg" />)}
+            {[...Array(8)].map((_, i) => <div key={i} className="h-12 bg-black/[0.04] dark:bg-white/[0.06] rounded-lg" />)}
           </div>
         ) : paginated.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-text-muted">
             <p className="text-4xl mb-3">👥</p>
             <p className="font-medium">No records found</p>
             <p className="text-sm mt-1">{search ? 'Try a different search term' : 'Connect your CRM or add customers manually'}</p>
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <thead className="bg-background border-b border-border">
+              <tr className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider">
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Company</th>
                 <th className="px-4 py-3">Email</th>
@@ -422,49 +422,49 @@ export default function CustomersPage() {
                 <th className="px-4 py-3">Created</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {paginated.map((c) => (
                 <tr key={c._id} onClick={() => { setSelected(c); setEditMode(false); setConfirmDel(false); setEditError(''); }}
                   className="hover:bg-blue-50/40 cursor-pointer transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
                       <Avatar name={c.name} />
-                      <p className="font-medium text-gray-900 leading-tight">{c.name}</p>
+                      <p className="font-medium text-text-primary leading-tight">{c.name}</p>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{str(c.company) || <span className="text-gray-300">—</span>}</td>
-                  <td className="px-4 py-3 text-gray-600 max-w-48 truncate">{str(c.email) || <span className="text-gray-300">—</span>}</td>
-                  <td className="px-4 py-3 text-gray-600">{str(c.phone) || <span className="text-gray-300">—</span>}</td>
+                  <td className="px-4 py-3 text-text-muted">{str(c.company) || <span className="text-text-muted">—</span>}</td>
+                  <td className="px-4 py-3 text-text-muted max-w-48 truncate">{str(c.email) || <span className="text-text-muted">—</span>}</td>
+                  <td className="px-4 py-3 text-text-muted">{str(c.phone) || <span className="text-text-muted">—</span>}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
                       {(c.sources && c.sources.length > 0 ? c.sources : [c.channel]).map((s) => (
                         <span key={s} title={s} className="text-base">{SOURCE_ICON[s] || '🌐'}</span>
                       ))}
                       {(!c.sources || c.sources.length <= 1) && (
-                        <span className="text-gray-500 capitalize text-xs ml-1">{str(c.leadSource) || c.channel}</span>
+                        <span className="text-text-muted capitalize text-xs ml-1">{str(c.leadSource) || c.channel}</span>
                       )}
                     </div>
                   </td>
                   {extraCols.map((col) => (
-                    <td key={col} className="px-4 py-3 text-gray-600 max-w-40 truncate whitespace-nowrap">
-                      {str(c.customFields?.[col]) || <span className="text-gray-300">—</span>}
+                    <td key={col} className="px-4 py-3 text-text-muted max-w-40 truncate whitespace-nowrap">
+                      {str(c.customFields?.[col]) || <span className="text-text-muted">—</span>}
                     </td>
                   ))}
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
                       c.recordType === 'lead'    ? 'bg-orange-50 text-orange-700 border border-orange-200' :
                       c.recordType === 'contact' ? 'bg-teal-50 text-teal-700 border border-teal-200' :
-                                                   'bg-gray-50 text-gray-700 border border-gray-200'
+                                                   'bg-background text-text-primary border border-border'
                     }`}>
                       {c.recordType}
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${STATUS_COLORS[c.status] || 'bg-gray-50 text-gray-600'}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${STATUS_COLORS[c.status] || 'bg-background text-text-muted'}`}>
                       {c.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
+                  <td className="px-4 py-3 text-text-muted whitespace-nowrap">
                     {format(new Date(c.createdAt), 'dd MMM yyyy')}
                   </td>
                 </tr>
@@ -474,15 +474,15 @@ export default function CustomersPage() {
         )}
 
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50">
-            <p className="text-xs text-gray-500">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-background">
+            <p className="text-xs text-text-muted">
               {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length}
             </p>
             <div className="flex gap-1">
               {[...Array(totalPages)].map((_, i) => (
                 <button key={i} onClick={() => setPage(i + 1)}
                   className={`h-7 w-7 rounded text-xs font-medium transition-colors ${
-                    page === i + 1 ? 'bg-brand-600 text-white' : 'text-gray-500 hover:bg-gray-200'
+                    page === i + 1 ? 'bg-ryze-600 text-white' : 'text-text-muted hover:bg-black/[0.06] dark:hover:bg-white/[0.08]'
                   }`}>
                   {i + 1}
                 </button>
@@ -496,11 +496,11 @@ export default function CustomersPage() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/30" onClick={closeDrawer} />
-          <div className="w-full max-w-sm bg-white shadow-2xl flex flex-col overflow-hidden">
+          <div className="w-full max-w-sm bg-surface shadow-2xl flex flex-col overflow-hidden">
 
             {/* Drawer header */}
             <div className="px-5 py-4 border-b flex items-center justify-between gap-2 shrink-0">
-              <h2 className="font-bold text-gray-900">
+              <h2 className="font-bold text-text-primary">
                 {editMode ? 'Edit Customer' : 'Record Detail'}
               </h2>
               <div className="flex items-center gap-1.5">
@@ -509,7 +509,7 @@ export default function CustomersPage() {
                     {canEdit && (
                       <button
                         onClick={() => openEdit(selected)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs border border-border rounded-lg hover:bg-background text-text-muted"
                       >
                         <PencilSquareIcon className="h-3.5 w-3.5" /> Edit
                       </button>
@@ -530,21 +530,21 @@ export default function CustomersPage() {
                       form="edit-customer-form"
                       type="submit"
                       disabled={editSaving}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50"
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-ryze-600 text-white rounded-lg hover:bg-ryze-700 disabled:opacity-50"
                     >
                       <CheckIcon className="h-3.5 w-3.5" />
                       {editSaving ? 'Saving…' : 'Save'}
                     </button>
                     <button
                       onClick={() => { setEditMode(false); setEditError(''); setConfirmDel(false); }}
-                      className="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
+                      className="px-2.5 py-1.5 text-xs border border-border rounded-lg hover:bg-background text-text-muted"
                     >
                       Cancel
                     </button>
                   </>
                 )}
-                <button onClick={closeDrawer} className="p-1.5 hover:bg-gray-100 rounded-lg ml-1">
-                  <XMarkIcon className="h-5 w-5 text-gray-400" />
+                <button onClick={closeDrawer} className="p-1.5 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] rounded-lg ml-1">
+                  <XMarkIcon className="h-5 w-5 text-text-muted" />
                 </button>
               </div>
             </div>
@@ -572,7 +572,7 @@ export default function CustomersPage() {
                   </button>
                   <button
                     onClick={() => setConfirmDel(false)}
-                    className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
+                    className="px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-background text-text-muted"
                   >
                     Cancel
                   </button>
@@ -584,16 +584,16 @@ export default function CustomersPage() {
             {!editMode && (
               <div className="flex-1 overflow-y-auto p-5 space-y-5">
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-lg">
+                  <div className="h-12 w-12 rounded-full bg-ryze-600/15 flex items-center justify-center text-ryze-700 dark:text-ryze-400 font-bold text-lg">
                     {selected.name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900 text-base">{selected.name}</p>
+                    <p className="font-bold text-text-primary text-base">{selected.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${
                         selected.recordType === 'lead'    ? 'bg-orange-100 text-orange-700' :
                         selected.recordType === 'contact' ? 'bg-teal-100 text-teal-700' :
-                                                            'bg-gray-100 text-gray-700'
+                                                            'bg-black/[0.04] dark:bg-white/[0.06] text-text-primary'
                       }`}>{selected.recordType}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${STATUS_COLORS[selected.status]}`}>
                         {selected.status}
@@ -605,7 +605,7 @@ export default function CustomersPage() {
                 {selected.sources && selected.sources.length > 0 && (
                   <div className="flex items-center gap-2 flex-wrap">
                     {selected.sources.map((s) => (
-                      <span key={s} className="flex items-center gap-1 bg-gray-100 text-gray-600 px-2 py-1 rounded-lg text-xs font-medium">
+                      <span key={s} className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] text-text-muted px-2 py-1 rounded-lg text-xs font-medium">
                         {SOURCE_ICON[s] || '🌐'} {s}
                       </span>
                     ))}
@@ -619,22 +619,22 @@ export default function CustomersPage() {
                   { label: 'Lead Source', value: str(selected.leadSource) },
                   { label: 'Created',     value: format(new Date(selected.createdAt), 'dd MMM yyyy, hh:mm a') },
                 ].map(({ label, value }) => value ? (
-                  <div key={label} className="flex justify-between text-sm border-b border-gray-50 pb-3">
-                    <span className="text-gray-500 font-medium">{label}</span>
-                    <span className="text-gray-900 text-right max-w-48 truncate">{value}</span>
+                  <div key={label} className="flex justify-between text-sm border-b border-border pb-3">
+                    <span className="text-text-muted font-medium">{label}</span>
+                    <span className="text-text-primary text-right max-w-48 truncate">{value}</span>
                   </div>
                 ) : null)}
 
                 {selected.customFields && Object.keys(selected.customFields).length > 0 && (
                   <div>
-                    <p className="text-xs text-gray-500 font-medium mb-2 uppercase tracking-wide">
+                    <p className="text-xs text-text-muted font-medium mb-2 uppercase tracking-wide">
                       CRM Fields ({Object.keys(selected.customFields).length})
                     </p>
-                    <div className="bg-gray-50 rounded-lg p-3 space-y-1.5 max-h-56 overflow-y-auto">
+                    <div className="bg-background rounded-lg p-3 space-y-1.5 max-h-56 overflow-y-auto">
                       {Object.entries(selected.customFields).map(([k, v]) => (
                         <div key={k} className="flex justify-between text-xs gap-2">
-                          <span className="text-gray-400 shrink-0">{k.replace(/_/g, ' ')}</span>
-                          <span className="text-gray-700 text-right font-medium truncate max-w-36">{str(v)}</span>
+                          <span className="text-text-muted shrink-0">{k.replace(/_/g, ' ')}</span>
+                          <span className="text-text-primary text-right font-medium truncate max-w-36">{str(v)}</span>
                         </div>
                       ))}
                     </div>
@@ -643,10 +643,10 @@ export default function CustomersPage() {
 
                 {selected.tags.length > 0 && (
                   <div>
-                    <p className="text-xs text-gray-500 font-medium mb-2">Tags</p>
+                    <p className="text-xs text-text-muted font-medium mb-2">Tags</p>
                     <div className="flex flex-wrap gap-1.5">
                       {selected.tags.map((t) => (
-                        <span key={t} className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">{t}</span>
+                        <span key={t} className="bg-black/[0.04] dark:bg-white/[0.06] text-text-muted px-2 py-0.5 rounded text-xs">{t}</span>
                       ))}
                     </div>
                   </div>
@@ -719,11 +719,11 @@ export default function CustomersPage() {
                 </div>
 
                 <div>
-                  <label className={LBL}>Tags <span className="text-gray-400 font-normal">(comma separated)</span></label>
+                  <label className={LBL}>Tags <span className="text-text-muted font-normal">(comma separated)</span></label>
                   <input className={INPUT} value={editForm.tags} onChange={ef('tags')} placeholder="hot-lead, enterprise" />
                 </div>
 
-                <div className="pt-1 text-xs text-gray-400 border-t border-gray-100">
+                <div className="pt-1 text-xs text-text-muted border-t border-border">
                   Changes save locally and sync back to the source CRM automatically.
                 </div>
               </form>
@@ -778,7 +778,7 @@ export default function CustomersPage() {
             </div>
           </div>
           <div>
-            <label className="label">Tags <span className="text-gray-400 font-normal">(comma separated)</span></label>
+            <label className="label">Tags <span className="text-text-muted font-normal">(comma separated)</span></label>
             <input className="input" placeholder="hot-lead, enterprise" value={form.tags} onChange={f('tags')} />
           </div>
           <div className="flex justify-end gap-3 pt-2">

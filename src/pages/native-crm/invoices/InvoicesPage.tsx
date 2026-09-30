@@ -65,12 +65,13 @@ export default function InvoicesPage() {
     { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `$${Number(r.servicesAmountWithTax).toFixed(2)}` : '—' },
     { key: 'dueDate',    label: 'Due Date', render: (r) => r.dueDate ? new Date(r.dueDate).toLocaleDateString() : '—' },
     { key: 'paid',       label: 'Paid',     render: (r) => (
-      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${r.paid ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${r.paid ? 'bg-green-100 dark:bg-green-500/15 text-green-700 dark:text-green-400' : 'bg-black/[0.06] dark:bg-white/[0.08] text-text-muted'}`}>
         {r.paid ? 'Yes' : 'No'}
       </span>
     )},
     { key: 'status',    label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
     { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
+    { key: 'createdAt', label: 'Created Date', render: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—' },
   ], [customerNames]);
 
   useEffect(() => {
@@ -94,32 +95,32 @@ export default function InvoicesPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-4 shrink-0">
+      <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-4 shrink-0">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="h-9 w-9 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
-            <BanknotesIcon className="h-5 w-5 text-green-600" />
+          <div className="h-9 w-9 rounded-lg bg-green-100 dark:bg-green-500/15 flex items-center justify-center shrink-0">
+            <BanknotesIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-base font-semibold text-gray-900">Invoices</h1>
-            <p className="text-xs text-gray-500">{meta.total} total</p>
+            <h1 className="text-base font-semibold text-text-primary">Invoices</h1>
+            <p className="text-xs text-text-muted">{meta.total} total</p>
           </div>
         </div>
 
         <div className="relative">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search invoices…"
-            className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-brand-400"
+            className="pl-9 pr-4 py-2 text-sm bg-surface border border-border rounded-lg w-52 text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400"
           />
         </div>
 
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="text-sm border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-400"
+          className="text-sm bg-surface border border-border rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400"
         >
           <option value="">All Status</option>
           {statusOptions.map((s) => (
@@ -129,7 +130,7 @@ export default function InvoicesPage() {
 
         <button
           onClick={() => setDrawer({ open: true, record: null })}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors shrink-0"
+          className="flex items-center gap-2 px-4 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 transition-colors shrink-0"
         >
           <PlusIcon className="h-4 w-4" />
           New Invoice

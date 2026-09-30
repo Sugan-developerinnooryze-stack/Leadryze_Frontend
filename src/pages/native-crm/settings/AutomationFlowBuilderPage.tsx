@@ -30,14 +30,14 @@ import { useAutomationTemplateQuery, useCreateAutomationTemplate } from '../../.
 /* ── Visual metadata per node type ────────────────────────────────────── */
 
 const NODE_META: Record<FlowNodeType, { label: string; color: string; ring: string; bg: string; icon: typeof BoltIcon }> = {
-  trigger:   { label: 'Trigger',   color: 'text-emerald-700', ring: 'border-emerald-300', bg: 'bg-emerald-50', icon: BoltIcon },
-  condition: { label: 'Condition', color: 'text-blue-700',    ring: 'border-blue-300',    bg: 'bg-blue-50',    icon: FunnelIcon },
-  action:    { label: 'Action',    color: 'text-purple-700',  ring: 'border-purple-300',  bg: 'bg-purple-50',  icon: PaperAirplaneIcon },
-  delay:     { label: 'Delay',     color: 'text-amber-700',   ring: 'border-amber-300',   bg: 'bg-amber-50',   icon: ClockIcon },
-  merge:     { label: 'Merge',     color: 'text-gray-700',    ring: 'border-gray-300',    bg: 'bg-gray-50',    icon: Squares2X2Icon },
-  subFlow:   { label: 'Sub-Flow',  color: 'text-indigo-700',  ring: 'border-indigo-300',  bg: 'bg-indigo-50',  icon: ArrowPathIcon },
-  loop:      { label: 'Loop',      color: 'text-pink-700',    ring: 'border-pink-300',    bg: 'bg-pink-50',    icon: ArrowsPointingOutIcon },
-  approval:  { label: 'Approval',  color: 'text-teal-700',    ring: 'border-teal-300',    bg: 'bg-teal-50',    icon: UserGroupIcon },
+  trigger:   { label: 'Trigger',   color: 'text-success-700 dark:text-success-500', ring: 'border-success-500/40', bg: 'bg-success-500/15', icon: BoltIcon },
+  condition: { label: 'Condition', color: 'text-blue-700 dark:text-blue-400',    ring: 'border-blue-300 dark:border-blue-500/40',    bg: 'bg-blue-50 dark:bg-blue-500/15',    icon: FunnelIcon },
+  action:    { label: 'Action',    color: 'text-purple-700 dark:text-purple-400',  ring: 'border-purple-300 dark:border-purple-500/40',  bg: 'bg-purple-50 dark:bg-purple-500/15',  icon: PaperAirplaneIcon },
+  delay:     { label: 'Delay',     color: 'text-amber-700 dark:text-amber-400',   ring: 'border-amber-300 dark:border-amber-500/40',   bg: 'bg-amber-50 dark:bg-amber-500/15',   icon: ClockIcon },
+  merge:     { label: 'Merge',     color: 'text-text-primary',    ring: 'border-border',    bg: 'bg-background',    icon: Squares2X2Icon },
+  subFlow:   { label: 'Sub-Flow',  color: 'text-indigo-700 dark:text-indigo-400',  ring: 'border-indigo-300 dark:border-indigo-500/40',  bg: 'bg-indigo-50 dark:bg-indigo-500/15',  icon: ArrowPathIcon },
+  loop:      { label: 'Loop',      color: 'text-pink-700 dark:text-pink-400',    ring: 'border-pink-300 dark:border-pink-500/40',    bg: 'bg-pink-50 dark:bg-pink-500/15',    icon: ArrowsPointingOutIcon },
+  approval:  { label: 'Approval',  color: 'text-teal-700 dark:text-teal-400',    ring: 'border-teal-300 dark:border-teal-500/40',    bg: 'bg-teal-50 dark:bg-teal-500/15',    icon: UserGroupIcon },
 };
 
 /** Left-palette node *types* (Trigger excluded — auto-seeded, singular,
@@ -121,26 +121,26 @@ function FlowNodeCard({ data, selected }: NodeProps) {
   const incomplete = needsConfiguration(node);
 
   return (
-    <div className={`relative rounded-xl border-2 ${selected ? 'border-brand-500 shadow-lg' : meta.ring} ${meta.bg} px-3 py-2.5 min-w-[190px] max-w-[240px]`}>
+    <div className={`relative rounded-xl border-2 ${selected ? 'border-ryze-500 shadow-lg' : meta.ring} ${meta.bg} px-3 py-2.5 min-w-[190px] max-w-[240px]`}>
       {incomplete && (
         <span
           title="Looks unconfigured — review before publishing"
-          className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 rounded-full bg-amber-400 border-2 border-white"
+          className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 rounded-full bg-amber-400 border-2 border-surface"
         />
       )}
-      {node.type !== 'trigger' && <Handle type="target" position={Position.Top} className="!bg-gray-400 !w-2.5 !h-2.5" />}
+      {node.type !== 'trigger' && <Handle type="target" position={Position.Top} className="!bg-gray-400 dark:!bg-gray-500 !w-2.5 !h-2.5" />}
       <div className="flex items-center gap-1.5 mb-1">
         <Icon className={`h-3.5 w-3.5 ${meta.color} shrink-0`} />
         <span className={`text-[10px] font-semibold uppercase tracking-wide ${meta.color}`}>{meta.label}</span>
       </div>
-      <p className="text-xs text-gray-800 font-medium truncate">{(data as any).label as string}</p>
-      <p className="text-[11px] text-gray-500 truncate mt-0.5">{describeNode(node)}</p>
+      <p className="text-xs text-text-primary font-medium truncate">{(data as any).label as string}</p>
+      <p className="text-[11px] text-text-muted truncate mt-0.5">{describeNode(node)}</p>
 
       {node.type === 'condition' && (
         <>
           <Handle type="source" position={Position.Bottom} id="true" style={{ left: '30%' }} className="!bg-emerald-500 !w-2.5 !h-2.5" />
           <Handle type="source" position={Position.Bottom} id="false" style={{ left: '70%' }} className="!bg-red-500 !w-2.5 !h-2.5" />
-          <div className="flex justify-between text-[9px] text-gray-400 mt-1 px-1">
+          <div className="flex justify-between text-[9px] text-text-muted mt-1 px-1">
             <span>True</span><span>False</span>
           </div>
         </>
@@ -149,7 +149,7 @@ function FlowNodeCard({ data, selected }: NodeProps) {
         <>
           <Handle type="source" position={Position.Bottom} id="success" style={{ left: '30%' }} className="!bg-emerald-500 !w-2.5 !h-2.5" />
           <Handle type="source" position={Position.Bottom} id="failure" style={{ left: '70%' }} className="!bg-red-500 !w-2.5 !h-2.5" />
-          <div className="flex justify-between text-[9px] text-gray-400 mt-1 px-1">
+          <div className="flex justify-between text-[9px] text-text-muted mt-1 px-1">
             <span>Success</span><span>Failure</span>
           </div>
         </>
@@ -158,13 +158,13 @@ function FlowNodeCard({ data, selected }: NodeProps) {
         <>
           <Handle type="source" position={Position.Bottom} id="approve" style={{ left: '30%' }} className="!bg-emerald-500 !w-2.5 !h-2.5" />
           <Handle type="source" position={Position.Bottom} id="reject" style={{ left: '70%' }} className="!bg-red-500 !w-2.5 !h-2.5" />
-          <div className="flex justify-between text-[9px] text-gray-400 mt-1 px-1">
+          <div className="flex justify-between text-[9px] text-text-muted mt-1 px-1">
             <span>Approve</span><span>Reject</span>
           </div>
         </>
       )}
       {(node.type === 'trigger' || node.type === 'delay' || node.type === 'merge' || node.type === 'subFlow' || node.type === 'loop') && (
-        <Handle type="source" position={Position.Bottom} className="!bg-gray-400 !w-2.5 !h-2.5" />
+        <Handle type="source" position={Position.Bottom} className="!bg-gray-400 dark:!bg-gray-500 !w-2.5 !h-2.5" />
       )}
     </div>
   );
@@ -188,25 +188,25 @@ function ConditionsEditor({ conditions, onChange, fields }: {
     <div className="space-y-2">
       {conditions.map((c, i) => (
         <div key={i} className="flex items-center gap-1.5">
-          <select value={c.field} onChange={(e) => patch(i, { field: e.target.value })} className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-gray-300 rounded-lg">
+          <select value={c.field} onChange={(e) => patch(i, { field: e.target.value })} className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary">
             <option value="">Field…</option>
             {fields.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
           </select>
-          <select value={c.operator} onChange={(e) => patch(i, { operator: e.target.value as any })} className="px-2 py-1.5 text-xs border border-gray-300 rounded-lg">
+          <select value={c.operator} onChange={(e) => patch(i, { operator: e.target.value as any })} className="px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary">
             {CONDITION_OPERATORS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           {c.operator !== 'is_empty' && c.operator !== 'is_not_empty' && (
             <input value={c.value ?? ''} onChange={(e) => patch(i, { value: e.target.value })} placeholder="Value"
-              className="w-20 px-2 py-1.5 text-xs border border-gray-300 rounded-lg" />
+              className="w-20 px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary" />
           )}
           {c.operator === 'between' && (
             <input value={c.value2 ?? ''} onChange={(e) => patch(i, { value2: e.target.value })} placeholder="and…"
-              className="w-20 px-2 py-1.5 text-xs border border-gray-300 rounded-lg" />
+              className="w-20 px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary" />
           )}
-          <button onClick={() => remove(i)} className="p-1 text-gray-400 hover:text-red-500 shrink-0"><TrashIcon className="h-3.5 w-3.5" /></button>
+          <button onClick={() => remove(i)} className="p-1 text-text-muted hover:text-red-500 shrink-0"><TrashIcon className="h-3.5 w-3.5" /></button>
         </div>
       ))}
-      <button onClick={add} className="text-[11px] font-medium text-brand-600 hover:text-brand-700">+ Add condition</button>
+      <button onClick={add} className="text-[11px] font-medium text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300">+ Add condition</button>
     </div>
   );
 }
@@ -237,20 +237,20 @@ function NodeConfigPanel({
   const Icon = meta.icon;
 
   return (
-    <div className="w-96 shrink-0 bg-white border-l border-gray-200 h-full overflow-y-auto flex flex-col">
-      <div className={`px-4 py-3.5 border-b border-gray-100 flex items-center gap-2.5 ${meta.bg}`}>
+    <div className="w-96 shrink-0 bg-surface border-l border-border h-full overflow-y-auto flex flex-col">
+      <div className={`px-4 py-3.5 border-b border-border flex items-center gap-2.5 ${meta.bg}`}>
         <Icon className={`h-4 w-4 ${meta.color}`} />
         <span className={`text-sm font-semibold ${meta.color}`}>{meta.label} node</span>
-        <button onClick={onClose} className="ml-auto p-1 rounded hover:bg-white/60 text-gray-500"><XMarkIcon className="h-4 w-4" /></button>
+        <button onClick={onClose} className="ml-auto p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-text-muted"><XMarkIcon className="h-4 w-4" /></button>
       </div>
 
       <div className="p-4 space-y-4 flex-1">
         {node.type === 'trigger' && (
           <>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Fires when</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Fires when</label>
               <select value={node.triggerType ?? 'record_created'} onChange={(e) => onChange({ triggerType: e.target.value as any, triggerStage: '', triggerField: '' })}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                 <option value="record_created">New record created</option>
                 <option value="status_changed">Status changes to…</option>
                 <option value="record_updated">Field updated</option>
@@ -261,8 +261,8 @@ function NodeConfigPanel({
             </div>
             {node.triggerType !== 'webhook' && node.triggerType !== 'scheduled' && (
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Module</label>
-                <select value={node.module ?? ''} onChange={(e) => onChange({ module: e.target.value as any })} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Module</label>
+                <select value={node.module ?? ''} onChange={(e) => onChange({ module: e.target.value as any })} className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                   <option value="">Select…</option>
                   {(node.triggerType === 'status_changed' ? STAGE_CAPABLE : EVERY_MODULE).map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
                 </select>
@@ -270,8 +270,8 @@ function NodeConfigPanel({
             )}
             {node.triggerType === 'status_changed' && (
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Stage</label>
-                <select value={node.triggerStage ?? ''} onChange={(e) => onChange({ triggerStage: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Stage</label>
+                <select value={node.triggerStage ?? ''} onChange={(e) => onChange({ triggerStage: e.target.value })} className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                   <option value="">Select stage…</option>
                   {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
                 </select>
@@ -279,8 +279,8 @@ function NodeConfigPanel({
             )}
             {node.triggerType === 'record_updated' && (
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Watch field</label>
-                <select value={node.triggerField ?? ''} onChange={(e) => onChange({ triggerField: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Watch field</label>
+                <select value={node.triggerField ?? ''} onChange={(e) => onChange({ triggerField: e.target.value })} className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                   <option value="">Select field…</option>
                   {triggerFields.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
                 </select>
@@ -289,15 +289,15 @@ function NodeConfigPanel({
             {node.triggerType === 'scheduled' && (
               <>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Watch which records</label>
-                  <select value={node.scheduleModule ?? ''} onChange={(e) => onChange({ scheduleModule: e.target.value as any })} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Watch which records</label>
+                  <select value={node.scheduleModule ?? ''} onChange={(e) => onChange({ scheduleModule: e.target.value as any })} className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                     <option value="">Select module…</option>
                     {EVERY_MODULE.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Check every</label>
-                  <select value={node.scheduleCron ?? '*/15 * * * *'} onChange={(e) => onChange({ scheduleCron: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Check every</label>
+                  <select value={node.scheduleCron ?? '*/15 * * * *'} onChange={(e) => onChange({ scheduleCron: e.target.value })} className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                     <option value="*/15 * * * *">15 minutes</option>
                     <option value="0 * * * *">Hour</option>
                     <option value="0 */6 * * *">6 hours</option>
@@ -307,7 +307,7 @@ function NodeConfigPanel({
               </>
             )}
             {node.triggerType === 'webhook' && (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-600">
+              <div className="bg-background border border-border rounded-lg p-3 text-xs text-text-muted">
                 {node.webhookToken
                   ? <>Webhook URL token is minted on save. Once saved, copy the receiving URL from the flow list.</>
                   : <>A webhook token will be generated the first time this flow is saved.</>}
@@ -321,7 +321,7 @@ function NodeConfigPanel({
 
         {node.type === 'condition' && (
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">All of these must match</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">All of these must match</label>
             <ConditionsEditor conditions={node.conditions ?? []} onChange={(c) => onChange({ conditions: c })} fields={triggerFields} />
           </div>
         )}
@@ -329,8 +329,8 @@ function NodeConfigPanel({
         {node.type === 'action' && (
           <>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Action</label>
-              <select value={node.actionType ?? 'send_email'} onChange={(e) => onChange({ actionType: e.target.value as any })} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+              <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Action</label>
+              <select value={node.actionType ?? 'send_email'} onChange={(e) => onChange({ actionType: e.target.value as any })} className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                 <optgroup label="Communication">
                   <option value="send_email">Send Email</option>
                   <option value="send_sms">Send SMS</option>
@@ -354,16 +354,16 @@ function NodeConfigPanel({
               everyModule={EVERY_MODULE} templates={templates}
             />
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Retry on failure</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Retry on failure</label>
               <div className="flex gap-2">
-                <select value={node.retryCount ?? 0} onChange={(e) => onChange({ retryCount: Number(e.target.value) as any })} className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                <select value={node.retryCount ?? 0} onChange={(e) => onChange({ retryCount: Number(e.target.value) as any })} className="flex-1 px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                   <option value={0}>No retry</option>
                   <option value={1}>1 retry</option>
                   <option value={2}>2 retries</option>
                   <option value={3}>3 retries</option>
                 </select>
                 {(node.retryCount ?? 0) > 0 && (
-                  <select value={node.retryBackoffMs ?? 5000} onChange={(e) => onChange({ retryBackoffMs: Number(e.target.value) as any })} className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                  <select value={node.retryBackoffMs ?? 5000} onChange={(e) => onChange({ retryBackoffMs: Number(e.target.value) as any })} className="flex-1 px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                     <option value={1000}>1s apart</option>
                     <option value={5000}>5s apart</option>
                     <option value={30000}>30s apart</option>
@@ -377,64 +377,64 @@ function NodeConfigPanel({
 
         {node.type === 'delay' && (
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Pause for (minutes)</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Pause for (minutes)</label>
             <input type="number" min={1} max={129600} value={node.delayMinutes ?? 5} onChange={(e) => onChange({ delayMinutes: Number(e.target.value) })}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" />
-            <p className="text-[11px] text-gray-400 mt-1">Up to 129,600 minutes (90 days).</p>
+              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary" />
+            <p className="text-[11px] text-text-muted mt-1">Up to 129,600 minutes (90 days).</p>
           </div>
         )}
 
         {node.type === 'merge' && (
-          <p className="text-xs text-gray-500">Merge nodes have no settings — they simply wait for every incoming branch to arrive before continuing.</p>
+          <p className="text-xs text-text-muted">Merge nodes have no settings — they simply wait for every incoming branch to arrive before continuing.</p>
         )}
 
         {node.type === 'subFlow' && (
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Flow to invoke</label>
-            <select value={node.targetFlowId ?? ''} onChange={(e) => onChange({ targetFlowId: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+            <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Flow to invoke</label>
+            <select value={node.targetFlowId ?? ''} onChange={(e) => onChange({ targetFlowId: e.target.value })} className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
               <option value="">Select flow…</option>
               {allFlows.filter((f) => f._id !== flowIdForSubFlowExclusion).map((f) => <option key={f._id} value={f._id}>{f.name}</option>)}
             </select>
-            <p className="text-[11px] text-gray-400 mt-1">The target flow can't itself contain a Sub-Flow, Loop, Delay, or Approval node.</p>
+            <p className="text-[11px] text-text-muted mt-1">The target flow can't itself contain a Sub-Flow, Loop, Delay, or Approval node.</p>
           </div>
         )}
 
         {node.type === 'loop' && (
           <>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Iterate over</label>
-              <select value={node.loopSourceModule ?? ''} onChange={(e) => onChange({ loopSourceModule: e.target.value as any })} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+              <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Iterate over</label>
+              <select value={node.loopSourceModule ?? ''} onChange={(e) => onChange({ loopSourceModule: e.target.value as any })} className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                 <option value="">Select module…</option>
                 <option value="customer">Customers</option>
                 {EVERY_MODULE.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Only matching (optional)</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Only matching (optional)</label>
               <ConditionsEditor conditions={node.loopFilter ?? []} onChange={(c) => onChange({ loopFilter: c })} fields={loopFields} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Flow to run per item</label>
-              <select value={node.loopSubFlowId ?? ''} onChange={(e) => onChange({ loopSubFlowId: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+              <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Flow to run per item</label>
+              <select value={node.loopSubFlowId ?? ''} onChange={(e) => onChange({ loopSubFlowId: e.target.value })} className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
                 <option value="">Select flow…</option>
                 {allFlows.filter((f) => f._id !== flowIdForSubFlowExclusion).map((f) => <option key={f._id} value={f._id}>{f.name}</option>)}
               </select>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="block text-[10px] font-semibold text-gray-600 mb-1 uppercase">Max items</label>
+                <label className="block text-[10px] font-semibold text-text-muted mb-1 uppercase">Max items</label>
                 <input type="number" min={1} max={2000} value={node.loopMaxItems ?? 50} onChange={(e) => onChange({ loopMaxItems: Number(e.target.value) })}
-                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg" />
+                  className="w-full px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary" />
               </div>
               <div>
-                <label className="block text-[10px] font-semibold text-gray-600 mb-1 uppercase">Batch size</label>
+                <label className="block text-[10px] font-semibold text-text-muted mb-1 uppercase">Batch size</label>
                 <input type="number" min={1} value={node.loopBatchSize ?? 10} onChange={(e) => onChange({ loopBatchSize: Number(e.target.value) })}
-                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg" />
+                  className="w-full px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary" />
               </div>
               <div>
-                <label className="block text-[10px] font-semibold text-gray-600 mb-1 uppercase">Concurrency</label>
+                <label className="block text-[10px] font-semibold text-text-muted mb-1 uppercase">Concurrency</label>
                 <input type="number" min={1} value={node.loopConcurrency ?? 1} onChange={(e) => onChange({ loopConcurrency: Number(e.target.value) })}
-                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg" />
+                  className="w-full px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary" />
               </div>
             </div>
           </>
@@ -442,17 +442,17 @@ function NodeConfigPanel({
 
         {node.type === 'approval' && (
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Notify</label>
-            <select value={node.approvalRecipientStrategy ?? 'manager'} onChange={(e) => onChange({ approvalRecipientStrategy: e.target.value as any })} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+            <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Notify</label>
+            <select value={node.approvalRecipientStrategy ?? 'manager'} onChange={(e) => onChange({ approvalRecipientStrategy: e.target.value as any })} className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
               {Object.entries(RECIPIENT_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
             </select>
-            <p className="text-[11px] text-gray-400 mt-1">Both the Approve and Reject paths below must be connected.</p>
+            <p className="text-[11px] text-text-muted mt-1">Both the Approve and Reject paths below must be connected.</p>
           </div>
         )}
       </div>
 
       {node.type !== 'trigger' && (
-        <div className="p-4 border-t border-gray-100">
+        <div className="p-4 border-t border-border">
           <button onClick={onDelete} className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50">
             <TrashIcon className="h-3.5 w-3.5" /> Delete node
           </button>
@@ -472,19 +472,19 @@ function DryRunModal({ flowId, triggerModule, onClose }: { flowId: string; trigg
     <>
       <div className="fixed inset-0 bg-black/40 z-50" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto">
+        <div className="bg-surface-elevated rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2"><BeakerIcon className="h-5 w-5 text-brand-600" /> Test this flow</h2>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400"><XMarkIcon className="h-5 w-5" /></button>
+            <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2"><BeakerIcon className="h-5 w-5 text-ryze-600 dark:text-ryze-400" /> Test this flow</h2>
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted"><XMarkIcon className="h-5 w-5" /></button>
           </div>
-          <p className="text-xs text-gray-500 mb-3">Simulates every node against one real {triggerModule || 'record'} — nothing is sent, created, or saved.</p>
+          <p className="text-xs text-text-muted mb-3">Simulates every node against one real {triggerModule || 'record'} — nothing is sent, created, or saved.</p>
           <div className="flex gap-2 mb-4">
             <input value={sampleRecordId} onChange={(e) => setSampleRecordId(e.target.value)} placeholder={`${triggerModule || 'Record'} ID (from its list/detail page)`}
-              className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg" />
+              className="flex-1 px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary" />
             <button
               disabled={!sampleRecordId.trim() || !triggerModule || dryRunMut.isPending}
               onClick={() => dryRunMut.mutate({ id: flowId, sampleModule: triggerModule, sampleRecordId: sampleRecordId.trim() })}
-              className="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-40"
+              className="px-4 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 disabled:opacity-40"
             >
               {dryRunMut.isPending ? 'Running…' : 'Run'}
             </button>
@@ -496,11 +496,11 @@ function DryRunModal({ flowId, triggerModule, onClose }: { flowId: string; trigg
 
           {dryRunMut.data && (
             <div className="space-y-2">
-              <p className="text-[11px] text-gray-400">{dryRunMut.data.usingDraft ? 'Simulated against your unpublished draft.' : 'Simulated against the live published flow.'}</p>
+              <p className="text-[11px] text-text-muted">{dryRunMut.data.usingDraft ? 'Simulated against your unpublished draft.' : 'Simulated against the live published flow.'}</p>
               {dryRunMut.data.steps.map((s, i) => (
-                <div key={i} className="bg-gray-50 rounded-lg px-3 py-2">
-                  <p className="text-[10px] font-semibold text-gray-500 uppercase">{s.nodeType} · {s.label}</p>
-                  <p className="text-xs text-gray-700 mt-0.5">{s.result}</p>
+                <div key={i} className="bg-background rounded-lg px-3 py-2">
+                  <p className="text-[10px] font-semibold text-text-muted uppercase">{s.nodeType} · {s.label}</p>
+                  <p className="text-xs text-text-primary mt-0.5">{s.result}</p>
                 </div>
               ))}
             </div>
@@ -525,17 +525,17 @@ function RunStepRow({ step }: { step: any }) {
     <div className="flex items-start gap-2 py-1.5">
       {ok ? <CheckCircleIcon className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" /> : <ExclamationTriangleIcon className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />}
       <div className="min-w-0">
-        <p className="text-xs text-gray-700"><span className="font-medium">{step.label}</span>{step.attempt ? ` (attempt ${step.attempt})` : ''}</p>
+        <p className="text-xs text-text-primary"><span className="font-medium">{step.label}</span>{step.attempt ? ` (attempt ${step.attempt})` : ''}</p>
         {hasCreatedRecord ? (
-          <p className="text-[11px] text-gray-500">Created {step.createdRecordModule}: {step.createdRecordId}</p>
-        ) : step.result && <p className="text-[11px] text-gray-500">{step.result}</p>}
+          <p className="text-[11px] text-text-muted">Created {step.createdRecordModule}: {step.createdRecordId}</p>
+        ) : step.result && <p className="text-[11px] text-text-muted">{step.result}</p>}
         {step.error && <p className="text-[11px] text-red-500">{step.error}</p>}
         {hasMeta && (
           <div className="flex flex-wrap items-center gap-1 mt-1">
             {step.forkId !== undefined && <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 text-[9px] font-medium">Fork: {step.forkId}</span>}
             {step.branchIndex !== undefined && <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 text-[9px] font-medium">Branch {step.branchIndex}</span>}
             {step.loopIterationIndex !== undefined && <span className="px-1.5 py-0.5 rounded bg-sky-50 text-sky-600 text-[9px] font-medium">Loop item {step.loopIterationIndex}</span>}
-            {step.subFlowNodeId !== undefined && <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 text-[9px] font-medium">via Sub-Flow</span>}
+            {step.subFlowNodeId !== undefined && <span className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-text-muted text-[9px] font-medium">via Sub-Flow</span>}
           </div>
         )}
       </div>
@@ -557,33 +557,33 @@ function HistoryPanel({ flowId, onClose }: { flowId: string; onClose: () => void
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-50" onClick={onClose} />
-      <div className="fixed right-0 top-0 bottom-0 w-full max-w-2xl bg-white shadow-2xl z-50 flex">
-        <div className="w-72 border-r border-gray-100 flex flex-col">
-          <div className="px-4 py-3.5 border-b border-gray-100 flex items-center gap-2">
-            <RectangleStackIcon className="h-4 w-4 text-gray-500" />
-            <span className="text-sm font-semibold text-gray-900">Execution history</span>
+      <div className="fixed right-0 top-0 bottom-0 w-full max-w-2xl bg-surface shadow-2xl z-50 flex">
+        <div className="w-72 border-r border-border flex flex-col">
+          <div className="px-4 py-3.5 border-b border-border flex items-center gap-2">
+            <RectangleStackIcon className="h-4 w-4 text-text-muted" />
+            <span className="text-sm font-semibold text-text-primary">Execution history</span>
           </div>
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
-              <p className="text-xs text-gray-400 p-4">Loading…</p>
+              <p className="text-xs text-text-muted p-4">Loading…</p>
             ) : runs.length === 0 ? (
-              <p className="text-xs text-gray-400 p-4">No runs yet.</p>
+              <p className="text-xs text-text-muted p-4">No runs yet.</p>
             ) : runs.map((r) => (
               <button key={r._id} onClick={() => setSelectedRunId(r._id)}
-                className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 ${selectedRunId === r._id ? 'bg-brand-50' : ''}`}>
+                className={`w-full text-left px-4 py-3 border-b border-border hover:bg-black/[0.04] dark:hover:bg-white/[0.06] ${selectedRunId === r._id ? 'bg-ryze-600/10' : ''}`}>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${STATUS_COLOR[r.status] ?? 'bg-gray-100 text-gray-600'}`}>{r.status}</span>
-                  {r.flowVersion && <span className="text-[10px] text-gray-400">v{r.flowVersion}</span>}
+                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${STATUS_COLOR[r.status] ?? 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'}`}>{r.status}</span>
+                  {r.flowVersion && <span className="text-[10px] text-text-muted">v{r.flowVersion}</span>}
                 </div>
-                <p className="text-[11px] text-gray-500 mt-1">{new Date(r.startedAt).toLocaleString()}</p>
+                <p className="text-[11px] text-text-muted mt-1">{new Date(r.startedAt).toLocaleString()}</p>
               </button>
             ))}
           </div>
         </div>
         <div className="flex-1 flex flex-col">
-          <div className="px-4 py-3.5 border-b border-gray-100 flex items-center justify-between">
-            <span className="text-sm font-semibold text-gray-900">{run ? `Run detail` : 'Select a run'}</span>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400"><XMarkIcon className="h-5 w-5" /></button>
+          <div className="px-4 py-3.5 border-b border-border flex items-center justify-between">
+            <span className="text-sm font-semibold text-text-primary">{run ? `Run detail` : 'Select a run'}</span>
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted"><XMarkIcon className="h-5 w-5" /></button>
           </div>
           <div className="flex-1 overflow-y-auto p-4">
             {run && (
@@ -817,31 +817,31 @@ function BuilderInner() {
   };
 
   if (!isNew && isLoading) {
-    return <div className="flex justify-center items-center h-full text-sm text-gray-400">Loading…</div>;
+    return <div className="flex justify-center items-center h-full text-sm text-text-muted">Loading…</div>;
   }
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 shrink-0">
-        <button onClick={() => navigate('/native-crm/settings/automation-flows')} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 shrink-0">
+      <div className="bg-surface border-b border-border px-4 py-3 flex items-center gap-3 shrink-0">
+        <button onClick={() => navigate('/native-crm/settings/automation-flows')} className="p-2 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted shrink-0">
           <ArrowLeftIcon className="h-4 w-4" />
         </button>
         <input value={flowName} onChange={(e) => setFlowName(e.target.value)} placeholder="Flow name"
-          className="text-sm font-semibold text-gray-900 border-none focus:ring-2 focus:ring-brand-300 rounded-lg px-2 py-1 min-w-0 flex-1 max-w-xs" />
+          className="text-sm font-semibold text-text-primary bg-transparent border-none focus:ring-2 focus:ring-ryze-300 rounded-lg px-2 py-1 min-w-0 flex-1 max-w-xs" />
         {!isNew && flow?.draft && <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-amber-100 text-amber-700 shrink-0">Unpublished changes</span>}
         {!isNew && !flow?.draft && <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 shrink-0">Published v{flow?.version ?? 1}</span>}
 
         <div className="ml-auto flex items-center gap-2 shrink-0">
           {!isNew && (
             <>
-              <button onClick={() => setShowHistory(true)} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">
+              <button onClick={() => setShowHistory(true)} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-text-muted border border-border rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">
                 <RectangleStackIcon className="h-3.5 w-3.5" /> History
               </button>
-              <button onClick={() => setShowDryRun(true)} disabled={!triggerModule} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40">
+              <button onClick={() => setShowDryRun(true)} disabled={!triggerModule} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-text-muted border border-border rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-40">
                 <BeakerIcon className="h-3.5 w-3.5" /> Test
               </button>
               {flow?.draft && (
-                <button onClick={() => discardMut.mutate(id!)} className="px-3 py-2 text-xs font-medium text-gray-500 hover:text-red-600">
+                <button onClick={() => discardMut.mutate(id!)} className="px-3 py-2 text-xs font-medium text-text-muted hover:text-red-600">
                   Discard draft
                 </button>
               )}
@@ -849,16 +849,16 @@ function BuilderInner() {
                 onClick={handleSaveAsTemplate}
                 disabled={saveAsTemplateMut.isPending || !!flow?.draft}
                 title={flow?.draft ? 'Publish your unpublished changes first — Save as Template only copies the last published version' : undefined}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-text-muted border border-border rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-40"
               >
                 <BookmarkIcon className="h-3.5 w-3.5" /> Save as template
               </button>
             </>
           )}
-          <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40">
+          <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-text-primary border border-border rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-40">
             Save draft
           </button>
-          <button onClick={handlePublish} disabled={saving || !hasTrigger} className="flex items-center gap-1.5 px-4 py-2 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 disabled:opacity-40">
+          <button onClick={handlePublish} disabled={saving || !hasTrigger} className="flex items-center gap-1.5 px-4 py-2 bg-ryze-600 text-white text-xs font-medium rounded-lg hover:bg-ryze-700 disabled:opacity-40">
             <PlayIcon className="h-3.5 w-3.5" /> Publish
           </button>
         </div>
@@ -873,14 +873,14 @@ function BuilderInner() {
       )}
 
       <div className="flex-1 flex min-h-0">
-        <div className="w-52 shrink-0 bg-white border-r border-gray-200 p-3 space-y-1.5 overflow-y-auto">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Add node</p>
+        <div className="w-52 shrink-0 bg-surface border-r border-border p-3 space-y-1.5 overflow-y-auto">
+          <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide mb-2 px-1">Add node</p>
           <div className="relative mb-2">
-            <MagnifyingGlassIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <MagnifyingGlassIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted" />
             <input
               value={paletteSearch} onChange={(e) => setPaletteSearch(e.target.value)}
               placeholder="Search nodes…"
-              className="w-full pl-7 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-300"
+              className="w-full pl-7 pr-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary focus:outline-none focus:ring-1 focus:ring-ryze-300"
             />
           </div>
           {(() => {
@@ -901,11 +901,11 @@ function BuilderInner() {
               const matches = NODE_PALETTE_GROUPS.flatMap((g) => g.types).filter((t) => NODE_META[t].label.toLowerCase().includes(query));
               return matches.length > 0
                 ? <div className="space-y-1.5">{matches.map(renderButton)}</div>
-                : <p className="text-[11px] text-gray-400 px-1">No matching nodes</p>;
+                : <p className="text-[11px] text-text-muted px-1">No matching nodes</p>;
             }
             return NODE_PALETTE_GROUPS.map((group) => (
               <div key={group.label} className="mb-3">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 px-1">{group.label}</p>
+                <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide mb-1.5 px-1">{group.label}</p>
                 <div className="space-y-1.5">{group.types.map(renderButton)}</div>
               </div>
             ));

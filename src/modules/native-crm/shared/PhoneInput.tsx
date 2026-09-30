@@ -13,11 +13,11 @@ export default function PhoneInput({ value, onChange, defaultDialCode = '+91', p
   const { dialCode, number } = splitPhone(value, defaultDialCode);
 
   return (
-    <div className={`flex rounded-lg border border-gray-300 focus-within:ring-2 focus-within:ring-brand-400 overflow-hidden ${className ?? ''}`}>
+    <div className={`flex rounded-lg bg-surface border border-border focus-within:ring-2 focus-within:ring-ryze-400 overflow-hidden ${className ?? ''}`}>
       <select
         value={dialCode}
         onChange={(e) => onChange(joinPhone(e.target.value, number))}
-        className="shrink-0 border-0 border-r border-gray-200 bg-gray-50 pl-2 pr-1 py-2 text-sm text-gray-700 focus:outline-none focus:ring-0"
+        className="shrink-0 border-0 border-r border-border bg-background pl-2 pr-1 py-2 text-sm text-text-primary focus:outline-none focus:ring-0"
       >
         {COUNTRY_CODE_OPTIONS.map((c) => (
           <option key={`${c.iso2}-${c.dialCode}`} value={c.dialCode}>
@@ -30,7 +30,7 @@ export default function PhoneInput({ value, onChange, defaultDialCode = '+91', p
         value={number}
         onChange={(e) => onChange(joinPhone(dialCode, e.target.value))}
         placeholder={placeholder}
-        className="flex-1 min-w-0 border-0 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-0"
+        className="flex-1 min-w-0 border-0 bg-surface px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-0"
       />
     </div>
   );

@@ -85,32 +85,32 @@ export default function AutomationFlowsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-4 shrink-0">
+      <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-4 shrink-0">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="h-9 w-9 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-            <ShareIcon className="h-5 w-5 text-indigo-600" />
+          <div className="h-9 w-9 rounded-lg bg-black/[0.06] dark:bg-white/[0.08] flex items-center justify-center shrink-0">
+            <ShareIcon className="h-5 w-5 text-text-muted" />
           </div>
           <div>
-            <h1 className="text-base font-semibold text-gray-900">Automation Flows</h1>
-            <p className="text-xs text-gray-500">Advanced Mode — branching, delays, approvals, sub-flows, and loops chained into one visual workflow</p>
+            <h1 className="text-base font-semibold text-text-primary">Automation Flows</h1>
+            <p className="text-xs text-text-muted">Advanced Mode — branching, delays, approvals, sub-flows, and loops chained into one visual workflow</p>
           </div>
         </div>
         <button
           onClick={() => navigate('/native-crm/settings/automations')}
           title="Simple Mode — one trigger, one action"
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shrink-0"
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-text-muted border border-border rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors shrink-0"
         >
           <BoltIcon className="h-3.5 w-3.5" /> Simple Mode
         </button>
         <button
           onClick={() => setShowGallery(true)}
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shrink-0"
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-text-muted border border-border rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors shrink-0"
         >
           <RectangleStackIcon className="h-3.5 w-3.5" /> Browse Templates
         </button>
         <button
           onClick={() => navigate('/native-crm/settings/automation-flows/new')}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 transition-colors"
         >
           <PlusIcon className="h-4 w-4" /> New Flow
         </button>
@@ -149,12 +149,12 @@ export default function AutomationFlowsPage() {
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-2.5">
+          <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-2.5">
             <div className="flex items-center gap-2">
               <CheckCircleIcon className="h-4 w-4 text-emerald-500" />
-              <span className="text-xs font-medium text-gray-700">All Automations Active</span>
+              <span className="text-xs font-medium text-text-primary">All Automations Active</span>
               {settings?.lastChangedBy && (
-                <span className="text-[11px] text-gray-400">— resumed by {settings.lastChangedBy}{settings.lastChangedAt ? ` • ${new Date(settings.lastChangedAt).toLocaleString()}` : ''}</span>
+                <span className="text-[11px] text-text-muted">— resumed by {settings.lastChangedBy}{settings.lastChangedAt ? ` • ${new Date(settings.lastChangedAt).toLocaleString()}` : ''}</span>
               )}
             </div>
             <button
@@ -183,7 +183,7 @@ export default function AutomationFlowsPage() {
                 key={s}
                 onClick={() => setStatusFilter(s)}
                 className={`px-2.5 py-1 text-[11px] font-medium rounded-full border transition-colors ${
-                  statusFilter === s ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  statusFilter === s ? 'bg-ryze-600 text-white border-ryze-600' : 'bg-surface text-text-muted border-border hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
                 }`}
               >
                 {s === 'all' ? 'All' : s === 'enabled' ? 'Enabled' : s === 'disabled' ? 'Disabled' : 'Has Draft'}
@@ -191,11 +191,11 @@ export default function AutomationFlowsPage() {
             ))}
           </div>
           <div className="relative ml-auto w-full sm:w-64">
-            <MagnifyingGlassIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <MagnifyingGlassIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted" />
             <input
               value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="Search flows…"
-              className="w-full pl-8 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-300"
+              className="w-full pl-8 pr-2 py-1.5 text-xs border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-ryze-300 bg-background text-text-primary"
             />
           </div>
         </div>
@@ -203,17 +203,17 @@ export default function AutomationFlowsPage() {
         {isLoading ? (
           <div className="flex justify-center py-16">
             <div className="flex gap-1.5">
-              {[0, 1, 2].map((i) => <span key={i} className="h-2 w-2 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}
+              {[0, 1, 2].map((i) => <span key={i} className="h-2 w-2 rounded-full bg-ryze-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}
             </div>
           </div>
         ) : flows.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
+          <div className="text-center py-20 text-text-muted">
             <ShareIcon className="h-10 w-10 mx-auto mb-3 opacity-40" />
             <p className="text-sm">No automation flows yet</p>
             <p className="text-xs mt-1">Create one to chain triggers, conditions, and actions visually</p>
           </div>
         ) : filteredFlows.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-text-muted">
             <p className="text-sm">No flows match this filter</p>
           </div>
         ) : (
@@ -223,16 +223,16 @@ export default function AutomationFlowsPage() {
               const flowStats = statsByFlowId.get(flow._id);
               const successPct = flowStats && flowStats.totalRuns > 0 ? Math.round((flowStats.completedCount / flowStats.totalRuns) * 100) : null;
               return (
-                <div key={flow._id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col gap-3 hover:border-brand-300 transition-colors">
+                <div key={flow._id} className="bg-surface rounded-xl border border-border shadow-sm p-4 flex flex-col gap-3 hover:border-ryze-300 dark:border-ryze-700 transition-colors">
                   <div className="flex items-start justify-between gap-2">
                     <button
                       onClick={() => navigate(`/native-crm/settings/automation-flows/${flow._id}`)}
-                      className="text-sm font-semibold text-gray-900 hover:text-brand-600 text-left truncate"
+                      className="text-sm font-semibold text-text-primary hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300 text-left truncate"
                     >
                       {flow.name}
                     </button>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span className={`text-[10px] font-medium ${flow.enabled ? 'text-emerald-600' : 'text-gray-400'}`}>{flow.enabled ? 'Enabled' : 'Disabled'}</span>
+                      <span className={`text-[10px] font-medium ${flow.enabled ? 'text-emerald-600' : 'text-text-muted'}`}>{flow.enabled ? 'Enabled' : 'Disabled'}</span>
                       <label className="inline-flex items-center cursor-pointer">
                         <input
                           type="checkbox"
@@ -240,15 +240,15 @@ export default function AutomationFlowsPage() {
                           onChange={(e) => updateMut.mutate({ id: flow._id, data: { enabled: e.target.checked } as any })}
                           className="sr-only peer"
                         />
-                        <div className="w-8 h-4.5 bg-gray-200 peer-checked:bg-emerald-500 rounded-full transition-colors relative">
-                          <div className="absolute top-0.5 left-0.5 h-3.5 w-3.5 bg-white rounded-full transition-transform peer-checked:translate-x-3.5" />
+                        <div className="w-8 h-4.5 bg-black/[0.06] dark:bg-white/[0.08] peer-checked:bg-emerald-500 rounded-full transition-colors relative">
+                          <div className="absolute top-0.5 left-0.5 h-3.5 w-3.5 bg-surface rounded-full transition-transform peer-checked:translate-x-3.5" />
                         </div>
                       </label>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
-                    <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{flow.nodes.length} node(s)</span>
-                    <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">v{flow.version ?? 1}</span>
+                    <span className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-text-muted">{flow.nodes.length} node(s)</span>
+                    <span className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-text-muted">v{flow.version ?? 1}</span>
                     {flow.draft && (
                       <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">Unpublished changes</span>
                     )}
@@ -256,7 +256,7 @@ export default function AutomationFlowsPage() {
                       <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">{triggerNode.module} · {triggerNode.triggerType}</span>
                     )}
                   </div>
-                  <div className="text-[11px] text-gray-500">
+                  <div className="text-[11px] text-text-muted">
                     {flowStats ? (
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                         <span>Last run {timeAgo(flowStats.lastRunAt)}</span>
@@ -265,13 +265,13 @@ export default function AutomationFlowsPage() {
                         {flowStats.failedCount > 0 && <span className="text-red-500">Failed: {flowStats.failedCount}</span>}
                       </div>
                     ) : (
-                      <span className="text-gray-400">No runs yet</span>
+                      <span className="text-text-muted">No runs yet</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 mt-auto pt-2 border-t border-gray-50">
+                  <div className="flex items-center gap-2 mt-auto pt-2 border-t border-border">
                     <button
                       onClick={() => navigate(`/native-crm/settings/automation-flows/${flow._id}`)}
-                      className="flex items-center gap-1 text-xs text-gray-600 hover:text-brand-600"
+                      className="flex items-center gap-1 text-xs text-text-muted hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300"
                     >
                       <PencilIcon className="h-3.5 w-3.5" /> Edit
                     </button>

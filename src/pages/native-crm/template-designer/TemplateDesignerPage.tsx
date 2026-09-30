@@ -358,7 +358,7 @@ function TablePreview({
                   onKeyDown={e => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingCol(null); }}
                   onMouseDown={e => e.stopPropagation()}
                   onClick={e => e.stopPropagation()}
-                  className="w-full bg-white text-gray-800 border border-brand-400 rounded px-1"
+                  className="w-full bg-surface text-text-primary border border-ryze-400 rounded px-1"
                   style={{ fontSize: 'inherit', fontWeight: 'inherit' }}
                 />
               ) : c.label}
@@ -366,7 +366,7 @@ function TablePreview({
                 <div
                   onMouseDown={e => startResize(i, e)}
                   title="Drag to resize this column"
-                  className="hover:bg-brand-400/50"
+                  className="hover:bg-ryze-400/50"
                   style={{ position: 'absolute', right: -3, top: 0, bottom: 0, width: 6, cursor: 'col-resize', zIndex: 5 }}
                 />
               )}
@@ -552,16 +552,16 @@ function GridTablePreview({
                     <>
                       <div
                         onMouseDown={e => e.stopPropagation()}
-                        className="absolute -top-7 left-0 z-20 flex gap-0.5 bg-white border border-gray-200 rounded shadow-md p-0.5 whitespace-nowrap"
+                        className="absolute -top-7 left-0 z-20 flex gap-0.5 bg-surface border border-border rounded shadow-md p-0.5 whitespace-nowrap"
                       >
                         <button onMouseDown={e => e.preventDefault()} onClick={() => document.execCommand('bold')}
-                          title="Bold" className="w-5 h-5 flex items-center justify-center text-[10px] font-bold hover:bg-gray-100 rounded">B</button>
+                          title="Bold" className="w-5 h-5 flex items-center justify-center text-[10px] font-bold hover:bg-black/[0.04] dark:hover:bg-white/[0.06] rounded">B</button>
                         <button onMouseDown={e => e.preventDefault()} onClick={() => document.execCommand('italic')}
-                          title="Italic" className="w-5 h-5 flex items-center justify-center text-[10px] italic hover:bg-gray-100 rounded">I</button>
+                          title="Italic" className="w-5 h-5 flex items-center justify-center text-[10px] italic hover:bg-black/[0.04] dark:hover:bg-white/[0.06] rounded">I</button>
                         <button onMouseDown={e => e.preventDefault()} onClick={() => document.execCommand('insertUnorderedList')}
-                          title="Bullet list" className="w-5 h-5 flex items-center justify-center text-[11px] hover:bg-gray-100 rounded">•≡</button>
+                          title="Bullet list" className="w-5 h-5 flex items-center justify-center text-[11px] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] rounded">•≡</button>
                         <button onMouseDown={e => e.preventDefault()} onClick={() => document.execCommand('insertOrderedList')}
-                          title="Numbered list" className="w-5 h-5 flex items-center justify-center text-[9px] hover:bg-gray-100 rounded">1.≡</button>
+                          title="Numbered list" className="w-5 h-5 flex items-center justify-center text-[9px] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] rounded">1.≡</button>
                         <button onMouseDown={e => e.preventDefault()} onClick={() => { commitEdit(); }}
                           title="Done" className="w-5 h-5 flex items-center justify-center text-emerald-600 hover:bg-emerald-50 rounded">✓</button>
                       </div>
@@ -585,13 +585,13 @@ function GridTablePreview({
                   ) : val ? (
                     <div className="tpl-rich" dangerouslySetInnerHTML={{ __html: val }} />
                   ) : (
-                    onChange && <span className="text-gray-300">Click to edit, or drag a variable/image here</span>
+                    onChange && <span className="text-text-muted">Click to edit, or drag a variable/image here</span>
                   )}
                   {selected && onChange && ri === 0 && ci < cols - 1 && (
                     <div
                       onMouseDown={e => startColResize(ci, e)}
                       title="Drag to resize this column"
-                      className="hover:bg-brand-400/50"
+                      className="hover:bg-ryze-400/50"
                       style={{ position: 'absolute', right: -3, top: 0, bottom: 0, width: 6, cursor: 'col-resize', zIndex: 5 }}
                     />
                   )}
@@ -599,7 +599,7 @@ function GridTablePreview({
                     <div
                       onMouseDown={e => startRowResize(ri, e)}
                       title="Drag to resize this row"
-                      className="hover:bg-brand-400/50"
+                      className="hover:bg-ryze-400/50"
                       style={{ position: 'absolute', left: 0, right: 0, bottom: -3, height: 6, cursor: 'row-resize', zIndex: 5 }}
                     />
                   )}
@@ -643,7 +643,7 @@ function ElementPreview({
       return <img src={el.src} style={{ width: '100%', height: '100%', objectFit: el.objectFit ?? 'contain' }} />;
     }
     return (
-      <div className="w-full h-full flex items-center justify-center bg-gray-100 text-xs text-gray-400 rounded overflow-hidden">
+      <div className="w-full h-full flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.06] text-xs text-text-muted rounded overflow-hidden">
         {el.src ?? '{{company.logo}}'}
       </div>
     );
@@ -694,10 +694,10 @@ function ElementPreview({
 // ── Properties panel ──────────────────────────────────────────────────────────
 
 function ColorInput({ value, fallback, onChange }: { value?: string; fallback: string; onChange: (v: string) => void }) {
-  const cls = "w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-brand-400";
+  const cls = "w-full px-2 py-1.5 text-xs bg-surface text-text-primary border border-border rounded focus:outline-none focus:ring-1 focus:ring-ryze-400";
   return (
     <div className="flex gap-2 items-center">
-      <input type="color" value={value ?? fallback} onChange={e => onChange(e.target.value)} className="h-7 w-10 rounded border border-gray-200 cursor-pointer p-0.5" />
+      <input type="color" value={value ?? fallback} onChange={e => onChange(e.target.value)} className="h-7 w-10 rounded border border-border cursor-pointer p-0.5" />
       <input className={`${cls} flex-1`} value={value ?? fallback} onChange={e => onChange(e.target.value)} />
     </div>
   );
@@ -712,11 +712,11 @@ function PropertiesPanel({
 }) {
   const inp = (label: string, node: React.ReactNode) => (
     <div className="mb-3">
-      <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">{label}</label>
+      <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">{label}</label>
       {node}
     </div>
   );
-  const cls = "w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-brand-400";
+  const cls = "w-full px-2 py-1.5 text-xs bg-surface text-text-primary border border-border rounded focus:outline-none focus:ring-1 focus:ring-ryze-400";
 
   const hasTypography = el.type === 'text' || el.type === 'richtext' || el.type === 'table' || el.type === 'totals' || el.type === 'gridtable';
   const colKeys = (el.dataset ?? 'services') === 'parts' ? PART_COLUMN_KEYS : SERVICE_COLUMN_KEYS;
@@ -747,7 +747,7 @@ function PropertiesPanel({
   return (
     <div className="p-3 text-xs">
       <div className="flex items-center justify-between mb-4">
-        <span className="text-xs font-semibold text-gray-700 capitalize">{el.type} Element</span>
+        <span className="text-xs font-semibold text-text-primary capitalize">{el.type} Element</span>
         <button onClick={onDelete} className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded">
           <TrashIcon className="h-3.5 w-3.5" />
         </button>
@@ -816,7 +816,7 @@ function PropertiesPanel({
           <div className="flex gap-1">
             {(['left','center','right'] as const).map(a => (
               <button key={a} onClick={() => onChange({ textAlign: a })}
-                className={`flex-1 py-1 text-[10px] rounded border capitalize ${el.textAlign === a ? 'bg-brand-600 text-white border-brand-600' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                className={`flex-1 py-1 text-[10px] rounded border capitalize ${el.textAlign === a ? 'bg-ryze-600 text-white border-ryze-600' : 'border-border text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}>
                 {a}
               </button>
             ))}
@@ -851,7 +851,7 @@ function PropertiesPanel({
         ))}
         {inp('Columns', (
           <div className="space-y-1.5">
-            <p className="text-[9px] text-gray-400 -mt-0.5">Tip: drag the ⠿ handle to reorder, or edit a column directly on the canvas — drag its right edge to resize, double-click its label to rename.</p>
+            <p className="text-[9px] text-text-muted -mt-0.5">Tip: drag the ⠿ handle to reorder, or edit a column directly on the canvas — drag its right edge to resize, double-click its label to rename.</p>
             {(el.columns ?? []).map((c, i) => (
               <div
                 key={i}
@@ -860,10 +860,10 @@ function PropertiesPanel({
                 onDragEnter={e => { e.preventDefault(); if (dragSrc.current !== null && dragSrc.current !== i) { reorderColumns(dragSrc.current, i); dragSrc.current = i; } }}
                 onDragOver={e => e.preventDefault()}
                 onDragEnd={() => { dragSrc.current = null; }}
-                className="border border-gray-100 rounded p-1.5 space-y-1 bg-gray-50"
+                className="border border-border rounded p-1.5 space-y-1 bg-background"
               >
                 <div className="flex items-center gap-1">
-                  <span className="cursor-grab active:cursor-grabbing text-gray-300 px-0.5" title="Drag to reorder">⠿</span>
+                  <span className="cursor-grab active:cursor-grabbing text-text-muted px-0.5" title="Drag to reorder">⠿</span>
                   <select className={`${cls} flex-1`} value={c.key} onChange={e => patchColumn(i, { key: e.target.value })}>
                     {colKeys.map(k => <option key={k} value={k}>{COLUMN_KEY_LABELS[k]}</option>)}
                   </select>
@@ -883,7 +883,7 @@ function PropertiesPanel({
             ))}
             <button
               onClick={() => onChange({ columns: [...(el.columns ?? []), { key: 'name', label: 'Column' }] })}
-              className="w-full py-1 text-[10px] border border-dashed border-gray-300 rounded text-gray-500 hover:bg-gray-50">
+              className="w-full py-1 text-[10px] border border-dashed border-border rounded text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">
               + Add column {!(el.columns?.length) && '(empty = default columns)'}
             </button>
           </div>
@@ -897,15 +897,15 @@ function PropertiesPanel({
         {inp('Alternate Row', (
           <div className="flex items-center gap-2">
             <input type="checkbox" checked={el.altRowBg !== ''} onChange={e => onChange({ altRowBg: e.target.checked ? '#f9fafb' : '' })}
-              className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600" />
-            <span className="text-[10px] text-gray-500">Banded rows</span>
+              className="h-3.5 w-3.5 rounded border-border text-ryze-600 dark:text-ryze-400" />
+            <span className="text-[10px] text-text-muted">Banded rows</span>
           </div>
         ))}
         {inp('Borders', (
           <div className="flex items-center gap-2">
             <input type="checkbox" checked={el.showBorders !== false} onChange={e => onChange({ showBorders: e.target.checked })}
-              className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600" />
-            <span className="text-[10px] text-gray-500">Cell borders</span>
+              className="h-3.5 w-3.5 rounded border-border text-ryze-600 dark:text-ryze-400" />
+            <span className="text-[10px] text-text-muted">Cell borders</span>
           </div>
         ))}
       </>)}
@@ -925,8 +925,8 @@ function PropertiesPanel({
                       else rows.splice(idx, 1);
                       onChange({ totalsRows: rows });
                     }}
-                    className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 shrink-0" />
-                  <span className="text-[10px] text-gray-600 w-16 shrink-0">{TOTALS_KEY_LABELS[k]}</span>
+                    className="h-3.5 w-3.5 rounded border-border text-ryze-600 dark:text-ryze-400 shrink-0" />
+                  <span className="text-[10px] text-text-muted w-16 shrink-0">{TOTALS_KEY_LABELS[k]}</span>
                   {active && (
                     <input className={`${cls} flex-1`} placeholder="Custom label"
                       value={el.totalsRows?.[idx]?.label ?? ''}
@@ -944,7 +944,7 @@ function PropertiesPanel({
         {inp('Emphasize last row', (
           <input type="checkbox" checked={el.totalsEmphasizeLast !== false}
             onChange={e => onChange({ totalsEmphasizeLast: e.target.checked })}
-            className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600" />
+            className="h-3.5 w-3.5 rounded border-border text-ryze-600 dark:text-ryze-400" />
         ))}
       </>)}
 
@@ -988,11 +988,11 @@ function PropertiesPanel({
         {inp('Header Row', (
           <div className="flex items-center gap-2">
             <input type="checkbox" checked={!!el.gridHeaderRow} onChange={e => onChange({ gridHeaderRow: e.target.checked })}
-              className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600" />
-            <span className="text-[10px] text-gray-500">Style first row as header (bold + shaded)</span>
+              className="h-3.5 w-3.5 rounded border-border text-ryze-600 dark:text-ryze-400" />
+            <span className="text-[10px] text-text-muted">Style first row as header (bold + shaded)</span>
           </div>
         ))}
-        <p className="text-[9px] text-gray-400">
+        <p className="text-[9px] text-text-muted">
           Click a cell to edit it — use the mini toolbar for bold/italic/lists, drag a variable or an uploaded image straight into a cell,
           and mix them freely (a cell can hold text, a list, and an image together). Drag a top-row cell's right edge to resize its column,
           or a left-column cell's bottom edge to resize its row.
@@ -1069,14 +1069,14 @@ function PreviewModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
+      <div className="bg-surface-elevated rounded-xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
-            <h3 className="text-sm font-semibold text-gray-900">Preview with real data</h3>
+            <h3 className="text-sm font-semibold text-text-primary">Preview with real data</h3>
             <select
               value={docId}
               onChange={e => runPreview(e.target.value)}
-              className="text-xs border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-400"
+              className="text-xs border border-border rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-ryze-400 bg-background text-text-primary"
             >
               <option value="">Select a {docType}…</option>
               {docs.map((d: any) => (
@@ -1090,23 +1090,23 @@ function PreviewModal({
             <button
               onClick={handleDownload}
               disabled={!docId || loading || downloading}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-ryze-600 text-white hover:bg-ryze-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {downloading ? 'Downloading…' : 'Download PDF'}
             </button>
-            <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100">
+            <button onClick={onClose} className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">
               <XMarkIcon className="h-5 w-5" />
             </button>
           </div>
         </div>
-        <div className="flex-1 bg-gray-100 overflow-hidden">
-          {loading && <div className="h-full flex items-center justify-center text-sm text-gray-400">Rendering…</div>}
+        <div className="flex-1 bg-black/[0.04] dark:bg-white/[0.06] overflow-hidden">
+          {loading && <div className="h-full flex items-center justify-center text-sm text-text-muted">Rendering…</div>}
           {error   && <div className="h-full flex items-center justify-center text-sm text-red-500">{error}</div>}
           {!loading && !error && html && (
-            <iframe title="preview" srcDoc={html} className="w-full h-full bg-white" />
+            <iframe title="preview" srcDoc={html} className="w-full h-full bg-surface" />
           )}
           {!loading && !error && !html && (
-            <div className="h-full flex items-center justify-center text-sm text-gray-400">
+            <div className="h-full flex items-center justify-center text-sm text-text-muted">
               Pick a document above to see this template with its real data
             </div>
           )}
@@ -1529,45 +1529,45 @@ export default function TemplateDesignerPage() {
     : ['text','image','divider','box'];
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
+    <div className="flex flex-col h-screen bg-black/[0.04] dark:bg-white/[0.06]">
 
       {/* ── Top toolbar ────────────────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-gray-200 px-4 py-2.5 flex items-center gap-3 shrink-0 z-10">
+      <div className="bg-surface border-b border-border px-4 py-2.5 flex items-center gap-3 shrink-0 z-10">
         <button onClick={() => { clearDraft(); navigate('/native-crm/settings'); }}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800">
+          className="flex items-center gap-1.5 text-sm text-text-muted hover:text-text-primary">
           <ArrowLeftIcon className="h-4 w-4" />Back
         </button>
-        <div className="h-5 w-px bg-gray-200" />
+        <div className="h-5 w-px bg-black/[0.06] dark:bg-white/[0.08]" />
         <input
           value={tplName}
           onChange={e => setTplName(e.target.value)}
-          className="text-sm font-medium text-gray-800 border-b border-transparent hover:border-gray-300 focus:border-brand-400 focus:outline-none bg-transparent min-w-[180px] px-1 py-0.5"
+          className="text-sm font-medium text-text-primary border-b border-transparent hover:border-border focus:border-ryze-400 focus:outline-none bg-transparent min-w-[180px] px-1 py-0.5"
         />
         <select
           value={docType}
           onChange={e => { setDocType(e.target.value as DocType); setSelectedId(null); }}
-          className="text-xs border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-400 text-gray-600"
+          className="text-xs border border-border rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-ryze-400 text-text-muted bg-background"
         >
           {DOC_TYPES.map(dt => <option key={dt} value={dt}>{dt.charAt(0).toUpperCase() + dt.slice(1)}</option>)}
         </select>
 
-        <div className="flex items-center gap-1.5 ml-2 text-[10px] text-gray-400">
+        <div className="flex items-center gap-1.5 ml-2 text-[10px] text-text-muted">
           <span>Add:</span>
           {addTypes.map(t => (
             <button key={t} onClick={() => addElement(t)}
-              className="flex items-center gap-1 px-2 py-1 border border-gray-200 rounded hover:bg-gray-50 text-gray-600 capitalize">
+              className="flex items-center gap-1 px-2 py-1 border border-border rounded hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted capitalize">
               <PlusIcon className="h-3 w-3" />{t}
             </button>
           ))}
           {region === 'body' && (
             <div className="relative" ref={gridPickerRef}>
               <button onClick={() => setShowGridPicker(v => !v)}
-                className="flex items-center gap-1 px-2 py-1 border border-gray-200 rounded hover:bg-gray-50 text-gray-600">
+                className="flex items-center gap-1 px-2 py-1 border border-border rounded hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted">
                 <PlusIcon className="h-3 w-3" />Grid Table
               </button>
               {showGridPicker && (
-                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-50" onClick={e => e.stopPropagation()}>
-                  <p className="text-[10px] text-gray-500 mb-1.5 text-center">
+                <div className="absolute top-full left-0 mt-1 bg-surface border border-border rounded-lg shadow-lg p-2 z-50" onClick={e => e.stopPropagation()}>
+                  <p className="text-[10px] text-text-muted mb-1.5 text-center">
                     {gridPickerHover ? `${gridPickerHover.r + 1} × ${gridPickerHover.c + 1}` : 'Pick a size'}
                   </p>
                   <div className="grid grid-cols-8 gap-[3px]" onMouseLeave={() => setGridPickerHover(null)}>
@@ -1585,7 +1585,7 @@ export default function TemplateDesignerPage() {
                             setShowGridPicker(false);
                             setGridPickerHover(null);
                           }}
-                          className={`h-3.5 w-3.5 border rounded-sm cursor-pointer ${active ? 'bg-brand-500 border-brand-600' : 'bg-gray-50 border-gray-200'}`}
+                          className={`h-3.5 w-3.5 border rounded-sm cursor-pointer ${active ? 'bg-ryze-600/100 border-ryze-600' : 'bg-background border-border'}`}
                         />
                       );
                     })}
@@ -1598,15 +1598,15 @@ export default function TemplateDesignerPage() {
 
         <div className="ml-auto flex items-center gap-2">
           <button onClick={() => setLiveMode(v => !v)}
-            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 border rounded-lg ${liveMode ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${liveMode ? 'bg-emerald-500' : 'bg-gray-300'}`} />
+            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 border rounded-lg ${liveMode ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'border-border text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${liveMode ? 'bg-emerald-500' : 'bg-black/[0.08] dark:bg-white/[0.1]'}`} />
             Live Data
           </button>
           {liveMode && (
             <select
               value={liveDocId}
               onChange={e => setLiveDocId(e.target.value)}
-              className="text-xs border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-400 text-gray-600 max-w-[180px]"
+              className="text-xs border border-border rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-ryze-400 text-text-muted max-w-[180px] bg-background"
             >
               <option value="">Select a {docType}…</option>
               {docs.map((d: any) => (
@@ -1623,14 +1623,14 @@ export default function TemplateDesignerPage() {
                 onClick={() => analysisFileInputRef.current?.click()}
                 disabled={analyzeMut.isPending}
                 title="Upload an existing invoice/quotation/contract/workorder (PDF or image) to auto-generate a draft template"
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 disabled:opacity-60"
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-border text-text-muted rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-60"
               >
                 {analyzeMut.isPending ? 'Analyzing…' : 'Analyze existing PDF'}
               </button>
             </>
           )}
           <button onClick={() => setShowPreview(true)}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50">
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-border text-text-muted rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">
             <EyeIcon className="h-3.5 w-3.5" />Preview
           </button>
           {editId && (
@@ -1640,7 +1640,7 @@ export default function TemplateDesignerPage() {
             </button>
           )}
           <button onClick={handleSave} disabled={saving}
-            className="flex items-center gap-1.5 text-sm px-4 py-1.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-60">
+            className="flex items-center gap-1.5 text-sm px-4 py-1.5 bg-ryze-600 text-white rounded-lg hover:bg-ryze-700 disabled:opacity-60">
             {saved ? <><CheckIcon className="h-4 w-4" />Saved!</> : saving ? 'Saving…' : 'Save Template'}
           </button>
         </div>
@@ -1660,47 +1660,47 @@ export default function TemplateDesignerPage() {
       )}
 
       {/* ── Region tabs (which element array the canvas below edits) ───────────── */}
-      <div className="bg-white border-b border-gray-200 px-4 py-1.5 flex items-center gap-1 shrink-0 z-10">
+      <div className="bg-surface border-b border-border px-4 py-1.5 flex items-center gap-1 shrink-0 z-10">
         {(['body', 'header', 'footer'] as const).map(r => (
           <button key={r} onClick={() => { setRegion(r); setSelectedId(null); setShowGridPicker(false); setGridPickerHover(null); }}
-            className={`px-3 py-1 text-xs rounded-md capitalize ${region === r ? 'bg-brand-50 text-brand-700 font-medium' : 'text-gray-500 hover:bg-gray-50'}`}>
+            className={`px-3 py-1 text-xs rounded-md capitalize ${region === r ? 'bg-ryze-600/10 text-ryze-700 dark:text-ryze-400 font-medium' : 'text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}>
             {r}
             {r === 'header' && headerCfg.enabled && <span className="ml-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />}
             {r === 'footer' && footerCfg.enabled && <span className="ml-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />}
           </button>
         ))}
         {region === 'header' && (
-          <div className="flex items-center gap-3 ml-3 text-xs text-gray-500">
+          <div className="flex items-center gap-3 ml-3 text-xs text-text-muted">
             <label className="flex items-center gap-1.5">
               <input type="checkbox" checked={headerCfg.enabled} onChange={e => setHeaderCfg(c => ({ ...c, enabled: e.target.checked }))}
-                className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600" />
+                className="h-3.5 w-3.5 rounded border-border text-ryze-600 dark:text-ryze-400" />
               Repeat on every page
             </label>
             <label className="flex items-center gap-1.5">
               Height (px)
               <input type="number" min={0} max={300} value={headerCfg.heightPx}
                 onChange={e => setHeaderCfg(c => ({ ...c, heightPx: +e.target.value }))}
-                className="w-16 px-1.5 py-1 text-xs border border-gray-200 rounded" />
+                className="w-16 px-1.5 py-1 text-xs border border-border rounded bg-background text-text-primary" />
             </label>
           </div>
         )}
         {region === 'footer' && (
-          <div className="flex items-center gap-3 ml-3 text-xs text-gray-500">
+          <div className="flex items-center gap-3 ml-3 text-xs text-text-muted">
             <label className="flex items-center gap-1.5">
               <input type="checkbox" checked={footerCfg.enabled} onChange={e => setFooterCfg(c => ({ ...c, enabled: e.target.checked }))}
-                className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600" />
+                className="h-3.5 w-3.5 rounded border-border text-ryze-600 dark:text-ryze-400" />
               Repeat on every page
             </label>
             <label className="flex items-center gap-1.5">
               Height (px)
               <input type="number" min={0} max={300} value={footerCfg.heightPx}
                 onChange={e => setFooterCfg(c => ({ ...c, heightPx: +e.target.value }))}
-                className="w-16 px-1.5 py-1 text-xs border border-gray-200 rounded" />
+                className="w-16 px-1.5 py-1 text-xs border border-border rounded bg-background text-text-primary" />
             </label>
           </div>
         )}
         {region !== 'body' && (
-          <span className="ml-3 text-[10px] text-gray-400">
+          <span className="ml-3 text-[10px] text-text-muted">
             Repeats on every page of the downloaded/emailed PDF — the on-screen preview shows it once, scroll-pinned, not per simulated page.
           </span>
         )}
@@ -1710,20 +1710,20 @@ export default function TemplateDesignerPage() {
       <div className="flex flex-1 min-h-0">
 
         {/* Left — Variable tree ───────────────────────────────────────────────── */}
-        <div className="w-56 shrink-0 bg-white border-r border-gray-200 overflow-y-auto">
-          <div className="px-3 py-2.5 border-b border-gray-100">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Variables</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">Drag onto canvas</p>
+        <div className="w-56 shrink-0 bg-surface border-r border-border overflow-y-auto">
+          <div className="px-3 py-2.5 border-b border-border">
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Variables</p>
+            <p className="text-[10px] text-text-muted mt-0.5">Drag onto canvas</p>
           </div>
 
           {/* Uploads — tenant image library, drag onto canvas */}
-          <div className="border-b border-gray-100">
+          <div className="border-b border-border">
             <button
               onClick={() => setOpenGroups(o => ({ ...o, Uploads: !o.Uploads }))}
-              className="w-full flex items-center justify-between px-3 py-2 text-[10px] font-semibold text-gray-600 hover:bg-gray-50"
+              className="w-full flex items-center justify-between px-3 py-2 text-[10px] font-semibold text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
             >
               Uploads
-              <span className="text-gray-300">{openGroups.Uploads ? '▾' : '▸'}</span>
+              <span className="text-text-muted">{openGroups.Uploads ? '▾' : '▸'}</span>
             </button>
             {openGroups.Uploads && (
               <div className="px-2 pb-2">
@@ -1731,14 +1731,14 @@ export default function TemplateDesignerPage() {
                 <button
                   onClick={() => assetFileInputRef.current?.click()}
                   disabled={uploadAssetMut.isPending}
-                  className="w-full mb-2 py-1.5 text-[10px] border border-dashed border-gray-300 rounded text-gray-500 hover:bg-gray-50 disabled:opacity-60 flex items-center justify-center gap-1"
+                  className="w-full mb-2 py-1.5 text-[10px] border border-dashed border-border rounded text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-60 flex items-center justify-center gap-1"
                 >
                   <PlusIcon className="h-3 w-3" />
                   {uploadAssetMut.isPending ? 'Uploading…' : 'Upload Image'}
                 </button>
                 {uploadError && <p className="text-[9px] text-red-500 mb-2">{uploadError}</p>}
                 {assets.length === 0 ? (
-                  <p className="text-[9px] text-gray-300 text-center py-2">No uploads yet</p>
+                  <p className="text-[9px] text-text-muted text-center py-2">No uploads yet</p>
                 ) : (
                   <div className="grid grid-cols-3 gap-1.5">
                     {assets.map((asset: TemplateAsset) => (
@@ -1748,7 +1748,7 @@ export default function TemplateDesignerPage() {
                           draggable
                           onDragStart={e => handleAssetDragStart(e, asset.url)}
                           title={asset.filename}
-                          className="w-full h-full object-cover rounded border border-gray-200 cursor-grab active:cursor-grabbing bg-gray-50"
+                          className="w-full h-full object-cover rounded border border-border cursor-grab active:cursor-grabbing bg-background"
                         />
                         <button
                           onClick={() => {
@@ -1758,7 +1758,7 @@ export default function TemplateDesignerPage() {
                             });
                           }}
                           title="Delete"
-                          className="hidden group-hover:flex absolute -top-1 -right-1 h-4 w-4 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-300 text-[9px] leading-none"
+                          className="hidden group-hover:flex absolute -top-1 -right-1 h-4 w-4 items-center justify-center rounded-full bg-surface border border-border text-text-muted hover:text-red-500 hover:border-red-300 text-[9px] leading-none"
                         >
                           ✕
                         </button>
@@ -1771,13 +1771,13 @@ export default function TemplateDesignerPage() {
           </div>
 
           {catalogGroups.map(group => (
-            <div key={group.label} className="border-b border-gray-100 last:border-0">
+            <div key={group.label} className="border-b border-border last:border-0">
               <button
                 onClick={() => setOpenGroups(o => ({ ...o, [group.label]: !o[group.label] }))}
-                className="w-full flex items-center justify-between px-3 py-2 text-[10px] font-semibold text-gray-600 hover:bg-gray-50"
+                className="w-full flex items-center justify-between px-3 py-2 text-[10px] font-semibold text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
               >
                 {group.label}
-                <span className="text-gray-300">{openGroups[group.label] ? '▾' : '▸'}</span>
+                <span className="text-text-muted">{openGroups[group.label] ? '▾' : '▸'}</span>
               </button>
               {openGroups[group.label] && (
                 <div className="pb-1">
@@ -1786,12 +1786,12 @@ export default function TemplateDesignerPage() {
                       key={item.key}
                       draggable
                       onDragStart={e => handleVarDragStart(e, item.key, item.elemType)}
-                      className="mx-2 mb-0.5 px-2 py-1.5 rounded text-[10px] text-gray-600 bg-gray-50 hover:bg-brand-50 hover:text-brand-700 cursor-grab active:cursor-grabbing border border-transparent hover:border-brand-200 flex items-center gap-1.5"
+                      className="mx-2 mb-0.5 px-2 py-1.5 rounded text-[10px] text-text-muted bg-background hover:bg-ryze-600/10 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 cursor-grab active:cursor-grabbing border border-transparent hover:border-ryze-200 dark:border-ryze-800 flex items-center gap-1.5"
                     >
-                      <span className="text-[8px] text-gray-300">⠿</span>
+                      <span className="text-[8px] text-text-muted">⠿</span>
                       {item.label}
                       {item.elemType !== 'text' && (
-                        <span className="ml-auto text-[8px] text-gray-300 uppercase">{item.elemType}</span>
+                        <span className="ml-auto text-[8px] text-text-muted uppercase">{item.elemType}</span>
                       )}
                     </div>
                   ))}
@@ -1801,27 +1801,27 @@ export default function TemplateDesignerPage() {
           ))}
 
           {/* Page margins */}
-          <div className="border-t border-gray-100 px-3 py-2.5">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Page Margins (px)</p>
+          <div className="border-t border-border px-3 py-2.5">
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1.5">Page Margins (px)</p>
             <div className="grid grid-cols-2 gap-1">
-              <label className="text-[9px] text-gray-400">Top
+              <label className="text-[9px] text-text-muted">Top
                 <input type="number" min={0} max={200} value={pageCfg.marginTopPx}
                   onChange={e => setPageCfg(p => ({ ...p, marginTopPx: +e.target.value }))}
-                  className="w-full px-1.5 py-1 text-[10px] border border-gray-200 rounded" />
+                  className="w-full px-1.5 py-1 text-[10px] border border-border rounded bg-background text-text-primary" />
               </label>
-              <label className="text-[9px] text-gray-400">Bottom
+              <label className="text-[9px] text-text-muted">Bottom
                 <input type="number" min={0} max={200} value={pageCfg.marginBottomPx}
                   onChange={e => setPageCfg(p => ({ ...p, marginBottomPx: +e.target.value }))}
-                  className="w-full px-1.5 py-1 text-[10px] border border-gray-200 rounded" />
+                  className="w-full px-1.5 py-1 text-[10px] border border-border rounded bg-background text-text-primary" />
               </label>
             </div>
           </div>
 
           {/* Saved templates list */}
           {!listLoading && (
-            <div className="border-t border-gray-100 mt-2">
+            <div className="border-t border-border mt-2">
               <div className="px-3 py-2.5 flex items-center justify-between gap-2">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Saved Templates</p>
+                <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Saved Templates</p>
                 <button
                   onClick={async () => {
                     const tpl = await seedStarterMut.mutateAsync(docType);
@@ -1829,20 +1829,20 @@ export default function TemplateDesignerPage() {
                   }}
                   disabled={seedStarterMut.isPending}
                   title="Add an editable starter template for this document type — safe to click even if one already exists"
-                  className="text-[10px] font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50 whitespace-nowrap"
+                  className="text-[10px] font-medium text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 disabled:opacity-50 whitespace-nowrap"
                 >
                   {seedStarterMut.isPending ? 'Adding…' : '+ Starter template'}
                 </button>
               </div>
               {allTemplates?.map((t: any) => (
-                <div key={t._id} className="mx-2 mb-1 px-2 py-1.5 rounded border border-gray-100 bg-gray-50 flex items-center gap-1.5 group">
+                <div key={t._id} className="mx-2 mb-1 px-2 py-1.5 rounded border border-border bg-background flex items-center gap-1.5 group">
                   {t.isDefault && <StarSolid className="h-3 w-3 text-amber-400 shrink-0" />}
-                  <span className="text-[10px] text-gray-600 truncate flex-1">{t.name}</span>
+                  <span className="text-[10px] text-text-muted truncate flex-1">{t.name}</span>
                   <div className="hidden group-hover:flex gap-1">
                     <button onClick={() => navigate(`/native-crm/template-designer?id=${t._id}&docType=${t.docType}`)}
-                      className="p-0.5 text-gray-400 hover:text-brand-600"><DocumentDuplicateIcon className="h-3 w-3" /></button>
+                      className="p-0.5 text-text-muted hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300"><DocumentDuplicateIcon className="h-3 w-3" /></button>
                     <button onClick={() => deleteMut.mutate(t._id)}
-                      className="p-0.5 text-gray-400 hover:text-red-500"><TrashIcon className="h-3 w-3" /></button>
+                      className="p-0.5 text-text-muted hover:text-red-500"><TrashIcon className="h-3 w-3" /></button>
                   </div>
                 </div>
               ))}
@@ -1851,7 +1851,7 @@ export default function TemplateDesignerPage() {
         </div>
 
         {/* Center — Canvas ────────────────────────────────────────────────────── */}
-        <div className="flex-1 overflow-auto p-6 flex items-start justify-center bg-gray-200">
+        <div className="flex-1 overflow-auto p-6 flex items-start justify-center bg-black/[0.06] dark:bg-white/[0.08]">
           <div
             ref={canvasRef}
             style={{ width: CANVAS_W, minHeight: canvasHeight, height: region === 'body' ? undefined : canvasHeight, position: 'relative', background: '#fff', boxShadow: '0 4px 32px rgba(0,0,0,0.15)', flexShrink: 0 }}
@@ -1922,7 +1922,7 @@ export default function TemplateDesignerPage() {
               );
             })}
             {elements.length === 0 && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-300 pointer-events-none">
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-text-muted pointer-events-none">
                 <p className="text-sm font-medium">Empty canvas</p>
                 <p className="text-xs mt-1">Drag variables from the left panel or use Add buttons above</p>
               </div>
@@ -1958,17 +1958,17 @@ export default function TemplateDesignerPage() {
                   window.addEventListener('mouseup', onUp);
                 }}
                 title="Drag to resize"
-                className="absolute left-0 right-0 bottom-0 h-2.5 cursor-ns-resize bg-brand-100 hover:bg-brand-400 flex items-center justify-center transition-colors"
+                className="absolute left-0 right-0 bottom-0 h-2.5 cursor-ns-resize bg-ryze-600/15 hover:bg-ryze-400 flex items-center justify-center transition-colors"
                 style={{ zIndex: 70 }}
               >
-                <span className="text-[8px] text-brand-600 leading-none">⋯</span>
+                <span className="text-[8px] text-ryze-600 dark:text-ryze-400 leading-none">⋯</span>
               </div>
             )}
           </div>
         </div>
 
         {/* Right — Properties panel ───────────────────────────────────────────── */}
-        <div className="w-64 shrink-0 bg-white border-l border-gray-200 overflow-y-auto">
+        <div className="w-64 shrink-0 bg-surface border-l border-border overflow-y-auto">
           {selected ? (
             <PropertiesPanel
               el={selected}
@@ -1976,7 +1976,7 @@ export default function TemplateDesignerPage() {
               onDelete={() => deleteElement(selected.id)}
             />
           ) : (
-            <div className="p-4 text-center text-gray-300">
+            <div className="p-4 text-center text-text-muted">
               <p className="text-xs mt-8">Select an element<br />to edit its properties</p>
             </div>
           )}

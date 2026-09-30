@@ -40,6 +40,7 @@ export const config: ModulePageConfig = {
     // convention the SLA-status filter below uses, so the table badge and
     // the filter dropdown read as the same concept at a glance.
     { key: 'slaStatus', label: 'SLA', type: 'text', tableCol: true, hideInForm: true },
+    { key: 'createdAt', label: 'Created Date', type: 'date' },
   ],
   // Server-side filter bar — every param here is sent straight through to
   // GET /tickets (ticket.controller.ts's list()), not a client-side

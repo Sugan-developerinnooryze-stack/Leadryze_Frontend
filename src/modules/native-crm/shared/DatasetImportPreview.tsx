@@ -167,13 +167,13 @@ export default function DatasetImportPreview({ fileName, fileType, aoa, jsonRows
     <>
       <div className="fixed inset-0 bg-black/40 z-50" onClick={onCancel} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[88vh] flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="bg-surface-elevated rounded-2xl shadow-2xl w-full max-w-3xl max-h-[88vh] flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
             <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-gray-900">Review before import</h3>
-              <p className="text-xs text-gray-400 truncate">{fileName}</p>
+              <h3 className="text-sm font-semibold text-text-primary">Review before import</h3>
+              <p className="text-xs text-text-muted truncate">{fileName}</p>
             </div>
-            <button onClick={onCancel} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 shrink-0">
+            <button onClick={onCancel} className="p-1.5 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted shrink-0">
               <XMarkIcon className="h-5 w-5" />
             </button>
           </div>
@@ -182,11 +182,11 @@ export default function DatasetImportPreview({ fileName, fileType, aoa, jsonRows
             {/* Dataset target */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Add to</label>
+                <label className="block text-xs font-medium text-text-muted mb-1">Add to</label>
                 <select
                   value={datasetTarget}
                   onChange={(e) => setDatasetTarget(e.target.value)}
-                  className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-2.5 py-1.5 bg-surface border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-500"
                 >
                   <option value="new">+ New dataset</option>
                   {existingDatasets.map((d) => (
@@ -196,12 +196,12 @@ export default function DatasetImportPreview({ fileName, fileType, aoa, jsonRows
               </div>
               {datasetTarget === 'new' && (
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Dataset name</label>
+                  <label className="block text-xs font-medium text-text-muted mb-1">Dataset name</label>
                   <input
                     value={datasetName}
                     onChange={(e) => setDatasetName(e.target.value)}
                     placeholder="e.g. Machines, Course Catalog, Price List"
-                    className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-2.5 py-1.5 bg-surface border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-500"
                   />
                 </div>
               )}
@@ -210,38 +210,38 @@ export default function DatasetImportPreview({ fileName, fileType, aoa, jsonRows
             {/* Header row selector (excel/csv only) */}
             {fileType !== 'json' && (
               <div className="flex items-center gap-3">
-                <label className="text-xs font-medium text-gray-600 shrink-0">Header row</label>
+                <label className="text-xs font-medium text-text-muted shrink-0">Header row</label>
                 <select
                   value={headerRowIndex}
                   onChange={(e) => setHeaderRowIndex(Number(e.target.value))}
-                  className="px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-2.5 py-1.5 bg-surface border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-500"
                 >
                   {Array.from({ length: scanLimit }, (_, i) => i).map((i) => (
                     <option key={i} value={i}>Row {i + 1}{aoa && i === detectHeaderRow(aoa) ? ' (detected)' : ''}</option>
                   ))}
                 </select>
-                <span className="text-xs text-gray-400">{headers.length} columns · {rows.length} data row(s)</span>
+                <span className="text-xs text-text-muted">{headers.length} columns · {rows.length} data row(s)</span>
               </div>
             )}
 
             {/* Mapping confidence summary */}
             {analyzing ? (
-              <div className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-1.5 text-xs text-text-muted bg-black/[0.02] dark:bg-white/[0.03] border border-border rounded-lg px-3 py-2">
                 <ArrowPathIcon className="h-4 w-4 animate-spin shrink-0" />
                 Analyzing columns…
               </div>
             ) : analyzeError ? (
-              <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-lg px-3 py-2">
                 <ExclamationTriangleIcon className="h-4 w-4 shrink-0" />
                 {analyzeError}
               </div>
             ) : columns && unmappedCount + lowConfidenceCount === 0 ? (
-              <div className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-1.5 text-xs text-success-700 dark:text-success-500 bg-success-500/10 border border-success-500/20 rounded-lg px-3 py-2">
                 <CheckCircleIcon className="h-4 w-4 shrink-0" />
                 Every column was recognized with high confidence.
               </div>
             ) : columns ? (
-              <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-lg px-3 py-2">
                 <ExclamationTriangleIcon className="h-4 w-4 shrink-0" />
                 {unmappedCount + lowConfidenceCount} column(s) below — still imported and fully searchable, just not mapped to a specific field type. Review below or leave as-is.
               </div>
@@ -250,22 +250,22 @@ export default function DatasetImportPreview({ fileName, fileType, aoa, jsonRows
             {/* Per-column role mapping */}
             {columns && (
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Column mapping</p>
-                <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
+                <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-1.5">Column mapping</p>
+                <div className="border border-border rounded-lg divide-y divide-border">
                   {columns.map((col, i) => {
                     const flagged = !col.semanticRole || (col.confidence < CONFIDENCE_THRESHOLD && col.source === 'heuristic');
                     return (
                       <div key={col.originalName + i} className="flex items-center gap-3 px-3 py-2">
-                        <span className="text-xs text-gray-700 flex-1 min-w-0 truncate" title={col.originalName}>{col.originalName}</span>
+                        <span className="text-xs text-text-primary flex-1 min-w-0 truncate" title={col.originalName}>{col.originalName}</span>
                         {col.source === 'heuristic' && (
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${flagged ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${flagged ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-success-500/10 text-success-600 dark:text-success-500'}`}>
                             {Math.round(col.confidence * 100)}%
                           </span>
                         )}
                         <select
                           value={col.semanticRole ?? ''}
                           onChange={(e) => updateRole(i, e.target.value as SemanticRole | '')}
-                          className="text-xs border border-gray-300 rounded-lg px-2 py-1 bg-white text-gray-700 shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="text-xs bg-surface border border-border rounded-lg px-2 py-1 text-text-primary shrink-0 focus:outline-none focus:ring-2 focus:ring-ryze-500"
                         >
                           {ROLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                         </select>
@@ -283,33 +283,33 @@ export default function DatasetImportPreview({ fileName, fileType, aoa, jsonRows
                 leaving this empty just means no images import this round —
                 every other column still imports normally. */}
             {imageColumn && (
-              <div className="border border-gray-200 rounded-lg px-3 py-2.5">
+              <div className="border border-border rounded-lg px-3 py-2.5">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <PhotoIcon className="h-4 w-4 text-gray-400 shrink-0" />
-                  <p className="text-xs font-semibold text-gray-700">Product Images (.zip)</p>
-                  <span className="text-[10px] text-gray-400">optional</span>
+                  <PhotoIcon className="h-4 w-4 text-text-muted shrink-0" />
+                  <p className="text-xs font-semibold text-text-primary">Product Images (.zip)</p>
+                  <span className="text-[10px] text-text-muted">optional</span>
                 </div>
-                <p className="text-xs text-gray-500 mb-2">
-                  Each image's filename must match a value in the <span className="font-medium text-gray-700">{imageColumn.originalName}</span> column exactly (e.g. a row with <code className="text-[11px] bg-gray-50 px-1 py-0.5 rounded">FF-BV100.jpg</code> needs a file of that same name in the ZIP — case doesn't matter, subfolders are fine).
+                <p className="text-xs text-text-muted mb-2">
+                  Each image's filename must match a value in the <span className="font-medium text-text-primary">{imageColumn.originalName}</span> column exactly (e.g. a row with <code className="text-[11px] bg-background px-1 py-0.5 rounded">FF-BV100.jpg</code> needs a file of that same name in the ZIP — case doesn't matter, subfolders are fine).
                 </p>
                 <input
                   type="file"
                   accept=".zip,application/zip,application/x-zip-compressed"
                   onChange={(e) => handleImageZipChange(e.target.files?.[0] ?? null)}
-                  className="block w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100"
+                  className="block w-full text-xs text-text-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-ryze-600/10 file:text-ryze-700 dark:file:text-ryze-400 hover:file:bg-ryze-600/20"
                 />
                 {imageZipFile && uploadImageZipMutation.isPending && (
-                  <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
+                  <p className="text-xs text-text-muted mt-1.5 flex items-center gap-1">
                     <ArrowPathIcon className="h-3.5 w-3.5 animate-spin shrink-0" /> Uploading {imageZipFile.name}…
                   </p>
                 )}
                 {imageZipFile && imageZipRef && (
-                  <p className="text-xs text-emerald-600 mt-1.5 flex items-center gap-1">
+                  <p className="text-xs text-success-600 dark:text-success-500 mt-1.5 flex items-center gap-1">
                     <CheckCircleIcon className="h-3.5 w-3.5 shrink-0" /> {imageZipFile.name} ({Math.round(imageZipFile.size / 1024)} KB)
                   </p>
                 )}
                 {imageZipError && (
-                  <p className="text-xs text-red-600 mt-1.5">{imageZipError}</p>
+                  <p className="text-xs text-danger-600 dark:text-danger-500 mt-1.5">{imageZipError}</p>
                 )}
 
                 {/* Live match preview — the exact backend matching logic
@@ -319,17 +319,17 @@ export default function DatasetImportPreview({ fileName, fileType, aoa, jsonRows
                     Excel says .jpg, the ZIP has .png) right here instead of
                     only after a full import + manual check. */}
                 {previewImageMatchMutation.isPending && (
-                  <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                  <p className="text-xs text-text-muted mt-2 flex items-center gap-1">
                     <ArrowPathIcon className="h-3.5 w-3.5 animate-spin shrink-0" /> Checking filename matches…
                   </p>
                 )}
                 {matchPreview && !previewImageMatchMutation.isPending && (
                   <div className={`mt-2 rounded-lg px-3 py-2 text-xs border ${
                     matchPreview.matched === matchPreview.declared
-                      ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                      ? 'bg-success-500/10 border-success-500/20 text-success-700 dark:text-success-500'
                       : matchPreview.matched === 0
-                      ? 'bg-red-50 border-red-100 text-red-600'
-                      : 'bg-amber-50 border-amber-100 text-amber-700'
+                      ? 'bg-danger-500/10 border-danger-500/20 text-danger-600 dark:text-danger-500'
+                      : 'bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20 text-amber-700 dark:text-amber-400'
                   }`}>
                     <p className="font-medium">
                       {matchPreview.declared} image{matchPreview.declared === 1 ? '' : 's'} declared · {matchPreview.matched} matched
@@ -358,28 +358,28 @@ export default function DatasetImportPreview({ fileName, fileType, aoa, jsonRows
 
             {/* Data preview */}
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-1.5">
                 Preview ({previewRows.length} of {rows.length} row{rows.length === 1 ? '' : 's'})
               </p>
-              <div className="border border-gray-200 rounded-lg overflow-x-auto">
+              <div className="border border-border rounded-lg overflow-x-auto">
                 <table className="w-full text-xs">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-background">
                     <tr>
                       {headers.map((h, i) => (
-                        <th key={i} className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">{h}</th>
+                        <th key={i} className="px-3 py-2 text-left font-medium text-text-muted whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-border">
                     {previewRows.map((r, ri) => (
                       <tr key={ri}>
                         {headers.map((h, ci) => (
-                          <td key={ci} className="px-3 py-2 text-gray-700 max-w-[160px] truncate">{String(r[h] ?? '')}</td>
+                          <td key={ci} className="px-3 py-2 text-text-primary max-w-[160px] truncate">{String(r[h] ?? '')}</td>
                         ))}
                       </tr>
                     ))}
                     {previewRows.length === 0 && (
-                      <tr><td colSpan={headers.length || 1} className="px-3 py-4 text-center text-gray-400">No data rows found below this header row.</td></tr>
+                      <tr><td colSpan={headers.length || 1} className="px-3 py-4 text-center text-text-muted">No data rows found below this header row.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -387,17 +387,17 @@ export default function DatasetImportPreview({ fileName, fileType, aoa, jsonRows
             </div>
           </div>
 
-          <div className="flex items-center gap-3 px-6 py-4 border-t border-gray-100">
+          <div className="flex items-center gap-3 px-6 py-4 border-t border-border">
             <button
               onClick={onCancel}
-              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleConfirm}
               disabled={!canConfirm}
-              className="flex-1 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors"
+              className="flex-1 px-4 py-2.5 bg-ryze-600 hover:bg-ryze-700 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors"
             >
               {importing ? 'Importing…' : `Import ${rows.length} row${rows.length === 1 ? '' : 's'}`}
             </button>

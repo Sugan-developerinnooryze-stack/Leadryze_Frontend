@@ -24,7 +24,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
   pending:    { label: 'Pending',     bg: 'bg-yellow-100', text: 'text-yellow-800' },
   in_progress:{ label: 'In Progress', bg: 'bg-blue-100',   text: 'text-blue-800'   },
   completed:  { label: 'Completed',   bg: 'bg-green-100',  text: 'text-green-800'  },
-  cancelled:  { label: 'Cancelled',   bg: 'bg-gray-100',   text: 'text-gray-500'   },
+  cancelled:  { label: 'Cancelled',   bg: 'bg-black/[0.04] dark:bg-white/[0.06]',   text: 'text-text-muted'   },
 };
 
 const CHANNEL_COLORS: Record<string, string> = {
@@ -143,21 +143,21 @@ export default function ManagementPage() {
   const totalPages = Math.ceil(total / LIMIT);
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-background">
       {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shrink-0">
+      <div className="flex items-center justify-between px-6 py-4 bg-surface border-b border-border shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-brand-100 rounded-xl flex items-center justify-center">
-            <SparklesIcon className="h-4 w-4 text-brand-600" />
+          <div className="w-8 h-8 bg-ryze-600/15 rounded-xl flex items-center justify-center">
+            <SparklesIcon className="h-4 w-4 text-ryze-600 dark:text-ryze-400" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-gray-900">Management</h1>
-            <p className="text-xs text-gray-500">Tasks, bookings, follow-ups & more</p>
+            <h1 className="text-base font-bold text-text-primary">Management</h1>
+            <p className="text-xs text-text-muted">Tasks, bookings, follow-ups & more</p>
           </div>
         </div>
         <button
           onClick={() => { setEditTarget(undefined); setModalOpen(true); }}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors shadow-sm"
+          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-ryze-600 hover:bg-ryze-700 rounded-lg transition-colors shadow-sm"
         >
           <PlusIcon className="h-4 w-4" />
           Add New
@@ -166,9 +166,9 @@ export default function ManagementPage() {
 
       {/* ── Stats strip ─────────────────────────────────────────────────────── */}
       {stats && (
-        <div className="grid grid-cols-4 gap-3 px-6 py-3 bg-white border-b border-gray-100 shrink-0">
+        <div className="grid grid-cols-4 gap-3 px-6 py-3 bg-surface border-b border-border shrink-0">
           {[
-            { label: 'Total',       value: stats.total,      icon: SparklesIcon,          color: 'text-brand-600', bg: 'bg-brand-50' },
+            { label: 'Total',       value: stats.total,      icon: SparklesIcon,          color: 'text-ryze-600 dark:text-ryze-400', bg: 'bg-ryze-600/10' },
             { label: 'Pending',     value: stats.pending,    icon: ExclamationCircleIcon, color: 'text-yellow-600', bg: 'bg-yellow-50' },
             { label: 'In Progress', value: stats.inProgress, icon: ArrowPathIcon,         color: 'text-blue-600',   bg: 'bg-blue-50'   },
             { label: 'Completed',   value: stats.completed,  icon: CheckCircleIcon,       color: 'text-green-600',  bg: 'bg-green-50'  },
@@ -177,7 +177,7 @@ export default function ManagementPage() {
               <s.icon className={`h-4 w-4 ${s.color} shrink-0`} />
               <div>
                 <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
-                <p className="text-[10px] text-gray-500">{s.label}</p>
+                <p className="text-[10px] text-text-muted">{s.label}</p>
               </div>
             </div>
           ))}
@@ -185,7 +185,7 @@ export default function ManagementPage() {
       )}
 
       {/* ── Tabs ────────────────────────────────────────────────────────────── */}
-      <div className="flex gap-1 px-6 py-2 bg-white border-b border-gray-100 overflow-x-auto shrink-0">
+      <div className="flex gap-1 px-6 py-2 bg-surface border-b border-border overflow-x-auto shrink-0">
         {TABS.map(t => {
           const count = t.key === 'all' ? stats?.total : stats?.byType[t.key];
           return (
@@ -194,13 +194,13 @@ export default function ManagementPage() {
               onClick={() => setTab(t.key)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
                 tab === t.key
-                  ? 'bg-brand-600 text-white'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  ? 'bg-ryze-600 text-white'
+                  : 'text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
               }`}
             >
               {t.label}
               {count !== undefined && count > 0 && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${tab === t.key ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${tab === t.key ? 'bg-white/20 text-white' : 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'}`}>
                   {count}
                 </span>
               )}
@@ -213,15 +213,15 @@ export default function ManagementPage() {
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2.5">
         {loading && (
           <div className="flex items-center justify-center py-16">
-            <div className="w-6 h-6 rounded-full border-2 border-brand-400 border-t-transparent animate-spin" />
+            <div className="w-6 h-6 rounded-full border-2 border-ryze-400 border-t-transparent animate-spin" />
           </div>
         )}
 
         {!loading && activities.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <SparklesIcon className="h-10 w-10 text-gray-300 mb-3" />
-            <p className="text-sm font-medium text-gray-500">No activities yet</p>
-            <p className="text-xs text-gray-400 mt-1">Click "+ Add New" to create your first activity</p>
+            <SparklesIcon className="h-10 w-10 text-text-muted mb-3" />
+            <p className="text-sm font-medium text-text-muted">No activities yet</p>
+            <p className="text-xs text-text-muted mt-1">Click "+ Add New" to create your first activity</p>
           </div>
         )}
 
@@ -234,7 +234,7 @@ export default function ManagementPage() {
           return (
             <div
               key={a._id}
-              className={`bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow ${isDone ? 'opacity-70' : ''}`}
+              className={`bg-surface border border-border rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow ${isDone ? 'opacity-70' : ''}`}
             >
               <div className="h-0.5" style={{ backgroundColor: a.color || cfg.color }} />
               <div className="flex items-start gap-3 px-4 py-3">
@@ -243,7 +243,7 @@ export default function ManagementPage() {
                   onClick={() => toggleStatus(a)}
                   title={isDone ? 'Mark pending' : 'Mark complete'}
                   className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                    isDone ? 'border-green-500 bg-green-500' : 'border-gray-300 hover:border-green-400'
+                    isDone ? 'border-green-500 bg-green-500' : 'border-border hover:border-green-400'
                   }`}
                 >
                   {isDone && <CheckCircleIcon className="h-3 w-3 text-white" />}
@@ -258,7 +258,7 @@ export default function ManagementPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-semibold text-gray-900 truncate ${isDone ? 'line-through text-gray-400' : ''}`}>
+                      <p className={`text-sm font-semibold text-text-primary truncate ${isDone ? 'line-through text-text-muted' : ''}`}>
                         {a.title}
                       </p>
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -275,27 +275,27 @@ export default function ManagementPage() {
                           <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
                             a.priority === 'high' ? 'bg-red-100 text-red-700' :
                             a.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-gray-100 text-gray-500'
+                            'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'
                           }`}>
                             {a.priority}
                           </span>
                         )}
                         {/* Date */}
-                        {dateStr && <span className="text-[10px] text-gray-400">{dateStr}</span>}
+                        {dateStr && <span className="text-[10px] text-text-muted">{dateStr}</span>}
                       </div>
 
                       {/* Linked person */}
                       {a.linkedPerson && (
                         <div className="flex items-center gap-1.5 mt-1.5">
                           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: CHANNEL_COLORS[a.linkedPerson.channel] || '#64748b' }} />
-                          <span className="text-xs text-gray-500 truncate">{a.linkedPerson.displayName}</span>
-                          <span className="text-[10px] text-gray-400">· {a.linkedPerson.module}</span>
+                          <span className="text-xs text-text-muted truncate">{a.linkedPerson.displayName}</span>
+                          <span className="text-[10px] text-text-muted">· {a.linkedPerson.module}</span>
                         </div>
                       )}
 
                       {/* Notes preview */}
                       {a.notes && (
-                        <p className="text-xs text-gray-400 mt-1 truncate max-w-sm">{a.notes}</p>
+                        <p className="text-xs text-text-muted mt-1 truncate max-w-sm">{a.notes}</p>
                       )}
                     </div>
 
@@ -303,14 +303,14 @@ export default function ManagementPage() {
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => openEdit(a)}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                        className="p-1.5 rounded-lg text-text-muted hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300 hover:bg-ryze-600/10 transition-colors"
                         title="Edit"
                       >
                         <PencilIcon className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => handleDelete(a._id)}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        className="p-1.5 rounded-lg text-text-muted hover:text-red-600 hover:bg-red-50 transition-colors"
                         title="Delete"
                       >
                         <TrashIcon className="h-3.5 w-3.5" />
@@ -326,17 +326,17 @@ export default function ManagementPage() {
 
       {/* ── Pagination ──────────────────────────────────────────────────────── */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 py-3 bg-white border-t border-gray-100 shrink-0">
+        <div className="flex items-center justify-center gap-2 py-3 bg-surface border-t border-border shrink-0">
           <button
             disabled={page === 1}
             onClick={() => { const p = page-1; setPage(p); fetchActivities(p, tab); }}
-            className="px-3 py-1.5 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
+            className="px-3 py-1.5 text-sm text-text-muted bg-surface border border-border rounded-lg disabled:opacity-40 hover:bg-background"
           >Prev</button>
-          <span className="text-sm text-gray-500">{page} / {totalPages}</span>
+          <span className="text-sm text-text-muted">{page} / {totalPages}</span>
           <button
             disabled={page === totalPages}
             onClick={() => { const p = page+1; setPage(p); fetchActivities(p, tab); }}
-            className="px-3 py-1.5 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
+            className="px-3 py-1.5 text-sm text-text-muted bg-surface border border-border rounded-lg disabled:opacity-40 hover:bg-background"
           >Next</button>
         </div>
       )}

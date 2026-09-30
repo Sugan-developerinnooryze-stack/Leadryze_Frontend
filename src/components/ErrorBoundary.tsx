@@ -17,14 +17,14 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.error) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-          <div className="max-w-lg w-full bg-white rounded-2xl shadow-sm border border-red-100 p-8 text-center">
+        <div className="min-h-screen flex items-center justify-center bg-background p-6">
+          <div className="max-w-lg w-full bg-surface rounded-2xl shadow-sm border border-danger-500/20 p-8 text-center">
             <div className="text-5xl mb-4">⚠️</div>
-            <h1 className="text-xl font-bold text-gray-900 mb-2">Something went wrong</h1>
-            <p className="text-sm text-gray-500 mb-4">
+            <h1 className="text-xl font-bold text-text-primary mb-2">Something went wrong</h1>
+            <p className="text-sm text-text-muted mb-4">
               {this.state.error.message}
             </p>
-            <pre className="text-left text-xs bg-gray-50 rounded-lg p-4 overflow-auto max-h-40 text-red-600 mb-6">
+            <pre className="text-left text-xs bg-black/[0.04] dark:bg-white/[0.06] rounded-lg p-4 overflow-auto max-h-40 text-danger-600 dark:text-danger-500 mb-6">
               {this.state.error.stack}
             </pre>
             <button

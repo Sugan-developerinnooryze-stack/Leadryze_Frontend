@@ -23,7 +23,7 @@ import { usePipelineStages } from '../../native-crm/queries/pipeline-config.quer
 
 /* ── Helpers ────────────────────────────────────────────────────────────────── */
 function StatusBadge({ value }: { value: string }) {
-  if (!value || value === '—') return <span className="text-gray-400 text-sm">—</span>;
+  if (!value || value === '—') return <span className="text-text-muted text-sm">—</span>;
   const c = statusColor(value);
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${c.bg} ${c.text}`}>
@@ -56,18 +56,18 @@ function DeleteConfirm({
     <>
       <div className="fixed inset-0 bg-black/40 z-50" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-sm p-6">
           <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
             <TrashIcon className="h-6 w-6 text-red-600" />
           </div>
-          <h3 className="text-lg font-semibold text-center text-gray-900 mb-1">Delete {config.labelSingular}</h3>
-          <p className="text-sm text-center text-gray-500 mb-6">
-            Delete <span className="font-medium text-gray-700">{nameOf}</span>? This cannot be undone.
+          <h3 className="text-lg font-semibold text-center text-text-primary mb-1">Delete {config.labelSingular}</h3>
+          <p className="text-sm text-center text-text-muted mb-6">
+            Delete <span className="font-medium text-text-primary">{nameOf}</span>? This cannot be undone.
           </p>
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-text-primary hover:bg-background transition-colors"
             >
               Cancel
             </button>
@@ -96,16 +96,16 @@ function BulkDeleteConfirm({
     <>
       <div className="fixed inset-0 bg-black/40 z-50" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-sm p-6">
           <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
             <TrashIcon className="h-6 w-6 text-red-600" />
           </div>
-          <h3 className="text-lg font-semibold text-center text-gray-900 mb-1">Delete {count} records</h3>
-          <p className="text-sm text-center text-gray-500 mb-6">This action cannot be undone.</p>
+          <h3 className="text-lg font-semibold text-center text-text-primary mb-1">Delete {count} records</h3>
+          <p className="text-sm text-center text-text-muted mb-6">This action cannot be undone.</p>
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-text-primary hover:bg-background transition-colors"
             >
               Cancel
             </button>
@@ -142,11 +142,11 @@ function FilterBar({
   onClear:  () => void;
   statusControl?: React.ReactNode;
 }) {
-  const inputCls = 'w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500';
-  const labelCls = 'text-xs font-medium text-gray-500 mb-1 block';
+  const inputCls = 'w-full px-2.5 py-1.5 border border-border rounded-lg text-sm text-text-primary bg-surface focus:outline-none focus:ring-2 focus:ring-ryze-500';
+  const labelCls = 'text-xs font-medium text-text-muted mb-1 block';
   const hasAny = Object.values(values).some(Boolean);
   return (
-    <div className="px-4 py-3 border-b border-gray-200 shrink-0 bg-gray-50">
+    <div className="px-4 py-3 border-b border-border shrink-0 bg-background">
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {statusControl}
         {fields.map((f) => {
@@ -156,7 +156,7 @@ function FilterBar({
                 <span className={labelCls}>{f.label}</span>
                 <div className="flex items-center gap-1">
                   <input type="date" value={values[f.key] ?? ''} onChange={(e) => onChange(f.key, e.target.value)} className={inputCls} />
-                  <span className="text-xs text-gray-400 shrink-0">–</span>
+                  <span className="text-xs text-text-muted shrink-0">–</span>
                   <input type="date" value={values[f.toKey!] ?? ''} onChange={(e) => onChange(f.toKey!, e.target.value)} className={inputCls} />
                 </div>
               </div>
@@ -200,7 +200,7 @@ function FilterBar({
         })}
       </div>
       {hasAny && (
-        <button onClick={onClear} className="mt-2.5 text-xs text-gray-400 hover:text-gray-600 underline transition-colors">
+        <button onClick={onClear} className="mt-2.5 text-xs text-text-muted hover:text-text-primary underline transition-colors">
           Clear filters
         </button>
       )}
@@ -227,7 +227,7 @@ function BulkActionButton({
       <button
         onClick={() => onRun('')}
         disabled={busy}
-        className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 bg-white rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 border border-border bg-surface rounded-lg text-xs font-medium text-text-primary hover:bg-background disabled:opacity-50 transition-colors"
       >
         {config.label}
       </button>
@@ -239,22 +239,22 @@ function BulkActionButton({
       <button
         onClick={() => setOpen((v) => !v)}
         disabled={busy}
-        className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 bg-white rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 border border-border bg-surface rounded-lg text-xs font-medium text-text-primary hover:bg-background disabled:opacity-50 transition-colors"
       >
         {config.label}
       </button>
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute top-full mt-1.5 left-0 z-20 bg-white border border-gray-200 rounded-xl shadow-lg p-3 min-w-[220px]">
+          <div className="absolute top-full mt-1.5 left-0 z-20 bg-surface border border-border rounded-xl shadow-lg p-3 min-w-[220px]">
             {config.input === 'text' ? (
               <input
                 autoFocus type="text" value={value} onChange={(e) => setValue(e.target.value)}
                 placeholder={config.placeholder ?? config.label}
-                className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-2.5 py-1.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 bg-background text-text-primary"
               />
             ) : config.input === 'select' ? (
-              <select value={value} onChange={(e) => setValue(e.target.value)} className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm">
+              <select value={value} onChange={(e) => setValue(e.target.value)} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-sm bg-background text-text-primary">
                 <option value="">Select…</option>
                 {(config.options ?? []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
@@ -268,7 +268,7 @@ function BulkActionButton({
             <button
               onClick={() => { if (value) { onRun(value); setOpen(false); setValue(''); } }}
               disabled={!value || busy}
-              className="mt-2 w-full px-3 py-1.5 bg-gray-900 hover:bg-gray-800 disabled:opacity-40 text-white text-xs font-medium rounded-lg transition-colors"
+              className="mt-2 w-full px-3 py-1.5 bg-ryze-600 hover:bg-ryze-700 disabled:opacity-40 text-white text-xs font-medium rounded-lg transition-colors"
             >
               Apply
             </button>
@@ -282,10 +282,10 @@ function BulkActionButton({
 /* ── SortIcon ───────────────────────────────────────────────────────────────── */
 function SortIcon({ col, sortKey, sortDir }: { col: string; sortKey: string; sortDir: 'asc' | 'desc' }) {
   if (sortKey !== col)
-    return <ChevronUpDownIcon className="h-3.5 w-3.5 text-gray-300 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />;
+    return <ChevronUpDownIcon className="h-3.5 w-3.5 text-text-muted ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />;
   return sortDir === 'asc'
-    ? <ChevronUpIcon className="h-3.5 w-3.5 text-blue-600 ml-1 inline" />
-    : <ChevronDownIcon className="h-3.5 w-3.5 text-blue-600 ml-1 inline" />;
+    ? <ChevronUpIcon className="h-3.5 w-3.5 text-ryze-600 dark:text-ryze-400 ml-1 inline" />
+    : <ChevronDownIcon className="h-3.5 w-3.5 text-ryze-600 dark:text-ryze-400 ml-1 inline" />;
 }
 
 /* ── Main CrmLayout ─────────────────────────────────────────────────────────── */
@@ -410,6 +410,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
       const params: Record<string, unknown> = { page, limit };
       if (search)  params.search = search;
       if (statusF) params.status = statusF;
+      if (viewTab !== 'all') params.owner = viewTab;
       if (upcomingOnly && config.upcomingDateField) params.upcoming = true;
       if (linkedFilter.relatedModule && linkedFilter.relatedId) {
         params.relatedModule = linkedFilter.relatedModule;
@@ -427,7 +428,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
       setErrorStatus(err?.response?.status);
     }
     finally { setLoading(false); }
-  }, [config.apiBase, config.upcomingDateField, page, limit, search, statusF, upcomingOnly, linkedFilter, filterValues]);
+  }, [config.apiBase, config.upcomingDateField, page, limit, search, statusF, viewTab, upcomingOnly, linkedFilter, filterValues]);
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
@@ -501,10 +502,10 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
     String(r.firstName && r.lastName ? `${r.firstName} ${r.lastName}` : r.name ?? r.title ?? r.subject ?? r.contactName ?? '—');
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-surface">
 
       {/* ── View tabs ─────────────────────────────────────────────────────── */}
-      <div className="border-b border-gray-200 px-6 shrink-0">
+      <div className="border-b border-border px-6 shrink-0">
         <div className="flex items-center -mb-px overflow-x-auto">
           {(['all', 'my', 'unassigned'] as ViewTab[]).map((tab) => (
             <button
@@ -512,14 +513,14 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
               onClick={() => { setViewTab(tab); setPage(1); }}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
                 viewTab === tab
-                  ? 'border-blue-600 text-blue-700'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-ryze-600 text-ryze-700 dark:text-ryze-400'
+                  : 'border-transparent text-text-muted hover:text-text-primary hover:border-border'
               }`}
             >
               {tab === 'all' ? `All ${config.label}` : tab === 'my' ? `My ${config.label}` : 'Unassigned'}
               {tab === 'all' && (
                 <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
-                  viewTab === 'all' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                  viewTab === 'all' ? 'bg-ryze-600/15 text-ryze-700 dark:text-ryze-400' : 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'
                 }`}>
                   {meta.total}
                 </span>
@@ -527,7 +528,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
             </button>
           ))}
           <button
-            className="ml-auto p-1.5 rounded-md hover:bg-gray-100 text-gray-400 transition-colors shrink-0"
+            className="ml-auto p-1.5 rounded-md hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted transition-colors shrink-0"
             title="Add view"
           >
             <PlusIcon className="h-4 w-4" />
@@ -536,16 +537,16 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
       </div>
 
       {/* ── Toolbar ───────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 shrink-0 flex-wrap bg-white">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0 flex-wrap bg-surface">
         {/* Search */}
         <div className="relative min-w-[180px] max-w-xs flex-1">
-          <MagnifyingGlassIcon className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <MagnifyingGlassIcon className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
           <input
             type="text"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search..."
-            className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-4 py-2 bg-surface text-text-primary border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500"
           />
         </div>
 
@@ -556,25 +557,25 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
             <div className="relative">
               <button
                 onClick={() => setTableViewMenuOpen((v) => !v)}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 bg-white hover:bg-gray-50 transition-colors"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 border border-border rounded-lg text-sm text-text-muted bg-surface hover:bg-background transition-colors"
               >
                 <TableCellsIcon className="h-4 w-4" />
                 <span>{viewMode === 'table' ? 'Table view' : (config.altViewLabel ?? 'Board view')}</span>
-                <ChevronDownIcon className="h-3.5 w-3.5 text-gray-400" />
+                <ChevronDownIcon className="h-3.5 w-3.5 text-text-muted" />
               </button>
               {tableViewMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setTableViewMenuOpen(false)} />
-                  <div className="absolute top-full mt-1.5 left-0 z-20 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[160px]">
+                  <div className="absolute top-full mt-1.5 left-0 z-20 bg-surface border border-border rounded-xl shadow-lg py-1 min-w-[160px]">
                     <button
                       onClick={() => { setViewMode('table'); setTableViewMenuOpen(false); }}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${viewMode === 'table' ? 'text-blue-700 font-medium' : 'text-gray-700'}`}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-background ${viewMode === 'table' ? 'text-ryze-700 dark:text-ryze-400 font-medium' : 'text-text-primary'}`}
                     >
                       Table view
                     </button>
                     <button
                       onClick={() => { setViewMode('alt'); setTableViewMenuOpen(false); }}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${viewMode === 'alt' ? 'text-blue-700 font-medium' : 'text-gray-700'}`}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-background ${viewMode === 'alt' ? 'text-ryze-700 dark:text-ryze-400 font-medium' : 'text-text-primary'}`}
                     >
                       {config.altViewLabel ?? (config.altView === 'kanban' ? 'Kanban board' : 'Calendar')}
                     </button>
@@ -583,7 +584,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
               )}
             </div>
           ) : (
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 bg-white cursor-default select-none">
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 border border-border rounded-lg text-sm text-text-muted bg-surface cursor-default select-none">
               <TableCellsIcon className="h-4 w-4" />
               <span>Table view</span>
             </div>
@@ -592,7 +593,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
           {/* Edit columns */}
           <button
             onClick={() => setColumnEditorOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 border border-border rounded-lg text-sm text-text-muted hover:bg-background transition-colors"
           >
             <AdjustmentsHorizontalIcon className="h-4 w-4" />
             <span className="hidden sm:inline">Edit columns ({visibleKeys.length})</span>
@@ -608,17 +609,17 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
               onClick={() => setFilterOpen((v) => !v)}
               className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg text-sm transition-colors ${
                 statusF || filterActiveCount > 0
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                  ? 'border-ryze-500 bg-ryze-600/10 text-ryze-700 dark:text-ryze-400'
+                  : 'border-border text-text-muted hover:bg-background'
               }`}
             >
               <FunnelIcon className="h-4 w-4" />
               <span className="hidden sm:inline">Filters</span>
               {(statusF || filterActiveCount > 0) && (
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
+                <span className="h-1.5 w-1.5 rounded-full bg-ryze-500 shrink-0" />
               )}
               {filterActiveCount > 0 && (
-                <span className="text-[10px] font-bold bg-blue-600 text-white rounded-full h-4 w-4 flex items-center justify-center">
+                <span className="text-[10px] font-bold bg-ryze-600 text-white rounded-full h-4 w-4 flex items-center justify-center">
                   {filterActiveCount}
                 </span>
               )}
@@ -627,36 +628,36 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
             {filterOpen && !config.filterFields && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setFilterOpen(false)} />
-                <div className="absolute top-full mt-1.5 right-0 z-20 bg-white border border-gray-200 rounded-xl shadow-lg p-3 min-w-[200px]">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2 mb-2">
+                <div className="absolute top-full mt-1.5 right-0 z-20 bg-surface border border-border rounded-xl shadow-lg p-3 min-w-[200px]">
+                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-2 mb-2">
                     {config.statusField?.replace(/_/g, ' ') ?? 'Status'}
                   </p>
                   <div className="space-y-0.5">
-                    <label className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <label className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-background cursor-pointer">
                       <input
                         type="radio"
                         checked={statusF === ''}
                         onChange={() => { setStatusF(''); setPage(1); }}
-                        className="text-blue-600 cursor-pointer"
+                        className="text-ryze-600 dark:text-ryze-400 cursor-pointer"
                       />
-                      <span className="text-sm text-gray-700">All</span>
+                      <span className="text-sm text-text-primary">All</span>
                     </label>
                     {statusOptions.map((o) => (
-                      <label key={o} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer">
+                      <label key={o} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-background cursor-pointer">
                         <input
                           type="radio"
                           checked={statusF === o}
                           onChange={() => { setStatusF(o); setPage(1); setFilterOpen(false); }}
-                          className="text-blue-600 cursor-pointer"
+                          className="text-ryze-600 dark:text-ryze-400 cursor-pointer"
                         />
-                        <span className="text-sm text-gray-700 capitalize">{o.replace(/_/g, ' ')}</span>
+                        <span className="text-sm text-text-primary capitalize">{o.replace(/_/g, ' ')}</span>
                       </label>
                     ))}
                   </div>
                   {statusF && (
                     <button
                       onClick={() => { setStatusF(''); setFilterOpen(false); }}
-                      className="mt-2 w-full text-xs text-gray-400 hover:text-gray-600 text-left px-2 py-1 hover:bg-gray-50 rounded transition-colors"
+                      className="mt-2 w-full text-xs text-text-muted hover:text-text-primary text-left px-2 py-1 hover:bg-background rounded transition-colors"
                     >
                       Clear filter ×
                     </button>
@@ -671,7 +672,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
             <button
               onClick={() => { setUpcomingOnly((v) => !v); setPage(1); }}
               className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg text-sm transition-colors ${
-                upcomingOnly ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                upcomingOnly ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-border text-text-muted hover:bg-background'
               }`}
             >
               <ClockIcon className="h-4 w-4" />
@@ -684,7 +685,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
             <button
               onClick={() => setLinkedFilterOpen((v) => !v)}
               className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg text-sm transition-colors ${
-                linkedFilter.relatedId ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                linkedFilter.relatedId ? 'border-ryze-500 bg-ryze-600/10 text-ryze-700 dark:text-ryze-400' : 'border-border text-text-muted hover:bg-background'
               }`}
             >
               <LinkIcon className="h-4 w-4" />
@@ -699,7 +700,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
                     being toggle-shown rather than always-on, so the two can
                     never visually bleed into each other even if both
                     happen to be open at once. */}
-                <div className="absolute top-full mt-1.5 right-0 z-30 bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-80">
+                <div className="absolute top-full mt-1.5 right-0 z-30 bg-surface border border-border rounded-xl shadow-lg p-3 w-80">
                   <FsRelationPicker
                     value={linkedFilter}
                     onChange={(v) => { setLinkedFilter(v); setPage(1); if (v.relatedId) setLinkedFilterOpen(false); }}
@@ -713,7 +714,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
           {sortKey && (
             <button
               onClick={() => setSortKey('')}
-              className="flex items-center gap-1.5 px-3 py-2 border border-blue-300 bg-blue-50 rounded-lg text-sm text-blue-700 hover:bg-blue-100 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 border border-ryze-300 dark:border-ryze-700 bg-ryze-600/10 rounded-lg text-sm text-ryze-700 dark:text-ryze-400 hover:bg-ryze-600/20 transition-colors"
             >
               {sortDir === 'asc' ? <ChevronUpIcon className="h-3.5 w-3.5" /> : <ChevronDownIcon className="h-3.5 w-3.5" />}
               <span className="hidden sm:inline">{config.fields.find((f) => f.key === sortKey)?.label ?? sortKey}</span>
@@ -737,11 +738,11 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
           {/* Add button */}
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-ryze-600 hover:bg-ryze-700 text-white text-sm font-medium rounded-lg transition-colors"
           >
             <PlusIcon className="h-4 w-4" />
             <span>Add {config.labelSingular}s</span>
-            <ChevronDownIcon className="h-3.5 w-3.5 text-gray-400" />
+            <ChevronDownIcon className="h-3.5 w-3.5 text-text-muted" />
           </button>
         </div>
       </div>
@@ -759,13 +760,13 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
           onClear={() => { setFilterValues({}); setStatusF(''); setPage(1); }}
           statusControl={
             <div>
-              <span className="text-xs font-medium text-gray-500 mb-1 block">
+              <span className="text-xs font-medium text-text-muted mb-1 block">
                 {config.statusField?.replace(/_/g, ' ') ?? 'Status'}
               </span>
               <select
                 value={statusF}
                 onChange={(e) => { setStatusF(e.target.value); setPage(1); }}
-                className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-2.5 py-1.5 border border-border rounded-lg text-sm text-text-primary bg-surface focus:outline-none focus:ring-2 focus:ring-ryze-500"
               >
                 <option value="">All</option>
                 {statusOptions.map((o) => <option key={o} value={o} className="capitalize">{o.replace(/_/g, ' ')}</option>)}
@@ -777,8 +778,8 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
 
       {/* ── Bulk actions bar ──────────────────────────────────────────────── */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 px-6 py-2.5 bg-blue-50 border-b border-blue-200 shrink-0 flex-wrap">
-          <span className="text-sm font-semibold text-blue-800">{selectedIds.size} selected</span>
+        <div className="flex items-center gap-3 px-6 py-2.5 bg-ryze-600/10 border-b border-ryze-600/20 shrink-0 flex-wrap">
+          <span className="text-sm font-semibold text-ryze-700 dark:text-ryze-400">{selectedIds.size} selected</span>
           <div className="flex items-center gap-2 flex-wrap">
             {(config.bulkActions ?? []).map((ba) => (
               <BulkActionButton
@@ -790,14 +791,14 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
             ))}
             <button
               onClick={() => setBulkDeleteOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-red-300 bg-white rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-red-300 bg-surface rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
             >
               <TrashIcon className="h-3.5 w-3.5" /> Delete
             </button>
           </div>
           <button
             onClick={() => setSelectedIds(new Set())}
-            className="ml-auto text-xs text-blue-600 hover:text-blue-800 underline transition-colors"
+            className="ml-auto text-xs text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 underline transition-colors"
           >
             Deselect all
           </button>
@@ -838,7 +839,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
               {[0, 1, 2].map((i) => (
                 <span
                   key={i}
-                  className="h-2.5 w-2.5 rounded-full bg-blue-400 animate-bounce"
+                  className="h-2.5 w-2.5 rounded-full bg-ryze-400 animate-bounce"
                   style={{ animationDelay: `${i * 0.15}s` }}
                 />
               ))}
@@ -850,8 +851,8 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
               <LockClosedIcon className="h-8 w-8 text-amber-500" />
             </div>
             <div>
-              <p className="text-gray-700 font-semibold">You don't have permission to view this</p>
-              <p className="text-gray-400 text-sm mt-1">Ask a Tenant Admin to grant access under Settings → Permissions.</p>
+              <p className="text-text-primary font-semibold">You don't have permission to view this</p>
+              <p className="text-text-muted text-sm mt-1">Ask a Tenant Admin to grant access under Settings → Permissions.</p>
             </div>
           </div>
         ) : sortedRecords.length === 0 ? (
@@ -863,8 +864,8 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
               <Icon className="h-8 w-8" style={{ color: iconColor }} />
             </div>
             <div>
-              <p className="text-gray-700 font-semibold">No {config.label.toLowerCase()} yet</p>
-              <p className="text-gray-400 text-sm mt-1">
+              <p className="text-text-primary font-semibold">No {config.label.toLowerCase()} yet</p>
+              <p className="text-text-muted text-sm mt-1">
                 {search || statusF
                   ? 'No records match your filters'
                   : `Click "Add ${config.labelSingular}s" to get started`}
@@ -873,7 +874,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
             {!search && !statusF && (
               <button
                 onClick={openCreate}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-ryze-600 hover:bg-ryze-700 text-white text-sm font-medium rounded-lg transition-colors"
               >
                 <PlusIcon className="h-4 w-4" /> Add {config.labelSingular}
               </button>
@@ -881,7 +882,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
           </div>
         ) : (
           <table className="w-full min-w-[700px]">
-            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+            <thead className="bg-background border-b border-border sticky top-0 z-10">
               <tr>
                 {/* Bulk checkbox */}
                 <th className="px-4 py-3 w-10 shrink-0">
@@ -890,16 +891,16 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
                     checked={allSelected}
                     ref={(el) => { if (el) el.indeterminate = someSelected; }}
                     onChange={toggleSelectAll}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    className="h-4 w-4 rounded border-border text-ryze-600 dark:text-ryze-400 focus:ring-ryze-500 cursor-pointer"
                   />
                 </th>
                 {/* S.No. — always first */}
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-16 select-none">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider w-16 select-none">
                   S.No.
                 </th>
                 {/* Name — always second */}
                 <th
-                  className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer group select-none"
+                  className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer group select-none"
                   onClick={() => handleSort('_displayName')}
                 >
                   Name <SortIcon col="_displayName" sortKey={sortKey} sortDir={sortDir} />
@@ -908,7 +909,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
                 {tableCols.map((c) => (
                   <th
                     key={c.key}
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer group select-none whitespace-nowrap"
+                    className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer group select-none whitespace-nowrap"
                     onClick={() => handleSort(c.key)}
                   >
                     {c.label} <SortIcon col={c.key} sortKey={sortKey} sortDir={sortDir} />
@@ -916,7 +917,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
                 ))}
                 {/* Create date — always last */}
                 <th
-                  className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer group select-none whitespace-nowrap"
+                  className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer group select-none whitespace-nowrap"
                   onClick={() => handleSort('createdAt')}
                 >
                   Create Date <SortIcon col="createdAt" sortKey={sortKey} sortDir={sortDir} />
@@ -924,24 +925,24 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
                 <th className="px-4 py-3 w-20" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {sortedRecords.map((r, idx) => {
                 const isSel = selectedIds.has(r._id);
                 const sno   = (page - 1) * limit + idx + 1;
                 return (
                   <Fragment key={r._id}>
-                    <tr className={`transition-colors group ${isSel ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
+                    <tr className={`transition-colors group ${isSel ? 'bg-ryze-600/10' : 'hover:bg-background'}`}>
                       {/* Checkbox */}
                       <td className="px-4 py-3 w-10">
                         <input
                           type="checkbox"
                           checked={isSel}
                           onChange={() => toggleSelect(r._id)}
-                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                          className="h-4 w-4 rounded border-border text-ryze-600 dark:text-ryze-400 focus:ring-ryze-500 cursor-pointer"
                         />
                       </td>
                       {/* S.No. */}
-                      <td className="px-4 py-3 text-sm text-gray-400 tabular-nums w-16">
+                      <td className="px-4 py-3 text-sm text-text-muted tabular-nums w-16">
                         {sno}
                       </td>
                       {/* Name */}
@@ -955,7 +956,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
                           </div>
                           <button
                             onClick={() => (config.detailRoute ? navigate(config.detailRoute(r._id)) : openEdit(r))}
-                            className="text-sm font-medium text-blue-700 hover:underline truncate max-w-[160px] text-left"
+                            className="text-sm font-medium text-ryze-700 dark:text-ryze-400 hover:underline truncate max-w-[160px] text-left"
                           >
                             {displayName(r)}
                           </button>
@@ -983,21 +984,21 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
                         const isVidArr = Array.isArray(v) && v.length > 0 && typeof v[0] === 'string' && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(v[0]);
 
                         return (
-                          <td key={col.key} className="px-4 py-3 text-sm text-gray-600 max-w-[180px]">
+                          <td key={col.key} className="px-4 py-3 text-sm text-text-muted max-w-[180px]">
                             {isImgUrl ? (
-                              <img src={v as string} className="h-8 w-8 rounded object-cover border border-gray-200" />
+                              <img src={v as string} className="h-8 w-8 rounded object-cover border border-border" />
                             ) : isImgArr ? (
                               <div className="flex items-center gap-1">
-                                <img src={(v as string[])[0]} className="h-8 w-8 rounded object-cover border border-gray-200" />
-                                {(v as string[]).length > 1 && <span className="text-xs text-gray-400">+{(v as string[]).length - 1}</span>}
+                                <img src={(v as string[])[0]} className="h-8 w-8 rounded object-cover border border-border" />
+                                {(v as string[]).length > 1 && <span className="text-xs text-text-muted">+{(v as string[]).length - 1}</span>}
                               </div>
                             ) : isVidUrl ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                              <span className="inline-flex items-center gap-1 text-xs text-text-muted">
                                 <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h6l2 2h4a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
                                 1 video
                               </span>
                             ) : isVidArr ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                              <span className="inline-flex items-center gap-1 text-xs text-text-muted">
                                 <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h6l2 2h4a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
                                 {(v as string[]).length} videos
                               </span>
@@ -1012,7 +1013,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
                         );
                       })}
                       {/* Create date */}
-                      <td className="px-4 py-3 text-sm text-gray-400 whitespace-nowrap">
+                      <td className="px-4 py-3 text-sm text-text-muted whitespace-nowrap">
                         {r.createdAt ? fmtVal(r.createdAt, 'date') : '—'}
                       </td>
                       {/* Row actions */}
@@ -1020,14 +1021,14 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => openEdit(r)}
-                            className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-ryze-600/10 text-text-muted hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300 transition-colors"
                             title="Edit"
                           >
                             <PencilSquareIcon className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => setDeleteTarget(r)}
-                            className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-red-50 text-text-muted hover:text-red-500 transition-colors"
                             title="Delete"
                           >
                             <TrashIcon className="h-4 w-4" />
@@ -1044,9 +1045,9 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
       </div>
 
       {/* ── Pagination ────────────────────────────────────────────────────── */}
-      <div className="border-t border-gray-200 px-6 py-3 flex items-center justify-between bg-white shrink-0 flex-wrap gap-2">
+      <div className="border-t border-border px-6 py-3 flex items-center justify-between bg-surface shrink-0 flex-wrap gap-2">
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-text-muted">
             {meta.total > 0
               ? `${(page - 1) * limit + 1}–${Math.min(page * limit, meta.total)} of ${meta.total}`
               : '0 records'}
@@ -1054,7 +1055,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
           <select
             value={limit}
             onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
-            className="border border-gray-300 rounded-lg px-2 py-1 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="bg-surface border border-border rounded-lg px-2 py-1 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-500"
           >
             {[20, 50, 100].map((n) => <option key={n} value={n}>{n} per page</option>)}
           </select>
@@ -1064,15 +1065,15 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="px-3 py-1.5 border border-border rounded-lg text-sm text-text-muted hover:bg-background disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             ← Prev
           </button>
-          <span className="text-sm text-gray-500 px-1">{page} / {meta.totalPages || 1}</span>
+          <span className="text-sm text-text-muted px-1">{page} / {meta.totalPages || 1}</span>
           <button
             onClick={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
             disabled={page >= meta.totalPages}
-            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="px-3 py-1.5 border border-border rounded-lg text-sm text-text-muted hover:bg-background disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             Next →
           </button>

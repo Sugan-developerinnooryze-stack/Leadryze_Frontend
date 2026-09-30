@@ -37,12 +37,12 @@ function ColumnFormulaBuilder({ formula, availableKeys, onChange }: {
   return (
     <div className="space-y-2 mt-1.5">
       <div className="flex flex-wrap gap-1 items-center">
-        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider shrink-0">Columns</span>
+        <span className="text-[9px] font-bold text-text-muted uppercase tracking-wider shrink-0">Columns</span>
         {availableKeys.length === 0
-          ? <span className="text-[10px] text-gray-400 italic">Add other columns first</span>
+          ? <span className="text-[10px] text-text-muted italic">Add other columns first</span>
           : availableKeys.map((k) => (
               <button key={k} type="button" onClick={() => insertAtCursor(`{${k}}`)}
-                className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors">
+                className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-success-500/10 text-success-700 dark:text-success-500 border border-success-500/20 hover:bg-success-500/20 transition-colors">
                 {k}
               </button>
             ))}
@@ -50,26 +50,26 @@ function ColumnFormulaBuilder({ formula, availableKeys, onChange }: {
       <div className="flex items-center gap-1 flex-wrap">
         {OPERATORS.map(([label, char]) => (
           <button key={label} type="button" onClick={() => insertAtCursor(char)}
-            className="w-6 h-6 rounded-md border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors">
+            className="w-6 h-6 rounded-md border border-border text-xs font-semibold text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
             {label}
           </button>
         ))}
       </div>
       <div className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 ${
-        formula && !preview.valid ? 'border-red-200 bg-red-50/30' : 'border-emerald-200 bg-emerald-50/40'
+        formula && !preview.valid ? 'border-danger-500/20 bg-danger-500/5' : 'border-success-500/20 bg-success-500/5'
       }`}>
-        <span className="text-xs font-bold text-emerald-600 shrink-0 select-none">fx</span>
+        <span className="text-xs font-bold text-success-600 dark:text-success-500 shrink-0 select-none">fx</span>
         <input
           ref={inputRef}
           type="text"
           value={formula ?? ''}
           onChange={(e) => onChange(e.target.value)}
           placeholder="{qty} * {price}"
-          className="flex-1 min-w-0 bg-transparent font-mono text-xs focus:outline-none text-gray-700"
+          className="flex-1 min-w-0 bg-transparent font-mono text-xs focus:outline-none text-text-primary"
         />
         {formula && (
           <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
-            preview.valid ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'
+            preview.valid ? 'bg-success-500/15 text-success-700 dark:text-success-500' : 'bg-danger-500/15 text-danger-600 dark:text-danger-500'
           }`}>
             {preview.valid ? `= ${preview.result}` : '⚠ error'}
           </span>
@@ -140,8 +140,8 @@ export default function TableColumnEditor({ columns, onChange }: TableColumnEdit
   cols.forEach((c) => { if (c.key) keyCounts.set(c.key, (keyCounts.get(c.key) ?? 0) + 1); });
 
   return (
-    <div className="space-y-2 rounded-xl border border-dashed border-teal-200 bg-teal-50/30 p-3">
-      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Columns</span>
+    <div className="space-y-2 rounded-xl border border-dashed border-ryze-200 dark:border-ryze-800 bg-ryze-600/5 p-3">
+      <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Columns</span>
 
       {cols.map((col, i) => {
         const otherKeys = cols.filter((c, j) => j !== i && c.key).map((c) => c.key);
@@ -155,14 +155,14 @@ export default function TableColumnEditor({ columns, onChange }: TableColumnEdit
               moveCol(dragSrc.current, i);
               dragSrc.current = i;
             }}
-            className={`flex items-start gap-2 bg-white rounded-lg border p-2.5 ${isDup ? 'border-red-300' : 'border-teal-100'}`}
+            className={`flex items-start gap-2 bg-surface rounded-lg border p-2.5 ${isDup ? 'border-danger-300 dark:border-danger-700' : 'border-ryze-100 dark:border-ryze-900'}`}
           >
             <span
               draggable
               onDragStart={() => { dragSrc.current = i; }}
               onDragEnd={() => { dragSrc.current = null; }}
               title="Drag to reorder"
-              className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing text-base leading-none select-none shrink-0 pt-1.5"
+              className="text-text-muted hover:text-text-primary cursor-grab active:cursor-grabbing text-base leading-none select-none shrink-0 pt-1.5"
             >
               ⠿
             </span>
@@ -171,21 +171,21 @@ export default function TableColumnEditor({ columns, onChange }: TableColumnEdit
                 value={col.label}
                 onChange={(e) => setLabel(i, e.target.value)}
                 placeholder="Column label (e.g. Price)"
-                className="w-full border-b border-gray-200 text-sm px-1 py-0.5 bg-transparent focus:outline-none focus:border-teal-400 text-gray-700"
+                className="w-full border-b border-border text-sm px-1 py-0.5 bg-transparent focus:outline-none focus:border-ryze-400 text-text-primary"
               />
 
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-gray-400 shrink-0">Key</span>
+                <span className="text-[10px] text-text-muted shrink-0">Key</span>
                 <input
                   value={col.key}
                   onChange={(e) => setKeyManually(i, e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                   placeholder="auto"
                   className={`font-mono text-[11px] px-1.5 py-0.5 rounded border w-28 focus:outline-none ${
-                    isDup ? 'border-red-300 bg-red-50 text-red-700' : 'border-gray-200 bg-gray-50 text-gray-600 focus:ring-1 focus:ring-teal-400'
+                    isDup ? 'border-danger-300 bg-danger-500/10 text-danger-700 dark:text-danger-500' : 'border-border bg-background text-text-muted focus:ring-1 focus:ring-ryze-400'
                   }`}
                 />
                 {isDup && (
-                  <span className="flex items-center gap-1 text-[10px] text-red-500">
+                  <span className="flex items-center gap-1 text-[10px] text-danger-500">
                     <ExclamationTriangleIcon className="h-3 w-3" /> Duplicate — edit one
                   </span>
                 )}
@@ -194,7 +194,7 @@ export default function TableColumnEditor({ columns, onChange }: TableColumnEdit
               <select
                 value={col.type}
                 onChange={(e) => patchCol(i, { type: e.target.value as ITableColumn['type'], options: [], formula: '' })}
-                className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-400 bg-white"
+                className="text-xs bg-surface border border-border rounded-lg px-2 py-1 text-text-primary focus:outline-none focus:ring-1 focus:ring-ryze-400"
               >
                 <option value="text">Text</option>
                 <option value="number">Number</option>
@@ -207,7 +207,7 @@ export default function TableColumnEditor({ columns, onChange }: TableColumnEdit
                   value={(col.options ?? []).join(', ')}
                   onChange={(e) => patchCol(i, { options: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })}
                   placeholder="Option A, Option B, Option C"
-                  className="w-full border-b border-gray-200 text-xs px-1 py-0.5 bg-transparent focus:outline-none"
+                  className="w-full border-b border-border text-xs px-1 py-0.5 bg-transparent text-text-primary focus:outline-none"
                 />
               )}
 
@@ -219,7 +219,7 @@ export default function TableColumnEditor({ columns, onChange }: TableColumnEdit
                 />
               )}
             </div>
-            <button type="button" onClick={() => deleteCol(i)} className="text-gray-300 hover:text-red-400 shrink-0 p-1">
+            <button type="button" onClick={() => deleteCol(i)} className="text-text-muted hover:text-danger-400 shrink-0 p-1">
               <TrashIcon className="h-4 w-4" />
             </button>
           </div>
@@ -227,11 +227,11 @@ export default function TableColumnEditor({ columns, onChange }: TableColumnEdit
       })}
 
       <button type="button" onClick={addCol}
-        className="text-xs text-teal-600 hover:text-teal-800 flex items-center gap-1.5 font-medium">
+        className="text-xs text-ryze-600 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 flex items-center gap-1.5 font-medium">
         <PlusIcon className="h-3.5 w-3.5" /> Add column
       </button>
       {cols.length === 0 && (
-        <p className="text-[11px] text-gray-400 italic">Click "Add column" to define your table structure.</p>
+        <p className="text-[11px] text-text-muted italic">Click "Add column" to define your table structure.</p>
       )}
     </div>
   );

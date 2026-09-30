@@ -59,3 +59,19 @@ export function useDealUpdateStage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 }
+
+export function useDealsStatsQuery(range?: string, customFrom?: string, customTo?: string) {
+  return useQuery({
+    queryKey: [...KEY, 'stats', range, customFrom, customTo],
+    queryFn: () => api.get(`${BASE}/stats`, { params: range ? { range, customFrom, customTo } : undefined }).then((r) => r.data.data as {
+      total: number;
+      allTimeTotal: number;
+      byStatus: Record<string, number>;
+      totalValue: number;
+      allTimeTotalValue: number;
+      priorTotal: number | null;
+      priorTotalValue: number | null;
+      daily: { date: string; count: number }[];
+    }),
+  });
+}

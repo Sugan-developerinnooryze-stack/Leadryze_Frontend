@@ -54,3 +54,23 @@ export function useTicketAddNote() {
     },
   });
 }
+
+export function useTicketsStatsQuery(range?: string, customFrom?: string, customTo?: string) {
+  return useQuery({
+    queryKey: [...KEY, 'stats', range, customFrom, customTo],
+    queryFn: () => api.get(`${BASE}/stats`, { params: range ? { range, customFrom, customTo } : undefined }).then((r) => r.data.data as {
+      total: number;
+      byStatus: Record<string, number>;
+    }),
+  });
+}
+
+/** Thin wrapper over the existing list endpoint's `slaStatus` filter — no
+ * backend change needed, just reads `meta.total` for a count. */
+export function useTicketsSlaCountQuery(status: 'warning' | 'breached') {
+  return useQuery({
+    queryKey: [...KEY, 'sla-count', status],
+    queryFn: () => api.get(BASE, { params: { slaStatus: status, limit: 1 } })
+      .then((r) => (r.data.meta?.total ?? 0) as number),
+  });
+}

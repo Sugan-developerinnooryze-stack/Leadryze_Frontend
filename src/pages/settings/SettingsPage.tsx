@@ -6,7 +6,7 @@ import {
   PlusIcon, TrashIcon, PencilIcon, CheckIcon, XMarkIcon,
   ChatBubbleLeftRightIcon, ClockIcon, ChevronDownIcon, ChevronUpIcon,
   UserGroupIcon, ShieldCheckIcon, KeyIcon, LockClosedIcon,
-  EyeIcon, EyeSlashIcon, ArrowPathIcon,
+  EyeIcon, EyeSlashIcon, ArrowPathIcon, ClipboardDocumentIcon,
 } from '@heroicons/react/24/outline';
 import { SUPPORTED_LANGUAGES } from '../../modules/native-crm/shared/languages';
 
@@ -15,8 +15,8 @@ function Section({ title, description, children }: { title: string; description:
   return (
     <div className="card">
       <div className="mb-5">
-        <h2 className="text-base font-semibold text-gray-900">{title}</h2>
-        <p className="text-sm text-gray-500 mt-0.5">{description}</p>
+        <h2 className="text-base font-semibold text-text-primary">{title}</h2>
+        <p className="text-sm text-text-muted mt-0.5">{description}</p>
       </div>
       {children}
     </div>
@@ -96,15 +96,15 @@ function BotTrainingPanel() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-base font-semibold text-gray-900">Bot Training — Q&amp;A Pairs</h2>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <h2 className="text-base font-semibold text-text-primary">Bot Training — Q&amp;A Pairs</h2>
+        <p className="text-sm text-text-muted mt-0.5">
           Add question &amp; answer pairs to train the AI chatbot. When a user asks something matching a question here, the AI will reply with your exact answer — no guessing.
         </p>
       </div>
 
       {/* Add new pair */}
       <div className="card space-y-3">
-        <p className="text-sm font-semibold text-gray-700">Add New Q&amp;A</p>
+        <p className="text-sm font-semibold text-text-primary">Add New Q&amp;A</p>
         <input
           className="input"
           placeholder="Question — e.g. What is the price of 2GB RAM?"
@@ -136,15 +136,15 @@ function BotTrainingPanel() {
       {/* Pairs list */}
       <div className="space-y-2">
         {loading ? (
-          [0,1,2].map((i) => <div key={i} className="h-20 rounded-xl bg-gray-100 animate-pulse" />)
+          [0,1,2].map((i) => <div key={i} className="h-20 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] animate-pulse" />)
         ) : pairs.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
+          <div className="text-center py-12 text-text-muted">
             <ChatBubbleLeftRightIcon className="h-10 w-10 mx-auto mb-3 opacity-40" />
             <p className="text-sm">No Q&amp;A pairs yet. Add your first one above.</p>
           </div>
         ) : (
           pairs.map((p) => (
-            <div key={p._id} className="card border border-gray-200">
+            <div key={p._id} className="card border border-border">
               {editId === p._id ? (
                 <div className="space-y-2">
                   <input className="input text-sm" value={editQ} onChange={(e) => setEditQ(e.target.value)} />
@@ -162,13 +162,13 @@ function BotTrainingPanel() {
                 <div className="flex items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 capitalize">{p.category}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-ryze-600/15 text-ryze-700 dark:text-ryze-400 capitalize">{p.category}</span>
                     </div>
-                    <p className="text-sm font-medium text-gray-800">Q: {p.question}</p>
-                    <p className="text-sm text-gray-600 mt-1">A: {p.answer}</p>
+                    <p className="text-sm font-medium text-text-primary">Q: {p.question}</p>
+                    <p className="text-sm text-text-muted mt-1">A: {p.answer}</p>
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    <button onClick={() => startEdit(p)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500">
+                    <button onClick={() => startEdit(p)} className="p-1.5 rounded hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted">
                       <PencilIcon className="h-4 w-4" />
                     </button>
                     <button onClick={() => deletePair(p._id)} className="p-1.5 rounded hover:bg-red-50 text-red-400">
@@ -257,16 +257,16 @@ function ChatHistoryPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-base font-semibold text-gray-900">Chat History</h2>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <h2 className="text-base font-semibold text-text-primary">Chat History</h2>
+        <p className="text-sm text-text-muted mt-0.5">
           Every conversation from your AI chatbot — {total} sessions total. Click a session to read the messages.
         </p>
       </div>
 
       {loading ? (
-        [0,1,2,3].map((i) => <div key={i} className="h-16 rounded-xl bg-gray-100 animate-pulse" />)
+        [0,1,2,3].map((i) => <div key={i} className="h-16 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] animate-pulse" />)
       ) : sessions.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-text-muted">
           <ClockIcon className="h-10 w-10 mx-auto mb-3 opacity-40" />
           <p className="text-sm">No chat sessions yet. Conversations will appear here once users start chatting.</p>
         </div>
@@ -274,39 +274,39 @@ function ChatHistoryPanel() {
         <>
           <div className="space-y-2">
             {sessions.map((s) => (
-              <div key={s._id} className="card border border-gray-200">
+              <div key={s._id} className="card border border-border">
                 <button className="w-full flex items-center gap-3 text-left" onClick={() => toggle(s)}>
-                  <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${s.escalated ? 'bg-red-100 text-red-600' : 'bg-brand-100 text-brand-700'}`}>
+                  <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${s.escalated ? 'bg-red-100 text-red-600' : 'bg-ryze-600/15 text-ryze-700 dark:text-ryze-400'}`}>
                     {s.visitorName?.[0]?.toUpperCase() || '?'}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-gray-800 truncate">{s.visitorName || 'Anonymous'}</p>
+                      <p className="text-sm font-medium text-text-primary truncate">{s.visitorName || 'Anonymous'}</p>
                       {s.escalated && <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded">Escalated</span>}
                     </div>
-                    <p className="text-xs text-gray-400">{s.messages.length} messages · {relTime(s.updatedAt)}</p>
+                    <p className="text-xs text-text-muted">{s.messages.length} messages · {relTime(s.updatedAt)}</p>
                   </div>
                   <div className="shrink-0 flex items-center gap-2">
-                    {s.visitorEmail && <span className="text-xs text-gray-400 hidden sm:block">{s.visitorEmail}</span>}
+                    {s.visitorEmail && <span className="text-xs text-text-muted hidden sm:block">{s.visitorEmail}</span>}
                     {expanded === s._id
-                      ? <ChevronUpIcon className="h-4 w-4 text-gray-400" />
-                      : <ChevronDownIcon className="h-4 w-4 text-gray-400" />}
+                      ? <ChevronUpIcon className="h-4 w-4 text-text-muted" />
+                      : <ChevronDownIcon className="h-4 w-4 text-text-muted" />}
                   </div>
                 </button>
 
                 {expanded === s._id && (
-                  <div className="mt-3 pt-3 border-t border-gray-100 space-y-2 max-h-80 overflow-y-auto">
+                  <div className="mt-3 pt-3 border-t border-border space-y-2 max-h-80 overflow-y-auto">
                     {detailLoading === s.sessionId ? (
                       <div className="flex justify-center py-4">
-                        <div className="flex gap-1.5">{[0,1,2].map((i) => <span key={i} className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}</div>
+                        <div className="flex gap-1.5">{[0,1,2].map((i) => <span key={i} className="h-1.5 w-1.5 rounded-full bg-ryze-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}</div>
                       </div>
                     ) : (detailCache[s.sessionId] ?? s.messages).map((m, i) => (
                       <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
-                        <div className={`max-w-[80%] px-3 py-2 rounded-lg text-xs ${m.role === 'user' ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-700'}`}>
+                        <div className={`max-w-[80%] px-3 py-2 rounded-lg text-xs ${m.role === 'user' ? 'bg-ryze-600 text-white' : 'bg-black/[0.04] dark:bg-white/[0.06] text-text-primary'}`}>
                           {m.content}
                         </div>
                         {m.trace && (m.trace.responseSource || m.trace.toolCalls?.length || m.trace.totalTokens != null) && (
-                          <div className="flex flex-wrap items-center gap-1.5 mt-1 max-w-[80%] text-[10px] text-gray-400">
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1 max-w-[80%] text-[10px] text-text-muted">
                             {sourceLabel(m.trace.responseSource) && (
                               <span className="px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-100">
                                 Answered from: {sourceLabel(m.trace.responseSource)}
@@ -334,10 +334,10 @@ function ChatHistoryPanel() {
           {/* Pagination */}
           {total > perPage && (
             <div className="flex items-center justify-between pt-2">
-              <p className="text-xs text-gray-500">{total} total sessions</p>
+              <p className="text-xs text-text-muted">{total} total sessions</p>
               <div className="flex gap-2">
                 <button className="btn-secondary text-xs" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Prev</button>
-                <span className="text-xs text-gray-500 flex items-center">Page {page}</span>
+                <span className="text-xs text-text-muted flex items-center">Page {page}</span>
                 <button className="btn-secondary text-xs" disabled={page * perPage >= total} onClick={() => setPage(p => p + 1)}>Next</button>
               </div>
             </div>
@@ -354,12 +354,14 @@ interface UserRow {
   _id: string; email: string; firstName: string; lastName: string;
   role: string; isActive: boolean; lastLogin?: string;
   roleId?: RoleRow;
+  loginId?: string;
 }
 
 function UsersPanel() {
   const [users, setUsers]       = useState<UserRow[]>([]);
   const [roles, setRoles]       = useState<RoleRow[]>([]);
   const [loading, setLoading]   = useState(true);
+  const [seatInfo, setSeatInfo] = useState<{ maxUsers: number | null; activeUsers: number }>({ maxUsers: null, activeUsers: 0 });
   const [showInvite, setShowInvite] = useState(false);
   const [resetModal, setResetModal]     = useState<{ id: string; name: string } | null>(null);
   const [resetPwd, setResetPwd]         = useState('');
@@ -383,9 +385,15 @@ function UsersPanel() {
       ]);
       setUsers(uRes.data.data ?? []);
       setRoles(rRes.data.data ?? []);
+      setSeatInfo({
+        maxUsers: uRes.data.meta?.maxUsers ?? null,
+        activeUsers: uRes.data.meta?.activeUsers ?? 0,
+      });
     } catch { toast.error('Failed to load users'); }
     finally { setLoading(false); }
   }, []);
+
+  const atSeatLimit = seatInfo.maxUsers != null && seatInfo.activeUsers >= seatInfo.maxUsers;
 
   useEffect(() => { load(); }, [load]);
 
@@ -423,7 +431,10 @@ function UsersPanel() {
       await api.put(`/api/v1/users/${id}`, { isActive: true });
       toast.success('User reactivated');
       await load();
-    } catch { toast.error('Failed to reactivate user'); }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg || 'Failed to reactivate user');
+    }
   };
 
   const doResetPwd = async () => {
@@ -452,13 +463,18 @@ function UsersPanel() {
       {!loading && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Total Members', value: users.length,                        color: 'text-gray-900' },
+            { label: 'Total Members', value: users.length,                        color: 'text-text-primary' },
             { label: 'Active',        value: users.filter(u => u.isActive).length,  color: 'text-emerald-600' },
             { label: 'Deactivated',   value: users.filter(u => !u.isActive).length, color: 'text-red-500' },
-            { label: 'Roles',         value: roles.length,                          color: 'text-brand-600' },
+            { label: 'Roles',         value: roles.length,                          color: 'text-ryze-600 dark:text-ryze-400' },
+            {
+              label: 'Seats',
+              value: seatInfo.maxUsers != null ? `${seatInfo.activeUsers} / ${seatInfo.maxUsers}` : 'Unlimited',
+              color: atSeatLimit ? 'text-red-500' : 'text-text-primary',
+            },
           ].map(s => (
-            <div key={s.label} className="bg-white rounded-2xl border border-gray-200 p-4">
-              <p className="text-xs text-gray-400 font-medium">{s.label}</p>
+            <div key={s.label} className="bg-surface rounded-2xl border border-border p-4">
+              <p className="text-xs text-text-muted font-medium">{s.label}</p>
               <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
             </div>
           ))}
@@ -468,41 +484,49 @@ function UsersPanel() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Team Members</h2>
-          <p className="text-sm text-gray-500">Invite and manage workspace members.</p>
+          <h2 className="text-lg font-semibold text-text-primary">Team Members</h2>
+          <p className="text-sm text-text-muted">Invite and manage workspace members.</p>
         </div>
         <button
-          onClick={() => setShowInvite(v => !v)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-medium hover:bg-brand-700 transition-colors"
+          onClick={() => !atSeatLimit && setShowInvite(v => !v)}
+          disabled={atSeatLimit}
+          title={atSeatLimit ? `You've reached your plan's limit of ${seatInfo.maxUsers} users. Contact your administrator to increase the limit.` : undefined}
+          className="flex items-center gap-2 px-4 py-2.5 bg-ryze-600 text-white rounded-xl text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-ryze-600 transition-colors"
         >
           <PlusIcon className="h-4 w-4" /> Invite Member
         </button>
       </div>
 
+      {atSeatLimit && (
+        <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
+          You've used all {seatInfo.maxUsers} seats on your plan. Deactivate a member or contact your administrator to add more.
+        </div>
+      )}
+
       {/* Invite form */}
-      {showInvite && (
-        <div className="bg-brand-50 border border-brand-200 rounded-2xl p-5 space-y-4">
+      {showInvite && !atSeatLimit && (
+        <div className="bg-ryze-600/10 border border-ryze-200 dark:border-ryze-800 rounded-2xl p-5 space-y-4">
           <div className="flex items-center gap-2">
-            <UserGroupIcon className="h-5 w-5 text-brand-600" />
-            <p className="text-sm font-semibold text-gray-900">Invite New Team Member</p>
+            <UserGroupIcon className="h-5 w-5 text-ryze-600 dark:text-ryze-400" />
+            <p className="text-sm font-semibold text-text-primary">Invite New Team Member</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">First Name *</label>
+              <label className="text-xs font-medium text-text-muted mb-1 block">First Name *</label>
               <input className="input text-sm" placeholder="First name" value={newFirst} onChange={e => setNewFirst(e.target.value)} />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">Last Name *</label>
+              <label className="text-xs font-medium text-text-muted mb-1 block">Last Name *</label>
               <input className="input text-sm" placeholder="Last name" value={newLast} onChange={e => setNewLast(e.target.value)} />
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600 mb-1 block">Email Address *</label>
+            <label className="text-xs font-medium text-text-muted mb-1 block">Email Address *</label>
             <input className="input text-sm" type="email" placeholder="team@company.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">Role Type</label>
+              <label className="text-xs font-medium text-text-muted mb-1 block">Role Type</label>
               <select className="input text-sm" value={newRole} onChange={e => setNewRole(e.target.value)}>
                 <option value="MANAGER">Manager</option>
                 <option value="AGENT">Agent</option>
@@ -510,7 +534,7 @@ function UsersPanel() {
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">Permission Role</label>
+              <label className="text-xs font-medium text-text-muted mb-1 block">Permission Role</label>
               <select className="input text-sm" value={newRoleId} onChange={e => setNewRoleId(e.target.value)}>
                 <option value="">— Auto-assign from type —</option>
                 {roles.map(r => <option key={r._id} value={r._id}>{r.name}{r.isSystem ? ' (system)' : ''}</option>)}
@@ -519,11 +543,11 @@ function UsersPanel() {
           </div>
           <div className="flex gap-2 pt-1">
             <button onClick={inviteUser} disabled={saving}
-              className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
+              className="px-4 py-2 bg-ryze-600 text-white rounded-lg text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors">
               {saving ? 'Sending…' : 'Send Invitation'}
             </button>
             <button onClick={() => setShowInvite(false)}
-              className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors">
+              className="px-4 py-2 border border-border text-text-muted rounded-lg text-sm hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
               Cancel
             </button>
           </div>
@@ -533,10 +557,10 @@ function UsersPanel() {
       {/* User cards */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[0,1,2].map(i => <div key={i} className="h-40 rounded-2xl bg-gray-100 animate-pulse" />)}
+          {[0,1,2].map(i => <div key={i} className="h-40 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] animate-pulse" />)}
         </div>
       ) : users.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200 text-gray-400">
+        <div className="text-center py-16 bg-surface rounded-2xl border border-dashed border-border text-text-muted">
           <UserGroupIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
           <p className="text-sm font-medium">No team members yet</p>
           <p className="text-xs mt-1">Invite your first member using the button above.</p>
@@ -544,27 +568,39 @@ function UsersPanel() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {users.map(u => (
-            <div key={u._id} className={`bg-white rounded-2xl border flex flex-col gap-4 p-5 ${u.isActive ? 'border-gray-200' : 'border-gray-100 opacity-55'}`}>
+            <div key={u._id} className={`bg-surface rounded-2xl border flex flex-col gap-4 p-5 ${u.isActive ? 'border-border' : 'border-border opacity-55'}`}>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`h-11 w-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 ${getAvatarColor(u.email)}`}>
                     {(u.firstName[0] ?? '').toUpperCase()}{(u.lastName[0] ?? '').toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold text-gray-900 text-sm leading-snug">{u.firstName} {u.lastName}</p>
-                    <p className="text-xs text-gray-400 truncate max-w-[140px]">{u.email}</p>
+                    <p className="font-semibold text-text-primary text-sm leading-snug">{u.firstName} {u.lastName}</p>
+                    <p className="text-xs text-text-muted truncate max-w-[140px]">{u.email}</p>
                   </div>
                 </div>
-                <span className={`h-2.5 w-2.5 rounded-full shrink-0 mt-1 ${u.isActive ? 'bg-emerald-400' : 'bg-gray-300'}`} title={u.isActive ? 'Active' : 'Deactivated'} />
+                <span className={`h-2.5 w-2.5 rounded-full shrink-0 mt-1 ${u.isActive ? 'bg-emerald-400' : 'bg-text-muted/40'}`} title={u.isActive ? 'Active' : 'Deactivated'} />
               </div>
+              {u.loginId && (
+                <div className="flex items-center gap-1.5 -mt-2">
+                  <span className="text-[11px] text-text-muted font-mono truncate">Login ID: {u.loginId}</span>
+                  <button
+                    onClick={() => { navigator.clipboard?.writeText(u.loginId!); toast.success('Login ID copied'); }}
+                    className="p-1 rounded text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors shrink-0"
+                    title="Copy Login ID"
+                  >
+                    <ClipboardDocumentIcon className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs px-2.5 py-1 rounded-lg bg-gray-100 text-gray-600 font-medium capitalize">{u.role.toLowerCase()}</span>
-                {u.roleId && <span className="text-xs px-2.5 py-1 rounded-lg bg-brand-100 text-brand-700 font-medium">{u.roleId.name}</span>}
+                <span className="text-xs px-2.5 py-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] text-text-muted font-medium capitalize">{u.role.toLowerCase()}</span>
+                {u.roleId && <span className="text-xs px-2.5 py-1 rounded-lg bg-ryze-600/15 text-ryze-700 dark:text-ryze-400 font-medium">{u.roleId.name}</span>}
               </div>
-              <div className="flex items-center gap-2 pt-1 border-t border-gray-100 mt-auto">
+              <div className="flex items-center gap-2 pt-1 border-t border-border mt-auto">
                 <button
                   onClick={() => { setResetModal({ id: u._id, name: `${u.firstName} ${u.lastName}` }); setResetPwd(''); }}
-                  className="flex-1 flex items-center justify-center gap-1.5 text-xs py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 text-xs py-2 border border-border rounded-lg text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] hover:border-border transition-colors"
                 >
                   <KeyIcon className="h-3.5 w-3.5" /> Reset PW
                 </button>
@@ -589,18 +625,18 @@ function UsersPanel() {
       {resetModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={() => { setResetModal(null); setResetPwd(''); setResetConfirmPwd(''); }}>
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" onClick={e => e.stopPropagation()}>
+          <div className="bg-surface-elevated rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
                 <KeyIcon className="h-5 w-5 text-orange-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Reset Password</h3>
-                <p className="text-xs text-gray-500">{resetModal.name}</p>
+                <h3 className="font-semibold text-text-primary">Reset Password</h3>
+                <p className="text-xs text-text-muted">{resetModal.name}</p>
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">New Password <span className="text-gray-400">(min 8 chars)</span></label>
+              <label className="text-xs font-medium text-text-muted mb-1 block">New Password <span className="text-text-muted">(min 8 chars)</span></label>
               <div className="relative">
                 <input
                   type={resetShowPwd ? 'text' : 'password'}
@@ -612,24 +648,24 @@ function UsersPanel() {
                 />
                 <button type="button"
                   onClick={() => setResetShowPwd(v => !v)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors">
                   {resetShowPwd ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
                 </button>
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">Confirm New Password</label>
+              <label className="text-xs font-medium text-text-muted mb-1 block">Confirm New Password</label>
               <div className="relative">
                 <input
                   type={resetShowConfirm ? 'text' : 'password'}
-                  className={`input pr-10 ${resetConfirmPwd && resetConfirmPwd !== resetPwd ? 'border-red-400 focus:ring-red-400' : ''}`}
+                  className={`bg-surface text-text-primary input pr-10 ${resetConfirmPwd && resetConfirmPwd !== resetPwd ? 'border-red-400 focus:ring-red-400' : ''}`}
                   placeholder="Re-enter new password"
                   value={resetConfirmPwd}
                   onChange={e => setResetConfirmPwd(e.target.value)}
                 />
                 <button type="button"
                   onClick={() => setResetShowConfirm(v => !v)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors">
                   {resetShowConfirm ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
                 </button>
               </div>
@@ -639,11 +675,11 @@ function UsersPanel() {
             </div>
             <div className="flex gap-2">
               <button onClick={doResetPwd} disabled={saving}
-                className="flex-1 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
+                className="flex-1 py-2 bg-ryze-600 text-white rounded-lg text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors">
                 {saving ? 'Resetting…' : 'Reset Password'}
               </button>
               <button onClick={() => { setResetModal(null); setResetPwd(''); setResetConfirmPwd(''); }}
-                className="flex-1 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors">
+                className="flex-1 py-2 border border-border text-text-muted rounded-lg text-sm hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
                 Cancel
               </button>
             </div>
@@ -738,12 +774,12 @@ function RolesPanel() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Roles</h2>
-          <p className="text-sm text-gray-500">Create and manage roles. Assign permissions per role in the Permissions tab.</p>
+          <h2 className="text-lg font-semibold text-text-primary">Roles</h2>
+          <p className="text-sm text-text-muted">Create and manage roles. Assign permissions per role in the Permissions tab.</p>
         </div>
         <button
           onClick={() => { setShowCreate(v => !v); setEditRole(null); setName(''); setDesc(''); }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-medium hover:bg-brand-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-ryze-600 text-white rounded-xl text-sm font-medium hover:bg-ryze-700 transition-colors"
         >
           <PlusIcon className="h-4 w-4" /> New Role
         </button>
@@ -751,26 +787,26 @@ function RolesPanel() {
 
       {/* Create / Edit form */}
       {(showCreate || editRole) && (
-        <div className="bg-brand-50 border border-brand-200 rounded-2xl p-5 space-y-4">
+        <div className="bg-ryze-600/10 border border-ryze-200 dark:border-ryze-800 rounded-2xl p-5 space-y-4">
           <div className="flex items-center gap-2">
-            <ShieldCheckIcon className="h-5 w-5 text-brand-600" />
-            <p className="text-sm font-semibold text-gray-900">{editRole ? `Edit: ${editRole.name}` : 'Create New Role'}</p>
+            <ShieldCheckIcon className="h-5 w-5 text-ryze-600 dark:text-ryze-400" />
+            <p className="text-sm font-semibold text-text-primary">{editRole ? `Edit: ${editRole.name}` : 'Create New Role'}</p>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600 mb-1 block">Role Name *</label>
+            <label className="text-xs font-medium text-text-muted mb-1 block">Role Name *</label>
             <input className="input text-sm" placeholder="e.g. Sales Manager, Support Agent" value={name} onChange={e => setName(e.target.value)} />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600 mb-1 block">Description</label>
+            <label className="text-xs font-medium text-text-muted mb-1 block">Description</label>
             <input className="input text-sm" placeholder="Brief description of this role's responsibilities" value={desc} onChange={e => setDesc(e.target.value)} />
           </div>
           <div className="flex gap-2 pt-1">
             <button onClick={editRole ? saveEdit : createRole} disabled={saving}
-              className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
+              className="px-4 py-2 bg-ryze-600 text-white rounded-lg text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors">
               {saving ? 'Saving…' : editRole ? 'Save Changes' : 'Create Role'}
             </button>
             <button onClick={() => { setShowCreate(false); setEditRole(null); }}
-              className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors">
+              className="px-4 py-2 border border-border text-text-muted rounded-lg text-sm hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
               Cancel
             </button>
           </div>
@@ -780,12 +816,12 @@ function RolesPanel() {
       {/* Role cards grid */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[0,1,2].map(i => <div key={i} className="h-48 rounded-2xl bg-gray-100 animate-pulse" />)}
+          {[0,1,2].map(i => <div key={i} className="h-48 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] animate-pulse" />)}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {roles.map((r, idx) => (
-            <div key={r._id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col">
+            <div key={r._id} className="bg-surface rounded-2xl border border-border overflow-hidden flex flex-col">
               {/* Gradient header */}
               <div className={`bg-gradient-to-r ${ROLE_GRADIENTS[idx % ROLE_GRADIENTS.length]} p-5`}>
                 <div className="flex items-center justify-between mb-3">
@@ -804,16 +840,16 @@ function RolesPanel() {
               {/* Card body */}
               <div className="p-4 flex flex-col gap-4 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <UserGroupIcon className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-500">{r.userCount ?? 0} member{r.userCount !== 1 ? 's' : ''}</span>
+                  <UserGroupIcon className="h-4 w-4 text-text-muted" />
+                  <span className="text-sm text-text-muted">{r.userCount ?? 0} member{r.userCount !== 1 ? 's' : ''}</span>
                 </div>
                 <div className="flex items-center gap-2 mt-auto">
                   <button onClick={() => startEdit(r)}
-                    className="flex-1 flex items-center justify-center gap-1.5 text-xs py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                    className="flex-1 flex items-center justify-center gap-1.5 text-xs py-2 border border-border rounded-lg text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
                     <PencilIcon className="h-3.5 w-3.5" /> Edit
                   </button>
                   <button onClick={() => cloneRole(r)}
-                    className="flex-1 flex items-center justify-center gap-1.5 text-xs py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                    className="flex-1 flex items-center justify-center gap-1.5 text-xs py-2 border border-border rounded-lg text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
                     <PlusIcon className="h-3.5 w-3.5" /> Clone
                   </button>
                   {!r.isSystem && (
@@ -930,25 +966,25 @@ function NativeCRMPermissionsPanel() {
     <div className="flex gap-5 min-h-[600px]">
       {/* Left: role selector */}
       <div className="w-52 shrink-0 flex flex-col gap-2">
-        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-1 mb-1">Select Role</p>
+        <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider px-1 mb-1">Select Role</p>
         {roles.map((role, idx) => (
           <button
             key={role._id}
             onClick={() => setSelectedRole(role._id)}
             className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl border text-left transition-all ${
               selectedRole === role._id
-                ? 'bg-brand-50 border-brand-200 shadow-sm'
-                : 'bg-white border-gray-200 hover:bg-gray-50'
+                ? 'bg-ryze-600/10 border-ryze-200 dark:border-ryze-800 shadow-sm'
+                : 'bg-surface border-border hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
             }`}
           >
             <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${ROLE_GRADIENTS[idx % ROLE_GRADIENTS.length]} flex items-center justify-center shrink-0`}>
               {role.isSystem ? <LockClosedIcon className="h-4 w-4 text-white" /> : <ShieldCheckIcon className="h-4 w-4 text-white" />}
             </div>
             <div className="min-w-0 flex-1">
-              <p className={`text-sm font-medium truncate ${selectedRole === role._id ? 'text-brand-700' : 'text-gray-800'}`}>{role.name}</p>
-              <p className="text-[10px] text-gray-400">{role.isSystem ? 'system role' : 'custom role'}</p>
+              <p className={`text-sm font-medium truncate ${selectedRole === role._id ? 'text-ryze-700 dark:text-ryze-400' : 'text-text-primary'}`}>{role.name}</p>
+              <p className="text-[10px] text-text-muted">{role.isSystem ? 'system role' : 'custom role'}</p>
             </div>
-            {selectedRole === role._id && <div className="h-2 w-2 rounded-full bg-brand-500 shrink-0" />}
+            {selectedRole === role._id && <div className="h-2 w-2 rounded-full bg-ryze-600/100 shrink-0" />}
           </button>
         ))}
       </div>
@@ -960,14 +996,14 @@ function NativeCRMPermissionsPanel() {
           <div>
             {selectedRoleObj && (
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-semibold text-gray-900">{selectedRoleObj.name}</h2>
-                {selectedRoleObj.isSystem && <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">system</span>}
+                <h2 className="text-base font-semibold text-text-primary">{selectedRoleObj.name}</h2>
+                {selectedRoleObj.isSystem && <span className="text-[10px] text-text-muted bg-black/[0.04] dark:bg-white/[0.06] px-1.5 py-0.5 rounded">system</span>}
               </div>
             )}
-            <p className="text-xs text-gray-400 mt-0.5">Showing Native CRM and Field Service permissions only.</p>
+            <p className="text-xs text-text-muted mt-0.5">Showing Native CRM and Field Service permissions only.</p>
           </div>
           <button onClick={savePermissions} disabled={saving || !selectedRole}
-            className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors shrink-0">
+            className="flex items-center gap-2 px-4 py-2.5 bg-ryze-600 text-white rounded-xl text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors shrink-0">
             <CheckIcon className="h-4 w-4" />
             {saving ? 'Saving…' : 'Save Permissions'}
           </button>
@@ -975,7 +1011,7 @@ function NativeCRMPermissionsPanel() {
 
         {/* Module accordions */}
         {Object.keys(allPerms).length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200 text-gray-400">
+          <div className="text-center py-16 bg-surface rounded-2xl border border-dashed border-border text-text-muted">
             <KeyIcon className="h-10 w-10 mx-auto mb-3 opacity-30" />
             <p className="text-sm">No Native CRM or Field Service permissions found. They appear after the app starts.</p>
           </div>
@@ -998,31 +1034,31 @@ function NativeCRMPermissionsPanel() {
                   const ai = ACTION_ORDER.indexOf(a), bi = ACTION_ORDER.indexOf(b);
                   return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
                 });
-              const modColor = MOD_COLOR[mod] ?? 'bg-gray-100 text-gray-600 border-gray-200';
+              const modColor = MOD_COLOR[mod] ?? 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted border-border';
 
               return (
-                <div key={mod} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="flex items-center gap-3 px-4 py-3 bg-gray-50/60">
+                <div key={mod} className="bg-surface rounded-xl border border-border overflow-hidden">
+                  <div className="flex items-center gap-3 px-4 py-3 bg-background/60">
                     <button onClick={() => setCollapsed(prev => { const s = new Set(prev); isOpen ? s.add(mod) : s.delete(mod); return s; })}
                       className="flex-1 flex items-center gap-3 text-left min-w-0">
                       <span className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wide border ${modColor}`}>
                         {MOD_LABELS[mod] ?? mod}
                       </span>
-                      <span className="text-xs text-gray-400 shrink-0">
+                      <span className="text-xs text-text-muted shrink-0">
                         {checkedCount === 0 ? 'None granted' : allChecked ? 'All granted' : `${checkedCount}/${allModKeys.length}`}
                       </span>
                       {checkedCount > 0 && !allChecked && (
-                        <div className="max-w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-brand-500 rounded-full transition-all" style={{ width: `${(checkedCount / allModKeys.length) * 100}%` }} />
+                        <div className="max-w-20 h-1.5 bg-black/[0.06] dark:bg-white/[0.08] rounded-full overflow-hidden">
+                          <div className="h-full bg-ryze-600/100 rounded-full transition-all" style={{ width: `${(checkedCount / allModKeys.length) * 100}%` }} />
                         </div>
                       )}
-                      <ChevronDownIcon className={`h-4 w-4 text-gray-400 ml-auto transition-transform duration-150 ${isOpen ? '' : '-rotate-90'}`} />
+                      <ChevronDownIcon className={`h-4 w-4 text-text-muted ml-auto transition-transform duration-150 ${isOpen ? '' : '-rotate-90'}`} />
                     </button>
                     <button onClick={() => toggleModule(allModKeys)}
                       className={`text-[11px] font-medium px-2.5 py-1 rounded-lg border shrink-0 transition-colors ${
                         allChecked
                           ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
-                          : 'bg-brand-50 border-brand-200 text-brand-600 hover:bg-brand-100'
+                          : 'bg-ryze-600/10 border-ryze-200 dark:border-ryze-800 text-ryze-600 dark:text-ryze-400 hover:bg-ryze-600/15'
                       }`}>
                       {allChecked ? 'Clear all' : 'Grant all'}
                     </button>
@@ -1032,10 +1068,10 @@ function NativeCRMPermissionsPanel() {
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs">
                         <thead>
-                          <tr className="border-b border-gray-100 bg-white">
-                            <th className="text-left py-2 pl-5 pr-4 font-medium text-gray-400 w-44">Resource</th>
+                          <tr className="border-b border-border bg-surface">
+                            <th className="text-left py-2 pl-5 pr-4 font-medium text-text-muted w-44">Resource</th>
                             {availActions.map(a => (
-                              <th key={a} className="text-center py-2 px-3 font-medium text-gray-400 capitalize whitespace-nowrap">{a}</th>
+                              <th key={a} className="text-center py-2 px-3 font-medium text-text-muted capitalize whitespace-nowrap">{a}</th>
                             ))}
                           </tr>
                         </thead>
@@ -1045,12 +1081,12 @@ function NativeCRMPermissionsPanel() {
                             const resKeys = resPerms.map(p => p.key);
                             const allResChecked = resKeys.every(k => assigned.has(k));
                             return (
-                              <tr key={res} className="hover:bg-gray-50/60 transition-colors">
+                              <tr key={res} className="hover:bg-black/[0.04] dark:hover:bg-white/[0.06]/60 transition-colors">
                                 <td className="py-2.5 pl-5 pr-4">
                                   <label className="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" checked={allResChecked} onChange={() => toggleModule(resKeys)}
-                                      className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 cursor-pointer" />
-                                    <span className="truncate max-w-[130px] text-gray-700 font-medium">{res}</span>
+                                      className="h-3.5 w-3.5 rounded border-border text-ryze-600 dark:text-ryze-400 cursor-pointer" />
+                                    <span className="truncate max-w-[130px] text-text-primary font-medium">{res}</span>
                                   </label>
                                 </td>
                                 {availActions.map(action => {
@@ -1059,9 +1095,9 @@ function NativeCRMPermissionsPanel() {
                                     <td key={action} className="text-center py-2.5 px-3">
                                       {perm ? (
                                         <input type="checkbox" checked={assigned.has(perm.key)} onChange={() => toggle(perm.key)}
-                                          className="h-4 w-4 text-brand-600 rounded border-gray-300 cursor-pointer" />
+                                          className="h-4 w-4 text-ryze-600 dark:text-ryze-400 rounded border-border cursor-pointer" />
                                       ) : (
-                                        <span className="text-gray-200 text-base select-none">·</span>
+                                        <span className="text-text-muted/40 text-base select-none">·</span>
                                       )}
                                     </td>
                                   );
@@ -1080,19 +1116,19 @@ function NativeCRMPermissionsPanel() {
         )}
 
         {/* PII Field Visibility */}
-        <div className="mt-2 pt-6 border-t border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">PII &amp; Field Visibility</h3>
-          <p className="text-xs text-gray-400 mb-4">
+        <div className="mt-2 pt-6 border-t border-border">
+          <h3 className="text-sm font-semibold text-text-primary mb-1">PII &amp; Field Visibility</h3>
+          <p className="text-xs text-text-muted mb-4">
             Controls which roles can view sensitive fields (phone, email, address, GST, PAN) in the Default Company.
             Admins always see unmasked values. For per-branch settings, use FS Settings → Permission tab.
           </p>
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
+          <div className="bg-surface rounded-xl border border-border overflow-hidden mb-4">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50/60 border-b border-gray-100">
+              <thead className="bg-background/60 border-b border-border">
                 <tr>
-                  <th className="text-left text-xs font-medium text-gray-400 px-5 py-2.5">Module</th>
-                  <th className="text-left text-xs font-medium text-gray-400 px-4 py-2.5">Fields Protected</th>
-                  <th className="text-left text-xs font-medium text-gray-400 px-4 py-2.5">Managers Can View</th>
+                  <th className="text-left text-xs font-medium text-text-muted px-5 py-2.5">Module</th>
+                  <th className="text-left text-xs font-medium text-text-muted px-4 py-2.5">Fields Protected</th>
+                  <th className="text-left text-xs font-medium text-text-muted px-4 py-2.5">Managers Can View</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -1100,13 +1136,13 @@ function NativeCRMPermissionsPanel() {
                   const cfg = piiConfig.find(p => p.module === piiMod.key);
                   const on = cfg?.viewRoles?.includes('MANAGER') ?? false;
                   return (
-                    <tr key={piiMod.key} className="hover:bg-gray-50/60 transition-colors">
-                      <td className="px-5 py-3 font-medium text-gray-800 text-sm">{piiMod.label}</td>
-                      <td className="px-4 py-3 text-xs text-gray-400">{piiMod.fields}</td>
+                    <tr key={piiMod.key} className="hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
+                      <td className="px-5 py-3 font-medium text-text-primary text-sm">{piiMod.label}</td>
+                      <td className="px-4 py-3 text-xs text-text-muted">{piiMod.fields}</td>
                       <td className="px-4 py-3">
                         <button onClick={() => togglePIIManager(piiMod.key)}
-                          className={`relative inline-flex h-5 w-9 rounded-full transition-colors duration-150 ${on ? 'bg-indigo-500' : 'bg-gray-200'}`}>
-                          <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-150 ${on ? 'translate-x-4' : 'translate-x-0'}`} />
+                          className={`relative inline-flex h-5 w-9 rounded-full transition-colors duration-150 ${on ? 'bg-ryze-500' : 'bg-black/[0.06] dark:bg-white/[0.08]'}`}>
+                          <span className={`inline-block h-5 w-5 rounded-full bg-surface shadow transform transition-transform duration-150 ${on ? 'translate-x-4' : 'translate-x-0'}`} />
                         </button>
                       </td>
                     </tr>
@@ -1116,7 +1152,7 @@ function NativeCRMPermissionsPanel() {
             </table>
           </div>
           <button onClick={savePII} disabled={piiSaving}
-            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+            className="flex items-center gap-2 px-4 py-2.5 bg-ryze-600 text-white rounded-xl text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors">
             <CheckIcon className="h-4 w-4" />
             {piiSaving ? 'Saving…' : 'Save PII Settings'}
           </button>
@@ -1132,19 +1168,19 @@ function NativeCRMPermissionsPanel() {
 const ACTION_ORDER = ['view', 'create', 'edit', 'delete', 'export', 'import', 'assign', 'configure', 'sync', 'manage', 'use'];
 
 const MOD_COLOR: Record<string, string> = {
-  analytics:  'bg-amber-100 text-amber-700 border-amber-200',
-  bot:        'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200',
-  campaigns:  'bg-purple-100 text-purple-700 border-purple-200',
-  connector:  'bg-blue-100 text-blue-700 border-blue-200',
-  customers:  'bg-orange-100 text-orange-700 border-orange-200',
-  knowledge:  'bg-rose-100 text-rose-700 border-rose-200',
-  logs:       'bg-gray-100 text-gray-600 border-gray-200',
-  native_crm: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  fs:         'bg-sky-100 text-sky-700 border-sky-200',
-  roles:      'bg-violet-100 text-violet-700 border-violet-200',
-  settings:   'bg-slate-100 text-slate-600 border-slate-200',
-  templates:  'bg-indigo-100 text-indigo-700 border-indigo-200',
-  users:      'bg-teal-100 text-teal-700 border-teal-200',
+  analytics:  'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/30',
+  bot:        'bg-fuchsia-100 dark:bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200 dark:border-fuchsia-500/30',
+  campaigns:  'bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-500/30',
+  connector:  'bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/30',
+  customers:  'bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-500/30',
+  knowledge:  'bg-rose-100 dark:bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30',
+  logs:       'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted border-border',
+  native_crm: 'bg-success-500/15 text-success-700 dark:text-success-500 border-success-500/30',
+  fs:         'bg-sky-100 dark:bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-200 dark:border-sky-500/30',
+  roles:      'bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-500/30',
+  settings:   'bg-black/[0.06] dark:bg-white/[0.08] text-text-muted border-border',
+  templates:  'bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30',
+  users:      'bg-teal-100 dark:bg-teal-500/15 text-teal-700 dark:text-teal-400 border-teal-200 dark:border-teal-500/30',
 };
 
 function PermissionMatrixPanel() {
@@ -1230,25 +1266,25 @@ function PermissionMatrixPanel() {
     <div className="flex gap-5 min-h-[600px]">
       {/* Left: role selector */}
       <div className="w-52 shrink-0 flex flex-col gap-2">
-        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-1 mb-1">Select Role</p>
+        <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider px-1 mb-1">Select Role</p>
         {roles.map((r, idx) => (
           <button
             key={r._id}
             onClick={() => setSelectedRole(r._id)}
             className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl border text-left transition-all ${
               selectedRole === r._id
-                ? 'bg-brand-50 border-brand-200 shadow-sm'
-                : 'bg-white border-gray-200 hover:bg-gray-50'
+                ? 'bg-ryze-600/10 border-ryze-200 dark:border-ryze-800 shadow-sm'
+                : 'bg-surface border-border hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
             }`}
           >
             <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${ROLE_GRADIENTS[idx % ROLE_GRADIENTS.length]} flex items-center justify-center shrink-0`}>
               {r.isSystem ? <LockClosedIcon className="h-4 w-4 text-white" /> : <ShieldCheckIcon className="h-4 w-4 text-white" />}
             </div>
             <div className="min-w-0 flex-1">
-              <p className={`text-sm font-medium truncate ${selectedRole === r._id ? 'text-brand-700' : 'text-gray-800'}`}>{r.name}</p>
-              <p className="text-[10px] text-gray-400">{allUsers.filter(u => u.roleId?._id === r._id).length} user(s)</p>
+              <p className={`text-sm font-medium truncate ${selectedRole === r._id ? 'text-ryze-700 dark:text-ryze-400' : 'text-text-primary'}`}>{r.name}</p>
+              <p className="text-[10px] text-text-muted">{allUsers.filter(u => u.roleId?._id === r._id).length} user(s)</p>
             </div>
-            {selectedRole === r._id && <div className="h-2 w-2 rounded-full bg-brand-500 shrink-0" />}
+            {selectedRole === r._id && <div className="h-2 w-2 rounded-full bg-ryze-600/100 shrink-0" />}
           </button>
         ))}
       </div>
@@ -1260,25 +1296,25 @@ function PermissionMatrixPanel() {
           <div>
             {selectedRoleObj && (
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-semibold text-gray-900">{selectedRoleObj.name}</h2>
-                {selectedRoleObj.isSystem && <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">system</span>}
+                <h2 className="text-base font-semibold text-text-primary">{selectedRoleObj.name}</h2>
+                {selectedRoleObj.isSystem && <span className="text-[10px] text-text-muted bg-black/[0.04] dark:bg-white/[0.06] px-1.5 py-0.5 rounded">system</span>}
               </div>
             )}
-            <p className="text-xs text-gray-400 mt-0.5">Changes apply to the entire role — all users with this role are affected.</p>
+            <p className="text-xs text-text-muted mt-0.5">Changes apply to the entire role — all users with this role are affected.</p>
           </div>
           <button onClick={save} disabled={saving || !selectedRole}
-            className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors shrink-0">
+            className="flex items-center gap-2 px-4 py-2.5 bg-ryze-600 text-white rounded-xl text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors shrink-0">
             <CheckIcon className="h-4 w-4" />
             {saving ? 'Saving…' : 'Save Changes'}
           </button>
         </div>
 
         {/* User context selector */}
-        <div className="flex items-center gap-3 bg-white rounded-xl border border-gray-200 px-4 py-3">
-          <UserGroupIcon className="h-4 w-4 text-gray-400 shrink-0" />
+        <div className="flex items-center gap-3 bg-surface rounded-xl border border-border px-4 py-3">
+          <UserGroupIcon className="h-4 w-4 text-text-muted shrink-0" />
           <select value={selectedUser} onChange={e => setSelectedUser(e.target.value)}
             disabled={roleUsers.length === 0}
-            className="flex-1 text-sm text-gray-700 bg-transparent border-none outline-none cursor-pointer">
+            className="flex-1 text-sm text-text-primary bg-transparent border-none outline-none cursor-pointer">
             <option value="all">
               {roleUsers.length > 0
                 ? `All ${roleUsers.length} user(s) in this role will be affected`
@@ -1289,28 +1325,28 @@ function PermissionMatrixPanel() {
             ))}
           </select>
           {selectedUserObj && (
-            <span className="text-xs text-brand-600 font-medium shrink-0">Context: {selectedUserObj.firstName}</span>
+            <span className="text-xs text-ryze-600 dark:text-ryze-400 font-medium shrink-0">Context: {selectedUserObj.firstName}</span>
           )}
         </div>
 
         {/* Collapse / expand all */}
         {!loading && moduleGroups.length > 0 && (
           <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-400">{assigned.size} permissions granted · {moduleGroups.length} modules</span>
+            <span className="text-xs text-text-muted">{assigned.size} permissions granted · {moduleGroups.length} modules</span>
             <button onClick={() => setCollapsedMods(new Set(moduleGroups))}
-              className="text-xs text-gray-400 hover:text-gray-700 underline underline-offset-2">Collapse all</button>
+              className="text-xs text-text-muted hover:text-text-primary underline underline-offset-2">Collapse all</button>
             <button onClick={() => setCollapsedMods(new Set())}
-              className="text-xs text-gray-400 hover:text-gray-700 underline underline-offset-2">Expand all</button>
+              className="text-xs text-text-muted hover:text-text-primary underline underline-offset-2">Expand all</button>
           </div>
         )}
 
         {/* Module accordions */}
         {loading ? (
           <div className="space-y-3">
-            {[0,1,2,3].map(i => <div key={i} className="h-14 rounded-xl bg-gray-100 animate-pulse" />)}
+            {[0,1,2,3].map(i => <div key={i} className="h-14 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] animate-pulse" />)}
           </div>
         ) : moduleGroups.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200 text-gray-400">
+          <div className="text-center py-16 bg-surface rounded-2xl border border-dashed border-border text-text-muted">
             <KeyIcon className="h-10 w-10 mx-auto mb-3 opacity-30" />
             <p className="text-sm">No permissions seeded yet. They appear on startup and after connector sync.</p>
           </div>
@@ -1334,30 +1370,30 @@ function PermissionMatrixPanel() {
                 });
               const isCollapsed = collapsedMods.has(mod);
               const allChecked = checkedCount === allModuleKeys.length;
-              const modColor = MOD_COLOR[mod] ?? 'bg-gray-100 text-gray-600 border-gray-200';
+              const modColor = MOD_COLOR[mod] ?? 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted border-border';
 
               return (
-                <div key={mod} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div key={mod} className="bg-surface rounded-xl border border-border overflow-hidden">
                   {/* Module header */}
-                  <div className="flex items-center gap-3 px-4 py-3 bg-gray-50/60">
+                  <div className="flex items-center gap-3 px-4 py-3 bg-background/60">
                     <button onClick={() => toggleCollapse(mod)} className="flex-1 flex items-center gap-3 text-left min-w-0">
                       <span className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wide border ${modColor}`}>{mod}</span>
-                      <span className="text-xs text-gray-400 shrink-0">
+                      <span className="text-xs text-text-muted shrink-0">
                         {checkedCount === 0 ? 'None granted' : checkedCount === allModuleKeys.length ? 'All granted' : `${checkedCount}/${allModuleKeys.length}`}
                       </span>
                       {checkedCount > 0 && checkedCount < allModuleKeys.length && (
-                        <div className="max-w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-brand-500 rounded-full transition-all" style={{ width: `${(checkedCount / allModuleKeys.length) * 100}%` }} />
+                        <div className="max-w-20 h-1.5 bg-black/[0.06] dark:bg-white/[0.08] rounded-full overflow-hidden">
+                          <div className="h-full bg-ryze-600/100 rounded-full transition-all" style={{ width: `${(checkedCount / allModuleKeys.length) * 100}%` }} />
                         </div>
                       )}
-                      <ChevronDownIcon className={`h-4 w-4 text-gray-400 ml-auto transition-transform duration-150 ${isCollapsed ? '-rotate-90' : ''}`} />
+                      <ChevronDownIcon className={`h-4 w-4 text-text-muted ml-auto transition-transform duration-150 ${isCollapsed ? '-rotate-90' : ''}`} />
                     </button>
                     <button
                       onClick={() => toggleModule(allModuleKeys)}
                       className={`text-[11px] font-medium px-2.5 py-1 rounded-lg border shrink-0 transition-colors ${
                         allChecked
                           ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
-                          : 'bg-brand-50 border-brand-200 text-brand-600 hover:bg-brand-100'
+                          : 'bg-ryze-600/10 border-ryze-200 dark:border-ryze-800 text-ryze-600 dark:text-ryze-400 hover:bg-ryze-600/15'
                       }`}
                     >
                       {allChecked ? 'Clear all' : 'Grant all'}
@@ -1369,10 +1405,10 @@ function PermissionMatrixPanel() {
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs">
                         <thead>
-                          <tr className="border-b border-gray-100 bg-white">
-                            <th className="text-left py-2 pl-5 pr-4 font-medium text-gray-400 w-44">Resource</th>
+                          <tr className="border-b border-border bg-surface">
+                            <th className="text-left py-2 pl-5 pr-4 font-medium text-text-muted w-44">Resource</th>
                             {availActions.map(a => (
-                              <th key={a} className="text-center py-2 px-3 font-medium text-gray-400 capitalize whitespace-nowrap">{a}</th>
+                              <th key={a} className="text-center py-2 px-3 font-medium text-text-muted capitalize whitespace-nowrap">{a}</th>
                             ))}
                           </tr>
                         </thead>
@@ -1382,12 +1418,12 @@ function PermissionMatrixPanel() {
                             const resKeys = resPems.map(p => p.key);
                             const allResChecked = resKeys.every(k => assigned.has(k));
                             return (
-                              <tr key={res} className="hover:bg-gray-50/60 transition-colors group">
+                              <tr key={res} className="hover:bg-black/[0.04] dark:hover:bg-white/[0.06]/60 transition-colors group">
                                 <td className="py-2.5 pl-5 pr-4">
                                   <label className="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" checked={allResChecked} onChange={() => toggleModule(resKeys)}
-                                      className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 cursor-pointer" />
-                                    <span className="truncate max-w-[130px] text-gray-700 font-medium">{res}</span>
+                                      className="h-3.5 w-3.5 rounded border-border text-ryze-600 dark:text-ryze-400 cursor-pointer" />
+                                    <span className="truncate max-w-[130px] text-text-primary font-medium">{res}</span>
                                   </label>
                                 </td>
                                 {availActions.map(action => {
@@ -1396,9 +1432,9 @@ function PermissionMatrixPanel() {
                                     <td key={action} className="text-center py-2.5 px-3">
                                       {perm ? (
                                         <input type="checkbox" checked={assigned.has(perm.key)} onChange={() => toggle(perm.key)}
-                                          className="h-4 w-4 text-brand-600 rounded border-gray-300 cursor-pointer" />
+                                          className="h-4 w-4 text-ryze-600 dark:text-ryze-400 rounded border-border cursor-pointer" />
                                       ) : (
-                                        <span className="text-gray-200 text-base select-none">·</span>
+                                        <span className="text-text-muted/40 text-base select-none">·</span>
                                       )}
                                     </td>
                                   );
@@ -1530,20 +1566,20 @@ export default function SettingsPage() {
   return (
     <div className={`space-y-6 ${['users','roles','permissions','native-crm'].includes(activeTab) ? '' : 'max-w-3xl'}`}>
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-sm text-gray-500 mt-1">Manage your profile, company, AI agent, and bot training.</p>
+        <h1 className="text-2xl font-bold text-text-primary">Settings</h1>
+        <p className="text-sm text-text-muted mt-1">Manage your profile, company, AI agent, and bot training.</p>
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 border-b border-gray-200 flex-wrap">
+      <div className="flex gap-1 border-b border-border flex-wrap">
         {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
             className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${
               activeTab === t.id
-                ? 'text-brand-600 border-b-2 border-brand-600 bg-brand-50/60'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'text-ryze-600 dark:text-ryze-400 border-b-2 border-ryze-600 bg-ryze-600/[0.06]'
+                : 'text-text-muted hover:text-text-primary'
             }`}
           >
             {t.label}
@@ -1574,7 +1610,7 @@ export default function SettingsPage() {
             </Field>
           </div>
           <Field label="Email">
-            <input className="input bg-gray-50 cursor-not-allowed" value={user?.email ?? ''} readOnly />
+            <input className="input bg-background cursor-not-allowed" value={user?.email ?? ''} readOnly />
           </Field>
           <div className="pt-1">
             <button className="btn-primary" onClick={saveProfile} disabled={savingProfile}>
@@ -1625,7 +1661,7 @@ export default function SettingsPage() {
           <Field label="Custom Instructions">
             <textarea className="input" rows={4} value={instructions} onChange={(e) => setInstructions(e.target.value)}
               placeholder="e.g. Always respond in a friendly tone. Focus on real estate leads. If user asks for pricing, say 'I'll connect you with our team.'" />
-            <p className="text-xs text-gray-400 mt-1">Tell the AI how to behave — tone, focus area, what to avoid.</p>
+            <p className="text-xs text-text-muted mt-1">Tell the AI how to behave — tone, focus area, what to avoid.</p>
           </Field>
           <div className="pt-1">
             <button className="btn-primary" onClick={saveAI} disabled={savingAI}>
@@ -1662,12 +1698,12 @@ export default function SettingsPage() {
       {/* ── Account info (read-only) ────────────────────────────────── */}
       <Section title="Account" description="Your current account role and plan.">
         <div className="flex items-center gap-4">
-          <div className="h-12 w-12 bg-brand-100 rounded-full flex items-center justify-center shrink-0">
-            <span className="text-brand-700 font-bold">{user?.firstName?.[0]?.toUpperCase()}</span>
+          <div className="h-12 w-12 bg-ryze-600/15 rounded-full flex items-center justify-center shrink-0">
+            <span className="text-ryze-700 dark:text-ryze-400 font-bold">{user?.firstName?.[0]?.toUpperCase()}</span>
           </div>
           <div className="flex-1">
-            <p className="font-semibold text-gray-900">{user?.firstName} {user?.lastName}</p>
-            <p className="text-sm text-gray-500">{user?.email}</p>
+            <p className="font-semibold text-text-primary">{user?.firstName} {user?.lastName}</p>
+            <p className="text-sm text-text-muted">{user?.email}</p>
           </div>
           <span className="badge badge-blue">{user?.role}</span>
         </div>

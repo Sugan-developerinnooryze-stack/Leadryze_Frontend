@@ -94,49 +94,49 @@ function StepType({ onSelect }: { onSelect: (t: ActivityType, custom?: string) =
 
   return (
     <div className="p-6">
-      <h2 className="text-lg font-bold text-gray-900 mb-1">What would you like to create?</h2>
-      <p className="text-sm text-gray-500 mb-5">Choose an activity type to get started</p>
+      <h2 className="text-lg font-bold text-text-primary mb-1">What would you like to create?</h2>
+      <p className="text-sm text-text-muted mb-5">Choose an activity type to get started</p>
       <div className="grid grid-cols-2 gap-3">
         {TYPE_CARDS.map(({ type, label, icon: Icon, color, desc }) => {
           if (type === 'custom') {
             return (
               <button key="custom" onClick={() => setShowCustomInput(true)}
-                className="flex items-start gap-3 p-3.5 border-2 border-dashed border-gray-200 rounded-xl hover:border-gray-300 hover:bg-gray-50 text-left transition-colors">
+                className="flex items-start gap-3 p-3.5 border-2 border-dashed border-border rounded-xl hover:border-border hover:bg-background text-left transition-colors">
                 <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: `${color}18` }}>
                   <Icon className="h-4 w-4" style={{ color }} />
                 </span>
                 <div>
-                  <p className="text-sm font-semibold text-gray-700">{label}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
+                  <p className="text-sm font-semibold text-text-primary">{label}</p>
+                  <p className="text-xs text-text-muted mt-0.5">{desc}</p>
                 </div>
               </button>
             );
           }
           return (
             <button key={type} onClick={() => onSelect(type)}
-              className="flex items-start gap-3 p-3.5 border-2 border-gray-100 rounded-xl hover:border-blue-200 hover:bg-blue-50/30 text-left transition-all group">
+              className="flex items-start gap-3 p-3.5 border-2 border-border rounded-xl hover:border-blue-200 hover:bg-blue-50/30 text-left transition-all group">
               <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: `${color}18` }}>
                 <Icon className="h-4 w-4" style={{ color }} />
               </span>
               <div>
-                <p className="text-sm font-semibold text-gray-700 group-hover:text-gray-900">{label}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
+                <p className="text-sm font-semibold text-text-primary group-hover:text-text-primary">{label}</p>
+                <p className="text-xs text-text-muted mt-0.5">{desc}</p>
               </div>
             </button>
           );
         })}
       </div>
       {showCustomInput && (
-        <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-          <p className="text-sm font-medium text-gray-700 mb-2">Custom type name</p>
+        <div className="mt-4 p-4 bg-background rounded-xl border border-border">
+          <p className="text-sm font-medium text-text-primary mb-2">Custom type name</p>
           <div className="flex gap-2">
             <input autoFocus type="text" value={customLabel} onChange={e => setCustomLabel(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && customLabel.trim()) onSelect('custom', customLabel.trim()); }}
               placeholder="e.g. Site Visit, Proposal, Review..."
-              className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500" />
+              className="flex-1 text-sm px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ryze-500 bg-background text-text-primary" />
             <button onClick={() => { if (customLabel.trim()) onSelect('custom', customLabel.trim()); }}
               disabled={!customLabel.trim()}
-              className="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg disabled:opacity-50 hover:bg-brand-700 transition-colors">
+              className="px-4 py-2 text-sm font-medium text-white bg-ryze-600 rounded-lg disabled:opacity-50 hover:bg-ryze-700 transition-colors">
               Create
             </button>
           </div>
@@ -187,25 +187,25 @@ function StepPerson({ onSelect, onSkip }: {
 
   return (
     <div className="p-6">
-      <h2 className="text-lg font-bold text-gray-900 mb-1">Link to a CRM person</h2>
-      <p className="text-sm text-gray-500 mb-5">Search contacts, leads, or accounts from your connected CRM</p>
+      <h2 className="text-lg font-bold text-text-primary mb-1">Link to a CRM person</h2>
+      <p className="text-sm text-text-muted mb-5">Search contacts, leads, or accounts from your connected CRM</p>
       <div className="relative mb-4">
-        <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+        <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-4 w-4 text-text-muted" />
         <input autoFocus type="text" value={q}
           onChange={e => { setQ(e.target.value); setSelected(null); }}
           placeholder="Search contacts, leads, accounts..."
-          className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500" />
-        {loading && <div className="absolute right-3 top-3 w-4 h-4 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />}
+          className="w-full pl-9 pr-3 py-2.5 text-sm border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-ryze-500 bg-background text-text-primary" />
+        {loading && <div className="absolute right-3 top-3 w-4 h-4 border-2 border-ryze-400 border-t-transparent rounded-full animate-spin" />}
       </div>
       {results.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-lg mb-4 max-h-52 overflow-y-auto">
+        <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-lg mb-4 max-h-52 overflow-y-auto">
           {results.map(r => (
             <button key={`${r.channel}-${r.module}-${r.id}`} onClick={() => pick(r)}
-              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 text-left transition-colors border-b border-gray-50 last:border-0">
+              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-background text-left transition-colors border-b border-border last:border-0">
               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: CHANNEL_COLORS[r.channel] || '#64748b' }} />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800 truncate">{r.displayName}</p>
-                <p className="text-xs text-gray-400">{r.module} · {r.channel}</p>
+                <p className="text-sm font-medium text-text-primary truncate">{r.displayName}</p>
+                <p className="text-xs text-text-muted">{r.module} · {r.channel}</p>
               </div>
             </button>
           ))}
@@ -215,23 +215,23 @@ function StepPerson({ onSelect, onSkip }: {
         <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl mb-4">
           <CheckIcon className="h-4 w-4 text-green-600 shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-800">{selected.displayName}</p>
-            <p className="text-xs text-gray-500">{selected.module} · {selected.channel}</p>
-            {selected.email && <p className="text-xs text-gray-400">{selected.email}</p>}
-            {selected.phone && <p className="text-xs text-gray-400">{selected.phone}</p>}
+            <p className="text-sm font-semibold text-text-primary">{selected.displayName}</p>
+            <p className="text-xs text-text-muted">{selected.module} · {selected.channel}</p>
+            {selected.email && <p className="text-xs text-text-muted">{selected.email}</p>}
+            {selected.phone && <p className="text-xs text-text-muted">{selected.phone}</p>}
           </div>
-          <button onClick={() => { setSelected(null); setQ(''); }} className="text-gray-400 hover:text-gray-600">
+          <button onClick={() => { setSelected(null); setQ(''); }} className="text-text-muted hover:text-text-primary">
             <XMarkIcon className="h-4 w-4" />
           </button>
         </div>
       )}
       <div className="flex gap-3 mt-6">
         <button onClick={onSkip}
-          className="flex-1 py-2.5 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+          className="flex-1 py-2.5 text-sm font-medium text-text-muted border border-border rounded-xl hover:bg-background transition-colors">
           Skip (no person)
         </button>
         <button onClick={() => selected ? onSelect(selected) : onSkip()}
-          className="flex-1 py-2.5 text-sm font-medium text-white bg-brand-600 rounded-xl hover:bg-brand-700 transition-colors">
+          className="flex-1 py-2.5 text-sm font-medium text-white bg-ryze-600 rounded-xl hover:bg-ryze-700 transition-colors">
           {selected ? 'Continue →' : 'Skip →'}
         </button>
       </div>
@@ -242,22 +242,22 @@ function StepPerson({ onSelect, onSkip }: {
 /* ── Contact info card ───────────────────────────────────────────────────── */
 function ContactCard({ person }: { person: LinkedPerson }) {
   return (
-    <div className="flex items-start gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl mb-1">
-      <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center shrink-0 text-brand-700 font-bold text-sm">
+    <div className="flex items-start gap-3 p-3 bg-background border border-border rounded-xl mb-1">
+      <div className="w-8 h-8 rounded-full bg-ryze-600/15 flex items-center justify-center shrink-0 text-ryze-700 dark:text-ryze-400 font-bold text-sm">
         {person.displayName.charAt(0).toUpperCase()}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-800 truncate">{person.displayName}</p>
-        <p className="text-xs text-gray-400 mb-1">{person.module} · {person.channel}</p>
+        <p className="text-sm font-semibold text-text-primary truncate">{person.displayName}</p>
+        <p className="text-xs text-text-muted mb-1">{person.module} · {person.channel}</p>
         <div className="flex flex-wrap gap-x-4 gap-y-0.5">
           {person.email && (
-            <span className="flex items-center gap-1 text-xs text-gray-500">
+            <span className="flex items-center gap-1 text-xs text-text-muted">
               <AtSymbolIcon className="h-3 w-3 shrink-0" />
               <span className="truncate max-w-[160px]">{person.email}</span>
             </span>
           )}
           {person.phone && (
-            <span className="flex items-center gap-1 text-xs text-gray-500">
+            <span className="flex items-center gap-1 text-xs text-text-muted">
               <PhoneIcon className="h-3 w-3 shrink-0" />
               {person.phone}
             </span>
@@ -347,9 +347,9 @@ function StepForm({ type, customType, person, prefillDate, editActivity, onSubmi
     onSubmit({ ...form, fields }, { email: notifyEmail, sms: notifySms });
   }
 
-  const inp = 'w-full text-sm px-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white';
+  const inp = 'w-full text-sm px-3 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-ryze-500 bg-surface';
   const sel = inp + ' appearance-none';
-  const lbl = 'block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide';
+  const lbl = 'block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide';
   const row = 'grid grid-cols-2 gap-3';
 
   const isVirtual = ['zoom', 'google_meet', 'teams', 'other'].includes(form.meetingType as string);
@@ -378,10 +378,10 @@ function StepForm({ type, customType, person, prefillDate, editActivity, onSubmi
             <div className="flex items-center gap-3">
               <button type="button"
                 onClick={() => set('allDay', !form.allDay)}
-                className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${form.allDay ? 'bg-brand-600' : 'bg-gray-200'}`}>
-                <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.allDay ? 'translate-x-5' : ''}`} />
+                className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${form.allDay ? 'bg-ryze-600' : 'bg-black/[0.06] dark:bg-white/[0.08]'}`}>
+                <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-surface rounded-full shadow transition-transform ${form.allDay ? 'translate-x-5' : ''}`} />
               </button>
-              <span className="text-sm text-gray-700">All day event</span>
+              <span className="text-sm text-text-primary">All day event</span>
             </div>
           )}
           <div className={row}>
@@ -596,26 +596,26 @@ function StepForm({ type, customType, person, prefillDate, editActivity, onSubmi
 
       {/* ── Notification toggles (only when linked person has contact) ── */}
       {hasNotify && (
-        <div className="border border-gray-200 rounded-xl p-3 bg-gray-50 space-y-2">
+        <div className="border border-border rounded-xl p-3 bg-background space-y-2">
           <div className="flex items-center gap-2 mb-1">
-            <BellIcon className="h-4 w-4 text-gray-400" />
-            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Send Notification</span>
+            <BellIcon className="h-4 w-4 text-text-muted" />
+            <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">Send Notification</span>
           </div>
           {person?.email && (
             <label className="flex items-center gap-3 cursor-pointer">
               <input type="checkbox" checked={notifyEmail} onChange={e => setNotifyEmail(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
-              <span className="text-sm text-gray-700">
-                Email confirmation to <span className="font-medium text-gray-900">{person.email}</span>
+                className="w-4 h-4 rounded border-border text-ryze-600 dark:text-ryze-400 focus:ring-ryze-500" />
+              <span className="text-sm text-text-primary">
+                Email confirmation to <span className="font-medium text-text-primary">{person.email}</span>
               </span>
             </label>
           )}
           {person?.phone && (
             <label className="flex items-center gap-3 cursor-pointer">
               <input type="checkbox" checked={notifySms} onChange={e => setNotifySms(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
-              <span className="text-sm text-gray-700">
-                WhatsApp/SMS to <span className="font-medium text-gray-900">{person.phone}</span>
+                className="w-4 h-4 rounded border-border text-ryze-600 dark:text-ryze-400 focus:ring-ryze-500" />
+              <span className="text-sm text-text-primary">
+                WhatsApp/SMS to <span className="font-medium text-text-primary">{person.phone}</span>
               </span>
             </label>
           )}
@@ -714,19 +714,19 @@ export default function ActivityModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="relative bg-surface rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
 
         <div className="h-1" style={{ backgroundColor: accentColor }} />
 
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 shrink-0">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-border shrink-0">
           {step > 1 && !isEdit && (
-            <button onClick={() => setStep(s => (s - 1) as 1 | 2 | 3)} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <button onClick={() => setStep(s => (s - 1) as 1 | 2 | 3)} className="text-text-muted hover:text-text-primary transition-colors">
               <ChevronLeftIcon className="h-5 w-5" />
             </button>
           )}
           <div className="flex-1">
             {step >= 2 && (
-              <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-0.5">
+              <div className="flex items-center gap-1.5 text-xs text-text-muted mb-0.5">
                 <span className="font-medium" style={{ color: accentColor }}>
                   {customType || (typeCard?.label || selType)}
                 </span>
@@ -735,7 +735,7 @@ export default function ActivityModal({
                 )}
               </div>
             )}
-            <h3 className="text-sm font-bold text-gray-900">
+            <h3 className="text-sm font-bold text-text-primary">
               {isEdit ? `Edit ${customType || typeCard?.label || selType}` :
                step === 1 ? 'New Activity' :
                step === 2 ? 'Link to CRM person' :
@@ -745,11 +745,11 @@ export default function ActivityModal({
           {!isEdit && (
             <div className="flex items-center gap-1.5 mr-1">
               {([1, 2, 3] as const).map(s => (
-                <span key={s} className={`w-2 h-2 rounded-full transition-colors ${step >= s ? 'bg-brand-600' : 'bg-gray-200'}`} />
+                <span key={s} className={`w-2 h-2 rounded-full transition-colors ${step >= s ? 'bg-ryze-600' : 'bg-black/[0.06] dark:bg-white/[0.08]'}`} />
               ))}
             </div>
           )}
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+          <button onClick={onClose} className="text-text-muted hover:text-text-primary transition-colors">
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>

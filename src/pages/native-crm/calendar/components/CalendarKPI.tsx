@@ -42,43 +42,43 @@ export default function CalendarKPI({ events }: Props) {
 
   return (
     <div className="grid grid-cols-4 gap-4 mb-6">
-      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex items-center gap-4">
-        <div className="p-3 bg-emerald-100 text-emerald-600 rounded-lg">
+      <div className="bg-surface rounded-xl border border-border p-4 shadow-sm flex items-center gap-4">
+        <div className="p-3 bg-success-500/15 text-success-700 dark:text-success-500 rounded-lg">
           <WrenchScrewdriverIcon className="w-6 h-6" />
         </div>
         <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase">Today's Visits</p>
-          <p className="text-2xl font-bold text-gray-900">{metrics.visitsToday}</p>
+          <p className="text-xs font-semibold text-text-muted uppercase">Today's Visits</p>
+          <p className="text-2xl font-bold text-text-primary">{metrics.visitsToday}</p>
         </div>
       </div>
       
-      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex items-center gap-4">
-        <div className="p-3 bg-rose-100 text-rose-600 rounded-lg">
+      <div className="bg-surface rounded-xl border border-border p-4 shadow-sm flex items-center gap-4">
+        <div className="p-3 bg-rose-100 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 rounded-lg">
           <DocumentTextIcon className="w-6 h-6" />
         </div>
         <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase">Overdue Invoices</p>
-          <p className="text-2xl font-bold text-gray-900">{metrics.overdueInvoices}</p>
+          <p className="text-xs font-semibold text-text-muted uppercase">Overdue Invoices</p>
+          <p className="text-2xl font-bold text-text-primary">{metrics.overdueInvoices}</p>
         </div>
       </div>
       
-      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex items-center gap-4">
-        <div className="p-3 bg-indigo-100 text-indigo-600 rounded-lg">
+      <div className="bg-surface rounded-xl border border-border p-4 shadow-sm flex items-center gap-4">
+        <div className="p-3 bg-indigo-100 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 rounded-lg">
           <DocumentCheckIcon className="w-6 h-6" />
         </div>
         <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase">Upcoming Renewals</p>
-          <p className="text-2xl font-bold text-gray-900">{metrics.renewalsUpcoming}</p>
+          <p className="text-xs font-semibold text-text-muted uppercase">Upcoming Renewals</p>
+          <p className="text-2xl font-bold text-text-primary">{metrics.renewalsUpcoming}</p>
         </div>
       </div>
       
-      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex items-center gap-4">
-        <div className="p-3 bg-amber-100 text-amber-600 rounded-lg">
+      <div className="bg-surface rounded-xl border border-border p-4 shadow-sm flex items-center gap-4">
+        <div className="p-3 bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 rounded-lg">
           <BanknotesIcon className="w-6 h-6" />
         </div>
         <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase">Invoice Due Today</p>
-          <p className="text-2xl font-bold text-gray-900">₹{metrics.revenueToday.toLocaleString()}</p>
+          <p className="text-xs font-semibold text-text-muted uppercase">Invoice Due Today</p>
+          <p className="text-2xl font-bold text-text-primary">₹{metrics.revenueToday.toLocaleString()}</p>
         </div>
       </div>
     </div>

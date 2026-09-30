@@ -68,9 +68,9 @@ export default function ActivityFeedPanel({
   const meta  = data?.meta  ?? { total: 0, page: 1, totalPages: 1 };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-        <h3 className="text-sm font-semibold text-gray-800">Activity</h3>
+    <div className="bg-surface rounded-xl border border-border shadow-sm">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <h3 className="text-sm font-semibold text-text-primary">Activity</h3>
         <div className="flex gap-1.5">
           {QUICK_ADD_KINDS.map((kind) => {
             const meta = KIND_META[kind];
@@ -80,20 +80,20 @@ export default function ActivityFeedPanel({
                 key={kind}
                 onClick={() => setQuickAddKind(kind)}
                 title={`Log a ${meta.label.toLowerCase()}`}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-text-primary border border-border rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
               >
                 <Icon className="h-3.5 w-3.5" style={{ color: meta.color }} />
-                <PlusIcon className="h-3 w-3 text-gray-400" />
+                <PlusIcon className="h-3 w-3 text-text-muted" />
               </button>
             );
           })}
         </div>
       </div>
 
-      <div className="divide-y divide-gray-100">
-        {isLoading && <div className="px-5 py-6 text-sm text-gray-400 text-center">Loading…</div>}
+      <div className="divide-y divide-border">
+        {isLoading && <div className="px-5 py-6 text-sm text-text-muted text-center">Loading…</div>}
         {!isLoading && items.length === 0 && (
-          <div className="px-5 py-6 text-sm text-gray-400 text-center">No activity logged yet.</div>
+          <div className="px-5 py-6 text-sm text-text-muted text-center">No activity logged yet.</div>
         )}
         {items.map((item) => {
           const meta = KIND_META[item.kind];
@@ -105,8 +105,8 @@ export default function ActivityFeedPanel({
                 <Icon className="h-4 w-4" style={{ color: meta.color }} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-800 truncate">{summarize(item)}</p>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-sm font-medium text-text-primary truncate">{summarize(item)}</p>
+                <p className="text-xs text-text-muted mt-0.5">
                   {item.kind === 'email' ? emailLabel(item) : meta.label} · {fmtDate(item.at as string)}
                   {status && <span className="capitalize"> · {status.replace(/_/g, ' ')}</span>}
                 </p>
@@ -117,7 +117,7 @@ export default function ActivityFeedPanel({
       </div>
 
       {meta.totalPages > 1 && (
-        <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 text-xs text-gray-500">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-border text-xs text-text-muted">
           <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="disabled:opacity-40">← Prev</button>
           <span>Page {meta.page} / {meta.totalPages}</span>
           <button disabled={page >= meta.totalPages} onClick={() => setPage((p) => p + 1)} className="disabled:opacity-40">Next →</button>

@@ -18,6 +18,7 @@ export const config: ModulePageConfig = {
       options: ['todo', 'in_progress', 'done', 'cancelled'] },
     { key: 'assignedTo', label: 'Assigned To', type: 'staffSelect', tableCol: true },
     { key: 'notes',      label: 'Notes',       type: 'textarea' },
+    { key: 'createdAt',  label: 'Created Date', type: 'date' },
   ],
 };
 

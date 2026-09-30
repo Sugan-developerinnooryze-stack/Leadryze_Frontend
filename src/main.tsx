@@ -5,6 +5,12 @@ import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 import './index.css';
+import { applyTheme, getInitialTheme } from './utils/theme';
+
+// As early as possible, before the first paint of app content — see
+// utils/theme.ts for why this can't be an inline <script> in index.html
+// (the CSP has no 'unsafe-inline' for script-src).
+applyTheme(getInitialTheme());
 
 const queryClient = new QueryClient({
   defaultOptions: {

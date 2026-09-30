@@ -20,6 +20,7 @@ const config: ModulePageConfig = {
     { key: 'companyName', label: 'Company',     type: 'text' },
     { key: 'assignedStaffId', label: 'Assigned Staff', type: 'staffSelect' },
     { key: 'notes',       label: 'Notes',       type: 'textarea' },
+    { key: 'createdAt',   label: 'Created Date', type: 'date' },
   ],
 };
 

@@ -38,7 +38,7 @@ interface FSDrawerProps {
   onUnlocked?: () => void;
 }
 
-const base = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent';
+const base = 'w-full rounded-lg bg-surface border border-border px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400 focus:border-transparent';
 
 export default function FSDrawer({ title, fields, record, onClose, onSaved, onCreate, onUpdate, module, onUnlocked }: FSDrawerProps) {
   const [form,            setForm]            = useState<Record<string, any>>({});
@@ -364,12 +364,12 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
     if (field.type === 'multiselect' && field.options) {
       const selected: string[] = Array.isArray(value) ? value : [];
       return (
-        <div className="border border-gray-300 rounded-lg max-h-40 overflow-y-auto p-2 space-y-1">
+        <div className="border border-border rounded-lg max-h-40 overflow-y-auto p-2 space-y-1">
           {field.options.map(opt => {
             const checked = selected.includes(opt);
             const label   = opt.charAt(0).toUpperCase() + opt.slice(1).replace(/_/g, ' ');
             return (
-              <label key={opt} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50 cursor-pointer">
+              <label key={opt} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-black/[0.03] dark:hover:bg-white/[0.05] cursor-pointer">
                 <input
                   type="checkbox"
                   checked={checked}
@@ -379,9 +379,9 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
                       : selected.filter(v => v !== opt);
                     handleChange(field.key, next);
                   }}
-                  className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-400"
+                  className="h-4 w-4 rounded border-border text-ryze-600 focus:ring-ryze-400"
                 />
-                <span className="text-sm text-gray-700">{label}</span>
+                <span className="text-sm text-text-primary">{label}</span>
               </label>
             );
           })}
@@ -405,7 +405,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
               <button
                 type="button"
                 onClick={() => handleChange(field.key, rows.filter((_, j) => j !== i))}
-                className="shrink-0 p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                className="shrink-0 p-2 rounded-lg text-text-muted hover:text-danger-500 hover:bg-danger-500/10 transition-colors"
               >
                 <XMarkIcon className="h-4 w-4" />
               </button>
@@ -414,7 +414,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
           <button
             type="button"
             onClick={() => handleChange(field.key, [...rows, ''])}
-            className="px-3 py-1.5 text-xs rounded-lg border border-brand-300 text-brand-600 hover:bg-brand-50 transition-colors"
+            className="px-3 py-1.5 text-xs rounded-lg border border-ryze-300 dark:border-ryze-700 text-ryze-600 dark:text-ryze-400 hover:bg-ryze-600/10 transition-colors"
           >
             + Add Email
           </button>
@@ -438,7 +438,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
               <button
                 type="button"
                 onClick={() => handleChange(field.key, rows.filter((_, j) => j !== i))}
-                className="shrink-0 p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                className="shrink-0 p-2 rounded-lg text-text-muted hover:text-danger-500 hover:bg-danger-500/10 transition-colors"
               >
                 <XMarkIcon className="h-4 w-4" />
               </button>
@@ -447,7 +447,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
           <button
             type="button"
             onClick={() => handleChange(field.key, [...rows, ''])}
-            className="px-3 py-1.5 text-xs rounded-lg border border-brand-300 text-brand-600 hover:bg-brand-50 transition-colors"
+            className="px-3 py-1.5 text-xs rounded-lg border border-ryze-300 dark:border-ryze-700 text-ryze-600 dark:text-ryze-400 hover:bg-ryze-600/10 transition-colors"
           >
             + Add Phone
           </button>
@@ -529,7 +529,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
                 type="button"
                 onClick={handleFindNearest}
                 disabled={nearestLoading}
-                className="flex-shrink-0 px-3 py-2 text-xs rounded-lg border border-brand-300 text-brand-600 hover:bg-brand-50 disabled:opacity-50 whitespace-nowrap"
+                className="flex-shrink-0 px-3 py-2 text-xs rounded-lg border border-ryze-300 dark:border-ryze-700 text-ryze-600 dark:text-ryze-400 hover:bg-ryze-600/10 disabled:opacity-50 whitespace-nowrap"
               >
                 {nearestLoading ? '...' : 'Find Nearest'}
               </button>
@@ -541,12 +541,12 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
               return v === storedVal;
             });
             const note = availabilityNote(staffBusyMap[selOpt?.staffId ?? selOpt?._id?.toString()]);
-            return note ? <p className="mt-1 text-xs text-red-500">🔴 {note}</p> : null;
+            return note ? <p className="mt-1 text-xs text-danger-500">🔴 {note}</p> : null;
           })()}
           {nearestResults !== null && (
-            <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+            <div className="absolute z-50 left-0 right-0 mt-1 bg-surface-elevated border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto">
               {nearestResults.length === 0 ? (
-                <p className="text-xs text-gray-400 p-3 text-center">No staff with location data found</p>
+                <p className="text-xs text-text-muted p-3 text-center">No staff with location data found</p>
               ) : (
                 nearestResults.map((s) => (
                   <button
@@ -556,17 +556,17 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
                       handleLookupChange(field, s.staffId);
                       setNearestResults(null);
                     }}
-                    className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 text-left border-b border-gray-100 last:border-0"
+                    className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-black/[0.03] dark:hover:bg-white/[0.05] text-left border-b border-border last:border-0"
                   >
                     <div>
-                      <p className="text-sm font-medium text-gray-800">{s.fullName}</p>
+                      <p className="text-sm font-medium text-text-primary">{s.fullName}</p>
                       {s.skills?.length > 0 && (
-                        <p className="text-xs text-gray-400">{s.skills.join(', ')}</p>
+                        <p className="text-xs text-text-muted">{s.skills.join(', ')}</p>
                       )}
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-medium text-gray-600">{s.distance_km} km</p>
-                      {s.busy && <p className="text-xs text-red-500">🔴 Busy</p>}
+                      <p className="text-xs font-medium text-text-muted">{s.distance_km} km</p>
+                      {s.busy && <p className="text-xs text-danger-500">🔴 Busy</p>}
                     </div>
                   </button>
                 ))
@@ -612,16 +612,16 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
                 type="button"
                 onClick={handleFindNearestMulti}
                 disabled={nearestLoading}
-                className="px-3 py-1.5 text-xs rounded-lg border border-brand-300 text-brand-600 hover:bg-brand-50 disabled:opacity-50 whitespace-nowrap"
+                className="px-3 py-1.5 text-xs rounded-lg border border-ryze-300 dark:border-ryze-700 text-ryze-600 dark:text-ryze-400 hover:bg-ryze-600/10 disabled:opacity-50 whitespace-nowrap"
               >
                 {nearestLoading ? '...' : 'Find Nearest'}
               </button>
             </div>
           )}
           {isStaffField && nearestResults !== null && (
-            <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+            <div className="absolute z-50 left-0 right-0 mt-1 bg-surface-elevated border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto">
               {nearestResults.length === 0 ? (
-                <p className="text-xs text-gray-400 p-3 text-center">No staff with location data found</p>
+                <p className="text-xs text-text-muted p-3 text-center">No staff with location data found</p>
               ) : (
                 nearestResults.map((s) => (
                   <button
@@ -631,26 +631,26 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
                       if (!selected.includes(s.staffId)) handleChange(field.key, [...selected, s.staffId]);
                       setNearestResults(null);
                     }}
-                    className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 text-left border-b border-gray-100 last:border-0"
+                    className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-black/[0.03] dark:hover:bg-white/[0.05] text-left border-b border-border last:border-0"
                   >
                     <div>
-                      <p className="text-sm font-medium text-gray-800">{s.fullName}</p>
+                      <p className="text-sm font-medium text-text-primary">{s.fullName}</p>
                       {s.skills?.length > 0 && (
-                        <p className="text-xs text-gray-400">{s.skills.join(', ')}</p>
+                        <p className="text-xs text-text-muted">{s.skills.join(', ')}</p>
                       )}
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-medium text-gray-600">{s.distance_km} km</p>
-                      {s.busy && <p className="text-xs text-red-500">🔴 Busy</p>}
+                      <p className="text-xs font-medium text-text-muted">{s.distance_km} km</p>
+                      {s.busy && <p className="text-xs text-danger-500">🔴 Busy</p>}
                     </div>
                   </button>
                 ))
               )}
             </div>
           )}
-        <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto p-2 space-y-1">
+        <div className="border border-border rounded-lg max-h-48 overflow-y-auto p-2 space-y-1">
           {opts.length === 0 && (
-            <p className="text-xs text-gray-400 px-2 py-1">No {field.label.toLowerCase()} available</p>
+            <p className="text-xs text-text-muted px-2 py-1">No {field.label.toLowerCase()} available</p>
           )}
           {opts.map(opt => {
             const val = field.multilookupValueField
@@ -671,7 +671,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
               <label
                 key={opt._id}
                 className={`flex items-start gap-2 px-2 py-1 rounded transition-colors ${
-                  blocked ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-50 cursor-pointer'
+                  blocked ? 'opacity-60 cursor-not-allowed' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.05] cursor-pointer'
                 }`}
               >
                 <input
@@ -684,12 +684,12 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
                       : selected.filter(v => v !== val);
                     handleChange(field.key, next);
                   }}
-                  className="h-4 w-4 mt-0.5 rounded border-gray-300 text-brand-600 focus:ring-brand-400 disabled:cursor-not-allowed"
+                  className="h-4 w-4 mt-0.5 rounded border-border text-ryze-600 focus:ring-ryze-400 disabled:cursor-not-allowed"
                 />
                 <span className="flex-1 min-w-0">
-                  <span className="block text-sm text-gray-700">{baseLbl}</span>
+                  <span className="block text-sm text-text-primary">{baseLbl}</span>
                   {busy && note && (
-                    <span className="block text-[11px] text-red-500 leading-snug">🔴 {note}</span>
+                    <span className="block text-[11px] text-danger-500 leading-snug">🔴 {note}</span>
                   )}
                 </span>
               </label>
@@ -732,9 +732,9 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
             type="checkbox"
             checked={!!value}
             onChange={e => handleChange(field.key, e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-400"
+            className="h-4 w-4 rounded border-border text-ryze-600 focus:ring-ryze-400"
           />
-          <span className="text-sm text-gray-700">{field.placeholder ?? 'Enabled'}</span>
+          <span className="text-sm text-text-primary">{field.placeholder ?? 'Enabled'}</span>
         </label>
       );
     }
@@ -773,7 +773,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
             value={hrs === 24 ? 0 : mins}
             disabled={hrs === 24}
             onChange={e => setHM(hrs, parseInt(e.target.value, 10))}
-            className={`${base} disabled:bg-gray-50 disabled:text-gray-400`}
+            className={`${base} disabled:bg-background disabled:text-text-muted`}
           >
             {Array.from({ length: 12 }, (_, i) => i * 5).map(m => (
               <option key={m} value={m}>{m} min</option>
@@ -836,19 +836,19 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
     <>
       <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40" onClick={onClose} />
 
-      <div className={`fixed right-0 top-0 h-full w-full max-w-[52vw] min-w-[600px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-out ${visible ? 'translate-x-0' : 'translate-x-full'}`}>
-        <div className="flex items-center justify-between px-7 py-5 border-b border-gray-100 shrink-0">
+      <div className={`fixed right-0 top-0 h-full w-full max-w-[52vw] min-w-[600px] bg-surface shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-out ${visible ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="flex items-center justify-between px-7 py-5 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-1 h-8 rounded-full bg-brand-500 shrink-0" />
+            <div className="w-1 h-8 rounded-full bg-ryze-500 shrink-0" />
             <div>
-              <h2 className="text-base font-semibold text-gray-900 leading-tight">{title}</h2>
-              <p className="text-xs text-gray-400 mt-0.5">{record?._id ? 'Edit record' : 'Create new record'}</p>
+              <h2 className="text-base font-semibold text-text-primary leading-tight">{title}</h2>
+              <p className="text-xs text-text-muted mt-0.5">{record?._id ? 'Edit record' : 'Create new record'}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-xl text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
           >
             <XMarkIcon className="h-5 w-5" />
           </button>
@@ -868,7 +868,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
               )}
 
               {errors._server && (
-                <div className="col-span-2 bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-xl">
+                <div className="col-span-2 bg-danger-500/10 border border-danger-500/20 text-danger-600 dark:text-danger-500 text-sm px-4 py-3 rounded-xl">
                   {errors._server}
                 </div>
               )}
@@ -886,18 +886,18 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
                 return (
                   <div key={field.key} className={fullWidth ? 'col-span-2' : 'col-span-1'}>
                     <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                      <label className="block text-xs font-semibold text-text-muted uppercase tracking-wide">
                         {field.label}
-                        {field.required && <span className="text-red-500 ml-0.5">*</span>}
+                        {field.required && <span className="text-danger-500 ml-0.5">*</span>}
                         {field.filterOnly && (
-                          <span className="ml-1.5 text-xs font-normal text-gray-400 normal-case tracking-normal">(filter only)</span>
+                          <span className="ml-1.5 text-xs font-normal text-text-muted normal-case tracking-normal">(filter only)</span>
                         )}
                       </label>
                       {field.copyFromKey && (
                         <button
                           type="button"
                           onClick={() => handleChange(field.key, form[field.copyFromKey!] ?? '')}
-                          className="text-[11px] font-medium text-brand-600 hover:text-brand-700 normal-case tracking-normal"
+                          className="text-[11px] font-medium text-ryze-600 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 normal-case tracking-normal"
                         >
                           {field.copyFromLabel ?? 'Same as above'}
                         </button>
@@ -905,21 +905,21 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
                     </div>
                     {renderField(field)}
                     {errors[field.key] && (
-                      <p className="mt-1 text-xs text-red-500">{errors[field.key]}</p>
+                      <p className="mt-1 text-xs text-danger-500">{errors[field.key]}</p>
                     )}
                   </div>
                 );
               })}
 
               {activeCustomFields.length > 0 && (
-                <div className="col-span-2 mt-1 pt-5 border-t border-dashed border-gray-200">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Custom Fields</p>
+                <div className="col-span-2 mt-1 pt-5 border-t border-dashed border-border">
+                  <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4">Custom Fields</p>
                   <div className="grid grid-cols-2 gap-x-5 gap-y-5">
                     {activeCustomFields.map((cf) => (
                       <div key={cf.fieldKey} className="col-span-2">
-                        <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                        <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">
                           {cf.label}
-                          {cf.required && <span className="text-red-500 ml-0.5">*</span>}
+                          {cf.required && <span className="text-danger-500 ml-0.5">*</span>}
                         </label>
                         <CustomFieldRenderer
                           field={cf}
@@ -933,7 +933,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
                           defaultDialCode={settings?.defaultCountryCode ?? '+91'}
                         />
                         {errors[`cf_${cf.fieldKey}`] && (
-                          <p className="mt-1 text-xs text-red-500">{errors[`cf_${cf.fieldKey}`]}</p>
+                          <p className="mt-1 text-xs text-danger-500">{errors[`cf_${cf.fieldKey}`]}</p>
                         )}
                       </div>
                     ))}
@@ -943,18 +943,18 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
             </div>
           </div>
 
-          <div className="px-7 py-5 border-t border-gray-100 flex items-center justify-center gap-3 shrink-0 bg-gray-50/60">
+          <div className="px-7 py-5 border-t border-border flex items-center justify-center gap-3 shrink-0 bg-black/[0.015] dark:bg-white/[0.02]">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+              className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving || (!!record?.isLocked && !isAdmin)}
-              className="px-6 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-60 transition-colors flex items-center gap-2 min-w-[120px] justify-center"
+              className="px-6 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-60 transition-colors flex items-center gap-2 min-w-[120px] justify-center"
             >
               {saving && (
                 <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">

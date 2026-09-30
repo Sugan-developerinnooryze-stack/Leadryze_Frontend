@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from './stores/auth.store';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import Layout from './components/layout/Layout';
@@ -9,9 +9,20 @@ const RegisterPage         = lazy(() => import('./pages/auth/RegisterPage'));
 const ForgotPasswordPage   = lazy(() => import('./pages/auth/ForgotPasswordPage'));
 const ResetPasswordPage    = lazy(() => import('./pages/auth/ResetPasswordPage'));
 const VerifyEmailPage      = lazy(() => import('./pages/auth/VerifyEmailPage'));
+const ForcedChangePasswordPage = lazy(() => import('./pages/auth/ForcedChangePasswordPage'));
 const VerifyEmailSentPage  = lazy(() => import('./pages/auth/VerifyEmailSentPage'));
 const AdminLoginPage       = lazy(() => import('./pages/auth/AdminLoginPage'));
-const AdminDashboardPage   = lazy(() => import('./pages/admin/AdminDashboardPage'));
+const AdminLayout            = lazy(() => import('./pages/admin/AdminLayout'));
+const AdminOverviewPage      = lazy(() => import('./pages/admin/overview/OverviewPage'));
+const AdminTenantsListPage   = lazy(() => import('./pages/admin/tenants/TenantsListPage'));
+const AdminTenantDetailPage  = lazy(() => import('./pages/admin/tenants/TenantDetailPage'));
+const AdminUsersPage         = lazy(() => import('./pages/admin/users/UsersPage'));
+const AdminLogsPage          = lazy(() => import('./pages/admin/logs/LogsPage'));
+const AdminConversationsPage = lazy(() => import('./pages/admin/conversations/ConversationsPage'));
+const AdminHealthPage        = lazy(() => import('./pages/admin/health/HealthPage'));
+const AdminSystemPage        = lazy(() => import('./pages/admin/system/SystemPage'));
+const AdminPlatformDefaultsPage = lazy(() => import('./pages/admin/system/PlatformDefaultsPage'));
+const AdminSecurityPage      = lazy(() => import('./pages/admin/security/SecurityPage'));
 
 const DashboardPage   = lazy(() => import('./pages/dashboard/DashboardPage'));
 const CustomersPage   = lazy(() => import('./pages/customers/CustomersPage'));
@@ -109,8 +120,15 @@ function PageLoader() {
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { token, user } = useAuthStore();
+  const location = useLocation();
   if (!token) return <Navigate to="/login" replace />;
-  if (user?.role === 'SUPER_ADMIN') return <Navigate to="/admin/dashboard" replace />;
+  if (user?.role === 'SUPER_ADMIN') return <Navigate to="/admin/overview" replace />;
+  // Inert for every existing session (mustChangePassword defaults false) —
+  // only fires for a Super-Admin-provisioned/approved tenant that hasn't
+  // set its own password yet.
+  if (user?.mustChangePassword && location.pathname !== '/change-password') {
+    return <Navigate to="/change-password" replace />;
+  }
   return children;
 }
 
@@ -138,9 +156,25 @@ export default function App() {
         <Route path="/verify-email-sent"  element={S(VerifyEmailSentPage)} />
 
         {/* Super admin routes */}
-        <Route path="/admin/login"        element={S(AdminLoginPage)} />
-        <Route path="/admin/dashboard"    element={<RequireAdmin>{S(AdminDashboardPage)}</RequireAdmin>} />
-        <Route path="/admin"              element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/admin/login" element={S(AdminLoginPage)} />
+        <Route path="/admin" element={<RequireAdmin>{S(AdminLayout)}</RequireAdmin>}>
+          <Route index                element={<Navigate to="/admin/overview" replace />} />
+          <Route path="dashboard"     element={<Navigate to="/admin/overview" replace />} />
+          <Route path="overview"      element={S(AdminOverviewPage)} />
+          <Route path="tenants"       element={S(AdminTenantsListPage)} />
+          <Route path="tenants/:id"   element={S(AdminTenantDetailPage)} />
+          <Route path="users"         element={S(AdminUsersPage)} />
+          <Route path="logs"          element={S(AdminLogsPage)} />
+          <Route path="conversations" element={S(AdminConversationsPage)} />
+          <Route path="health"        element={S(AdminHealthPage)} />
+          <Route path="system"        element={S(AdminSystemPage)} />
+          <Route path="platform-defaults" element={S(AdminPlatformDefaultsPage)} />
+          <Route path="security"      element={S(AdminSecurityPage)} />
+        </Route>
+
+        {/* Forced first-login password change — authenticated, but deliberately
+            outside the main Layout so there's no sidebar/nav to escape through */}
+        <Route path="/change-password" element={<RequireAuth>{S(ForcedChangePasswordPage)}</RequireAuth>} />
 
         {/* Client app routes */}
         <Route path="/" element={<RequireAuth><Layout /></RequireAuth>}>

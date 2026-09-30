@@ -45,13 +45,13 @@ export default function ServiceLinesEditor({ value, onChange, availableServices,
 
   const fmt = (n: number) => n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const base  = 'w-full rounded border border-gray-300 px-2 py-1.5 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-brand-400';
-  const th    = 'px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50';
+  const base  = 'w-full rounded bg-surface border border-border px-2 py-1.5 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-ryze-400';
+  const th    = 'px-2 py-1.5 text-left text-xs font-medium text-text-muted uppercase tracking-wider bg-background';
   const td    = 'px-2 py-1.5 align-top';
 
   return (
     <div className="space-y-2">
-      <div className="overflow-x-auto rounded-lg border border-gray-200">
+      <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full min-w-[560px] text-xs">
           <thead>
             <tr>
@@ -63,16 +63,16 @@ export default function ServiceLinesEditor({ value, onChange, availableServices,
               <th className={`${th} w-8`}></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-border">
             {lines.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-3 py-4 text-center text-xs text-gray-400">
+                <td colSpan={6} className="px-3 py-4 text-center text-xs text-text-muted">
                   No lines yet — click "Add line" below
                 </td>
               </tr>
             )}
             {lines.map((line, i) => (
-              <tr key={i} className="hover:bg-gray-50/50">
+              <tr key={i} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.03]">
                 <td className={td}>
                   <select
                     value=""
@@ -120,14 +120,14 @@ export default function ServiceLinesEditor({ value, onChange, availableServices,
                     className={base}
                   />
                 </td>
-                <td className={`${td} text-right font-medium text-gray-700`}>
+                <td className={`${td} text-right font-medium text-text-primary`}>
                   {fmt((Number(line.amount) || 0) * (Number(line.count) || 1))}
                 </td>
                 <td className={td}>
                   <button
                     type="button"
                     onClick={() => removeLine(i)}
-                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                    className="p-1 text-text-muted hover:text-danger-500 transition-colors"
                   >
                     <TrashIcon className="h-3.5 w-3.5" />
                   </button>
@@ -141,7 +141,7 @@ export default function ServiceLinesEditor({ value, onChange, availableServices,
       <button
         type="button"
         onClick={addLine}
-        className="flex items-center gap-1.5 text-xs text-brand-600 hover:text-brand-700 font-medium"
+        className="flex items-center gap-1.5 text-xs text-ryze-600 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 font-medium"
       >
         <PlusIcon className="h-3.5 w-3.5" />
         Add line
@@ -149,25 +149,25 @@ export default function ServiceLinesEditor({ value, onChange, availableServices,
 
       {lines.length > 0 && (
         <div className="ml-auto w-56 space-y-1 text-xs">
-          <div className="flex justify-between text-gray-600">
+          <div className="flex justify-between text-text-muted">
             <span>Subtotal</span>
             <span className="font-medium">{fmt(subtotal)}</span>
           </div>
           {withTotals && (
             <>
               {discount > 0 && (
-                <div className="flex justify-between text-gray-500">
+                <div className="flex justify-between text-text-muted">
                   <span>Discount ({discount}%)</span>
                   <span>−{fmt(discAmt)}</span>
                 </div>
               )}
               {gstPercentage > 0 && (
-                <div className="flex justify-between text-gray-500">
+                <div className="flex justify-between text-text-muted">
                   <span>GST ({gstPercentage}%)</span>
                   <span>+{fmt(taxAmt)}</span>
                 </div>
               )}
-              <div className="flex justify-between border-t border-gray-200 pt-1 font-semibold text-gray-900">
+              <div className="flex justify-between border-t border-border pt-1 font-semibold text-text-primary">
                 <span>Total</span>
                 <span>{fmt(grandTotal)}</span>
               </div>

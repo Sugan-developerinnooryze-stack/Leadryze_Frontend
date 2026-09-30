@@ -57,7 +57,7 @@ function getModuleIcon(name: string): HeroIcon {
 }
 
 const CONNECTOR_COLOR: Record<string, string> = {
-  zoho: 'bg-blue-500', hubspot: 'bg-orange-500', salesforce: 'bg-sky-500',
+  zoho: 'bg-ryze-500', hubspot: 'bg-orange-500', salesforce: 'bg-sky-500',
   rest: 'bg-purple-500', mysql: 'bg-teal-500', postgresql: 'bg-indigo-500', mongodb: 'bg-green-500',
 };
 
@@ -158,42 +158,42 @@ function buildSchema(records: CRMRecord[], displayNameSample: string): ColumnSch
 
 /* ── Value formatters ───────────────────────────────────────────────── */
 function renderCell(val: unknown, type: FieldType) {
-  if (val === null || val === undefined || val === '') return <span className="text-gray-300">—</span>;
+  if (val === null || val === undefined || val === '') return <span className="text-text-muted">—</span>;
   const str = String(val);
   switch (type) {
     case 'email':
-      return <a href={`mailto:${str}`} className="text-blue-600 hover:underline">{str}</a>;
+      return <a href={`mailto:${str}`} className="text-ryze-600 dark:text-ryze-400 hover:underline">{str}</a>;
     case 'url':
       return (
-        <a href={str} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline truncate block max-w-xs">
+        <a href={str} target="_blank" rel="noreferrer" className="text-ryze-600 dark:text-ryze-400 hover:underline truncate block max-w-xs">
           {str.replace(/^https?:\/\//, '')}
         </a>
       );
     case 'datetime': {
       const d = new Date(str);
-      return <span className="text-gray-600">{isNaN(d.getTime()) ? str : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>;
+      return <span className="text-text-muted">{isNaN(d.getTime()) ? str : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>;
     }
     case 'date': {
       const d = new Date(str + 'T00:00:00');
-      return <span className="text-gray-600">{isNaN(d.getTime()) ? str : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>;
+      return <span className="text-text-muted">{isNaN(d.getTime()) ? str : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>;
     }
     case 'currency': {
       const num = Number(str);
-      if (isNaN(num)) return <span className="text-gray-700">{str}</span>;
-      return <span className="font-medium text-gray-900">₹{num.toLocaleString('en-IN')}</span>;
+      if (isNaN(num)) return <span className="text-text-primary">{str}</span>;
+      return <span className="font-medium text-text-primary">₹{num.toLocaleString('en-IN')}</span>;
     }
     case 'number':
       return <span>{Number(str).toLocaleString()}</span>;
     case 'boolean':
       return (
-        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${val ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${val ? 'bg-success-500/15 text-success-700 dark:text-success-500' : 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'}`}>
           {val ? 'Yes' : 'No'}
         </span>
       );
     case 'lookup': {
       const obj = val as Record<string, unknown>;
       const name = String(obj?.name || obj?.Name || obj?.fullName || obj?.subject || '');
-      return <span className="truncate block max-w-xs text-gray-700" title={name}>{name || '—'}</span>;
+      return <span className="truncate block max-w-xs text-text-primary" title={name}>{name || '—'}</span>;
     }
     default:
       return <span className="truncate block max-w-xs" title={str}>{str}</span>;
@@ -201,7 +201,7 @@ function renderCell(val: unknown, type: FieldType) {
 }
 
 /* ── Field input for edit/create mode ──────────────────────────────── */
-const INPUT_CLS = 'w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white';
+const INPUT_CLS = 'w-full px-2.5 py-1.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ryze-300 bg-surface';
 
 function FieldInput({ fieldKey, type, value, onChange }: {
   fieldKey: string;
@@ -220,16 +220,16 @@ function FieldInput({ fieldKey, type, value, onChange }: {
     const displayName = String(obj.name || obj.Name || obj.fullName || obj.subject || value || '');
     return (
       <div className={`${INPUT_CLS} flex items-center justify-between opacity-70 cursor-not-allowed`}>
-        <span className="text-gray-600 truncate">{displayName || '—'}</span>
-        <span className="text-xs text-gray-400 shrink-0 ml-2">Linked record · edit in CRM</span>
+        <span className="text-text-muted truncate">{displayName || '—'}</span>
+        <span className="text-xs text-text-muted shrink-0 ml-2">Linked record · edit in CRM</span>
       </div>
     );
   }
   if (type === 'boolean') {
     return (
       <label className="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" checked={Boolean(value)} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-brand-600" />
-        <span className="text-sm text-gray-600">{Boolean(value) ? 'Yes' : 'No'}</span>
+        <input type="checkbox" checked={Boolean(value)} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 rounded border-border text-ryze-600" />
+        <span className="text-sm text-text-muted">{Boolean(value) ? 'Yes' : 'No'}</span>
       </label>
     );
   }
@@ -368,26 +368,26 @@ function RecordDrawer({
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-black/30" onClick={onClose} />
-      <div className="w-[500px] bg-white shadow-xl flex flex-col overflow-hidden">
+      <div className="w-[500px] bg-surface shadow-xl flex flex-col overflow-hidden">
 
         {/* Header */}
-        <div className="flex items-start justify-between px-5 py-4 border-b border-gray-200 gap-3">
+        <div className="flex items-start justify-between px-5 py-4 border-b border-border gap-3">
           <div className="flex-1 min-w-0">
             {editing ? (
               <div>
-                <p className="text-xs text-gray-400 mb-1 uppercase tracking-wider font-medium">Display Name</p>
+                <p className="text-xs text-text-muted mb-1 uppercase tracking-wider font-medium">Display Name</p>
                 <input
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   placeholder="Record name..."
-                  className="w-full font-semibold text-gray-900 text-base border-b border-gray-300 focus:outline-none focus:border-brand-500 pb-0.5 bg-transparent"
+                  className="w-full font-semibold text-text-primary text-base border-b border-border focus:outline-none focus:border-ryze-500 pb-0.5 bg-transparent"
                 />
               </div>
             ) : (
               <div>
-                <h2 className="font-semibold text-gray-900 text-base truncate">{record?.displayName}</h2>
-                <p className="text-xs text-gray-400 mt-0.5">ID: {record?.externalId}</p>
+                <h2 className="font-semibold text-text-primary text-base truncate">{record?.displayName}</h2>
+                <p className="text-xs text-text-muted mt-0.5">ID: {record?.externalId}</p>
               </div>
             )}
           </div>
@@ -398,7 +398,7 @@ function RecordDrawer({
                 {canEdit && (
                   <button
                     onClick={() => { setEditing(true); setForm({ ...record!.data }); setDisplayName(record!.displayName); }}
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs border border-border rounded-lg hover:bg-background text-text-muted"
                   >
                     <PencilSquareIcon className="h-3.5 w-3.5" /> Edit
                   </button>
@@ -419,7 +419,7 @@ function RecordDrawer({
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50"
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-ryze-600 text-white rounded-lg hover:bg-ryze-700 disabled:opacity-50"
                   >
                     <CheckIcon className="h-3.5 w-3.5" />
                     {saving ? 'Saving…' : 'Save'}
@@ -428,15 +428,15 @@ function RecordDrawer({
                 {!isNew && (
                   <button
                     onClick={() => { setEditing(false); setForm({ ...record!.data }); setDisplayName(record!.displayName); setError(''); }}
-                    className="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
+                    className="px-2.5 py-1.5 text-xs border border-border rounded-lg hover:bg-background text-text-muted"
                   >
                     Cancel
                   </button>
                 )}
               </>
             )}
-            <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg">
-              <XMarkIcon className="h-5 w-5 text-gray-500" />
+            <button onClick={onClose} className="p-1.5 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] rounded-lg">
+              <XMarkIcon className="h-5 w-5 text-text-muted" />
             </button>
           </div>
         </div>
@@ -464,7 +464,7 @@ function RecordDrawer({
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
-                className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
+                className="px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-background text-text-muted"
               >
                 Cancel
               </button>
@@ -480,9 +480,9 @@ function RecordDrawer({
               const label = getLabel(key);
               return (
                 <div key={key}>
-                  <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-medium text-text-muted uppercase tracking-wider mb-1">
                     {label}
-                    {type === 'id' && <span className="ml-1 text-gray-300 normal-case">(read-only)</span>}
+                    {type === 'id' && <span className="ml-1 text-text-muted normal-case">(read-only)</span>}
                   </label>
                   <FieldInput
                     fieldKey={key}
@@ -504,8 +504,8 @@ function RecordDrawer({
                 if (val === null || val === undefined || val === '') return null;
                 return (
                   <div key={key}>
-                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-0.5">{getLabel(key)}</p>
-                    <div className="text-sm text-gray-900">{renderCell(val, getFieldType(key))}</div>
+                    <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-0.5">{getLabel(key)}</p>
+                    <div className="text-sm text-text-primary">{renderCell(val, getFieldType(key))}</div>
                   </div>
                 );
               });
@@ -515,8 +515,8 @@ function RecordDrawer({
 
         {/* Footer hint when editing */}
         {editing && (
-          <div className="px-5 py-3 border-t border-gray-100 bg-gray-50 space-y-1">
-            <p className="text-xs text-gray-400">
+          <div className="px-5 py-3 border-t border-border bg-background space-y-1">
+            <p className="text-xs text-text-muted">
               Changes save locally and sync back to <span className="font-medium uppercase">{channel}</span> automatically.
             </p>
             {isNew && hiddenLookupCount > 0 && (
@@ -539,24 +539,24 @@ function ColumnPicker({ schema, onChange, onClose }: {
   onClose: () => void;
 }) {
   return (
-    <div className="absolute right-0 top-10 z-30 w-64 bg-white rounded-xl shadow-lg border border-gray-200 p-3">
+    <div className="absolute right-0 top-10 z-30 w-64 bg-surface rounded-xl shadow-lg border border-border p-3">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-medium text-gray-700">Columns</p>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+        <p className="text-sm font-medium text-text-primary">Columns</p>
+        <button onClick={onClose} className="text-text-muted hover:text-text-primary">
           <XMarkIcon className="h-4 w-4" />
         </button>
       </div>
       <div className="max-h-72 overflow-y-auto space-y-1">
         {schema.filter((c) => !c.key.startsWith('$') && c.score > -50).map((col) => (
-          <label key={col.key} className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded-lg cursor-pointer">
+          <label key={col.key} className="flex items-center gap-2 px-2 py-1.5 hover:bg-background rounded-lg cursor-pointer">
             <input
               type="checkbox"
               checked={col.visible}
               onChange={() => onChange(schema.map((c) => c.key === col.key ? { ...c, visible: !c.visible } : c))}
-              className="rounded border-gray-300 text-brand-600"
+              className="rounded border-border text-ryze-600"
             />
-            <span className="text-sm text-gray-700 truncate">{col.label}</span>
-            <span className="ml-auto text-xs text-gray-400">{col.type}</span>
+            <span className="text-sm text-text-primary truncate">{col.label}</span>
+            <span className="ml-auto text-xs text-text-muted">{col.type}</span>
           </label>
         ))}
       </div>
@@ -621,35 +621,35 @@ export default function CRMDataPage() {
       {/* Header */}
       <div className="mb-5">
         <div className="flex items-center gap-3 mb-1">
-          {(() => { const ModIcon = getModuleIcon(mod); return <ModIcon className="h-7 w-7 text-gray-700 shrink-0" />; })()}
-          <h1 className="text-2xl font-bold text-gray-900">{mod}</h1>
-          <span className="ml-1 px-2.5 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full font-medium">
+          {(() => { const ModIcon = getModuleIcon(mod); return <ModIcon className="h-7 w-7 text-text-primary shrink-0" />; })()}
+          <h1 className="text-2xl font-bold text-text-primary">{mod}</h1>
+          <span className="ml-1 px-2.5 py-0.5 bg-black/[0.04] dark:bg-white/[0.06] text-text-muted text-xs rounded-full font-medium">
             {total} records
           </span>
         </div>
         <div className="flex items-center gap-2 mt-1">
-          <span className={`h-2 w-2 rounded-full ${CONNECTOR_COLOR[channel] || 'bg-gray-400'}`} />
-          <p className="text-sm text-gray-400 capitalize">{channel} · Synced Automatically</p>
+          <span className={`h-2 w-2 rounded-full ${CONNECTOR_COLOR[channel] || 'bg-text-muted/50'}`} />
+          <p className="text-sm text-text-muted capitalize">{channel} · Synced Automatically</p>
         </div>
       </div>
 
       {/* Toolbar */}
       <div className="mb-4 flex items-center gap-3">
         <div className="relative">
-          <MagnifyingGlassIcon className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <MagnifyingGlassIcon className="h-4 w-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             placeholder={`Search ${mod}...`}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm w-72 focus:outline-none focus:ring-2 focus:ring-brand-300"
+            className="pl-9 pr-3 py-2 border border-border rounded-lg text-sm w-72 focus:outline-none focus:ring-2 focus:ring-ryze-300 bg-background text-text-primary"
           />
         </div>
 
         {canCreate && (
           <button
             onClick={() => setShowNewDrawer(true)}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm bg-ryze-600 text-white rounded-lg hover:bg-ryze-700"
           >
             <PlusIcon className="h-4 w-4" />
             Add Record
@@ -659,7 +659,7 @@ export default function CRMDataPage() {
         <div className="relative ml-auto">
           <button
             onClick={() => setShowPicker((v) => !v)}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border rounded-lg hover:bg-background text-text-muted"
           >
             <AdjustmentsHorizontalIcon className="h-4 w-4" />
             Columns
@@ -669,16 +669,16 @@ export default function CRMDataPage() {
           )}
         </div>
 
-        {loading && <span className="text-xs text-gray-400">Loading…</span>}
+        {loading && <span className="text-xs text-text-muted">Loading…</span>}
       </div>
 
       {/* Table */}
-      <div className="flex-1 bg-white rounded-xl border border-gray-200 overflow-auto">
+      <div className="flex-1 bg-surface rounded-xl border border-border overflow-auto">
         {!loading && records.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 text-gray-400">
+          <div className="flex flex-col items-center justify-center h-40 text-text-muted">
             <p className="text-sm">No records found</p>
             {search && (
-              <button onClick={() => setSearch('')} className="mt-2 text-xs text-brand-600 hover:underline">
+              <button onClick={() => setSearch('')} className="mt-2 text-xs text-ryze-600 dark:text-ryze-400 hover:underline">
                 Clear search
               </button>
             )}
@@ -686,27 +686,27 @@ export default function CRMDataPage() {
         ) : (
           <table className="w-full text-sm border-collapse">
             <thead className="sticky top-0 z-10">
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap min-w-[160px]">Name</th>
+              <tr className="bg-background border-b border-border">
+                <th className="text-left px-4 py-3 font-medium text-text-muted whitespace-nowrap min-w-[160px]">Name</th>
                 {visibleCols.map((col) => (
-                  <th key={col.key} className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">
+                  <th key={col.key} className="text-left px-4 py-3 font-medium text-text-muted whitespace-nowrap">
                     {col.label}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {records.map((record) => (
                 <tr
                   key={record._id}
                   onClick={() => setSelectedRecord(record)}
-                  className="hover:bg-blue-50/40 cursor-pointer transition-colors"
+                  className="hover:bg-ryze-600/10/40 cursor-pointer transition-colors"
                 >
-                  <td className="px-4 py-3 font-semibold text-gray-900 whitespace-nowrap">
+                  <td className="px-4 py-3 font-semibold text-text-primary whitespace-nowrap">
                     {getDisplayName(record)}
                   </td>
                   {visibleCols.map((col) => (
-                    <td key={col.key} className="px-4 py-3 text-gray-600">
+                    <td key={col.key} className="px-4 py-3 text-text-muted">
                       {renderCell(record.data[col.key], col.type)}
                     </td>
                   ))}
@@ -719,15 +719,15 @@ export default function CRMDataPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
+        <div className="flex items-center justify-between mt-4 text-sm text-text-muted">
           <span>
             Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
           </span>
           <div className="flex gap-2">
-            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1.5 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50">
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1.5 border border-border rounded-lg disabled:opacity-40 hover:bg-background">
               Previous
             </button>
-            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-3 py-1.5 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50">
+            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-3 py-1.5 border border-border rounded-lg disabled:opacity-40 hover:bg-background">
               Next
             </button>
           </div>

@@ -17,21 +17,21 @@ const TABS = [
 ];
 
 const LIFECYCLE_COLORS: Record<string, string> = {
-  subscriber: 'bg-slate-100 text-slate-600',
-  lead: 'bg-amber-100 text-amber-700',
-  marketing_qualified_lead: 'bg-amber-100 text-amber-700',
-  sales_qualified_lead: 'bg-blue-100 text-blue-700',
-  opportunity: 'bg-purple-100 text-purple-700',
-  customer: 'bg-emerald-100 text-emerald-700',
-  evangelist: 'bg-emerald-100 text-emerald-700',
-  other: 'bg-slate-100 text-slate-600',
+  subscriber: 'bg-black/[0.06] dark:bg-white/[0.08] text-text-muted',
+  lead: 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400',
+  marketing_qualified_lead: 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400',
+  sales_qualified_lead: 'bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400',
+  opportunity: 'bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400',
+  customer: 'bg-success-500/15 text-success-700 dark:text-success-500',
+  evangelist: 'bg-success-500/15 text-success-700 dark:text-success-500',
+  other: 'bg-black/[0.06] dark:bg-white/[0.08] text-text-muted',
 };
 
 function InfoRow({ label, value }: { label: string; value?: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-2 py-2 border-b border-gray-50 last:border-0">
-      <span className="text-sm text-gray-500 w-40 shrink-0">{label}</span>
-      <span className="text-sm text-gray-900 font-medium">{value ?? '—'}</span>
+    <div className="flex items-start gap-2 py-2 border-b border-border last:border-0">
+      <span className="text-sm text-text-muted w-40 shrink-0">{label}</span>
+      <span className="text-sm text-text-primary font-medium">{value ?? '—'}</span>
     </div>
   );
 }
@@ -57,50 +57,50 @@ export default function ContactViewPage() {
 
   if (isLoading) return (
     <div className="flex items-center justify-center h-full">
-      <div className="flex gap-2">{[0, 1, 2].map(i => <span key={i} className="h-2.5 w-2.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}</div>
+      <div className="flex gap-2">{[0, 1, 2].map(i => <span key={i} className="h-2.5 w-2.5 rounded-full bg-ryze-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}</div>
     </div>
   );
 
-  if (!item) return <div className="flex items-center justify-center h-full text-gray-400">Contact not found.</div>;
+  if (!item) return <div className="flex items-center justify-center h-full text-text-muted">Contact not found.</div>;
 
   const initials = `${item.firstName?.[0] ?? ''}${item.lastName?.[0] ?? ''}`.toUpperCase() || '?';
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 overflow-hidden">
+    <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-8 py-6 shrink-0">
+      <div className="bg-surface border-b border-border px-8 py-6 shrink-0">
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => navigate('/crm/contacts')}
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors">
+            className="flex items-center gap-1.5 text-sm text-text-muted hover:text-text-primary transition-colors">
             <ArrowLeftIcon className="h-4 w-4" /> Back to Contacts
           </button>
           <button
             onClick={() => navigate('/crm/contacts')}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-primary border border-border rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
           >
             <PencilSquareIcon className="h-4 w-4" /> Edit
           </button>
         </div>
 
         <div className="flex items-start gap-4">
-          <div className="h-16 w-16 rounded-2xl bg-indigo-100 flex items-center justify-center shrink-0 border border-indigo-200">
-            <span className="text-xl font-bold text-indigo-600">{initials}</span>
+          <div className="h-16 w-16 rounded-2xl bg-indigo-100 dark:bg-indigo-500/15 flex items-center justify-center shrink-0 border border-indigo-200 dark:border-indigo-500/30">
+            <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{initials}</span>
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-gray-900 truncate">{fullName || 'Unnamed Contact'}</h1>
-            <div className="flex flex-wrap gap-x-6 gap-y-1 mt-1.5 text-sm text-gray-600">
-              {item.jobTitle && item.company && <p>{item.jobTitle} at <strong className="text-gray-800">{item.company}</strong></p>}
+            <h1 className="text-2xl font-bold text-text-primary truncate">{fullName || 'Unnamed Contact'}</h1>
+            <div className="flex flex-wrap gap-x-6 gap-y-1 mt-1.5 text-sm text-text-muted">
+              {item.jobTitle && item.company && <p>{item.jobTitle} at <strong className="text-text-primary">{item.company}</strong></p>}
               {item.jobTitle && !item.company && <p>{item.jobTitle}</p>}
-              {!item.jobTitle && item.company && <p><strong className="text-gray-800">{item.company}</strong></p>}
+              {!item.jobTitle && item.company && <p><strong className="text-text-primary">{item.company}</strong></p>}
             </div>
-            <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm text-gray-500">
+            <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm text-text-muted">
               {item.email && <p>{item.email}</p>}
               {item.phone && <p>{item.phone}</p>}
             </div>
           </div>
           <div className="shrink-0 flex flex-col items-end gap-2">
             {item.lifecycleStage && (
-              <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${LIFECYCLE_COLORS[item.lifecycleStage] ?? 'bg-slate-100 text-slate-600'}`}>
+              <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${LIFECYCLE_COLORS[item.lifecycleStage] ?? 'bg-black/[0.06] dark:bg-white/[0.08] text-text-muted'}`}>
                 {item.lifecycleStage.replace(/_/g, ' ')}
               </span>
             )}
@@ -111,7 +111,7 @@ export default function ContactViewPage() {
 
       {/* Tabs Layout */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        <div className="w-full md:w-64 bg-white border-r border-gray-200 shrink-0 overflow-y-auto">
+        <div className="w-full md:w-64 bg-surface border-r border-border shrink-0 overflow-y-auto">
           <nav className="p-4 space-y-1">
             {TABS.map((tab) => {
               const Icon = tab.icon;
@@ -121,10 +121,11 @@ export default function ContactViewPage() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all ${
-                    active ? 'bg-brand-50 text-brand-700 shadow-sm' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    active ? 'bg-ryze-600/10 text-ryze-700 dark:text-ryze-400 shadow-sm'
+                      : 'text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] hover:text-text-primary'
                   }`}
                 >
-                  <Icon className={`h-5 w-5 ${active ? 'text-brand-600' : 'text-gray-400'}`} />
+                  <Icon className={`h-5 w-5 ${active ? 'text-ryze-600 dark:text-ryze-400' : 'text-text-muted'}`} />
                   {tab.label}
                 </button>
               );
@@ -135,9 +136,9 @@ export default function ContactViewPage() {
         <div className="flex-1 overflow-y-auto p-6 md:p-8">
           {activeTab === 'overview' && (
             <div className="space-y-6 max-w-4xl">
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-                  <h3 className="text-sm font-semibold text-gray-700">Contact Details</h3>
+              <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-border bg-black/[0.015] dark:bg-white/[0.02]">
+                  <h3 className="text-sm font-semibold text-text-primary">Contact Details</h3>
                 </div>
                 <div className="px-6 py-4">
                   <InfoRow label="First Name" value={item.firstName} />
@@ -154,9 +155,9 @@ export default function ContactViewPage() {
               </div>
 
               {item.customFields && Object.keys(item.customFields).length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-                    <h3 className="text-sm font-semibold text-gray-700">Custom Fields</h3>
+                <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
+                  <div className="px-6 py-4 border-b border-border bg-black/[0.015] dark:bg-white/[0.02]">
+                    <h3 className="text-sm font-semibold text-text-primary">Custom Fields</h3>
                   </div>
                   <div className="px-6 py-4">
                     {Object.entries(item.customFields).map(([k, v]) => (
@@ -170,10 +171,10 @@ export default function ContactViewPage() {
 
           {activeTab === 'deals' && (
             <div className="max-w-4xl">
-              <p className="text-xs text-gray-400 mb-3">
+              <p className="text-xs text-text-muted mb-3">
                 Matched by contact name — Deals don't yet carry a direct link to Contacts, so this list may miss or over-include records with similar names.
               </p>
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col h-[560px] overflow-hidden">
+              <div className="bg-surface rounded-xl border border-border shadow-sm flex flex-col h-[560px] overflow-hidden">
                 <FSTable
                   columns={DEAL_COLS}
                   data={dealsData?.items ?? []}

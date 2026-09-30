@@ -153,30 +153,30 @@ function ColumnPicker({ allCols, visible, onChange, onClose }: PickerProps) {
     <>
       <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-        <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg pointer-events-auto flex flex-col overflow-hidden" style={{ maxHeight: '80vh' }}>
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
-            <h3 className="text-sm font-semibold text-gray-900">Edit Columns</h3>
-            <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors">
+        <div className="bg-surface-elevated rounded-xl shadow-2xl w-full max-w-lg pointer-events-auto flex flex-col overflow-hidden" style={{ maxHeight: '80vh' }}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+            <h3 className="text-sm font-semibold text-text-primary">Edit Columns</h3>
+            <button onClick={onClose} className="p-1.5 rounded-lg text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
               <XMarkIcon className="h-4 w-4" />
             </button>
           </div>
 
           <div className="flex flex-1 overflow-hidden">
             {/* Left — PROPERTIES */}
-            <div className="w-1/2 border-r border-gray-100 flex flex-col">
-              <p className="px-4 py-2.5 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 shrink-0">
+            <div className="w-1/2 border-r border-border flex flex-col">
+              <p className="px-4 py-2.5 text-xs font-semibold text-text-muted uppercase tracking-wider border-b border-border shrink-0">
                 Properties ({allCols.length})
               </p>
               <div className="flex-1 overflow-y-auto py-1">
                 {allCols.map((col) => (
-                  <label key={col.key} className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                  <label key={col.key} className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-colors">
                     <input
                       type="checkbox"
                       checked={draft.includes(col.key)}
                       onChange={() => toggle(col.key)}
-                      className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-400"
+                      className="h-3.5 w-3.5 rounded border-border text-ryze-600 focus:ring-ryze-400"
                     />
-                    <span className="text-xs text-gray-700 truncate">{col.label}</span>
+                    <span className="text-xs text-text-primary truncate">{col.label}</span>
                   </label>
                 ))}
               </div>
@@ -184,12 +184,12 @@ function ColumnPicker({ allCols, visible, onChange, onClose }: PickerProps) {
 
             {/* Right — SELECTED (draggable) */}
             <div className="w-1/2 flex flex-col">
-              <p className="px-4 py-2.5 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 shrink-0 flex items-center justify-between">
+              <p className="px-4 py-2.5 text-xs font-semibold text-text-muted uppercase tracking-wider border-b border-border shrink-0 flex items-center justify-between">
                 <span>Selected Columns</span>
-                <span className="text-brand-600 font-semibold">{draft.length}</span>
+                <span className="text-ryze-600 dark:text-ryze-400 font-semibold">{draft.length}</span>
               </p>
               <div className="flex-1 overflow-y-auto py-1" onDragOver={(e) => e.preventDefault()}>
-                {draft.length === 0 && <p className="px-4 py-3 text-xs text-gray-400">No columns selected</p>}
+                {draft.length === 0 && <p className="px-4 py-3 text-xs text-text-muted">No columns selected</p>}
                 {draft.map((key, i) => {
                   const col = allCols.find((c) => c.key === key);
                   if (!col) return null;
@@ -203,13 +203,13 @@ function ColumnPicker({ allCols, visible, onChange, onClose }: PickerProps) {
                       onDrop={(e) => handleDrop(e, i)}
                       className={[
                         'flex items-center gap-2 px-3 py-2 transition-colors cursor-grab active:cursor-grabbing select-none',
-                        dragOverIdx === i && dragIdx !== i ? 'bg-brand-50 border-t-2 border-brand-400' : 'hover:bg-gray-50',
+                        dragOverIdx === i && dragIdx !== i ? 'bg-ryze-600/10 border-t-2 border-ryze-400' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.05]',
                         dragIdx === i ? 'opacity-40' : '',
                       ].join(' ')}
                     >
-                      <Bars3Icon className="h-3.5 w-3.5 text-gray-300 shrink-0" />
-                      <span className="flex-1 text-xs text-gray-700 truncate">{col.label}</span>
-                      <button type="button" onClick={() => remove(key)} className="text-gray-300 hover:text-red-500 transition-colors shrink-0">
+                      <Bars3Icon className="h-3.5 w-3.5 text-text-muted shrink-0" />
+                      <span className="flex-1 text-xs text-text-primary truncate">{col.label}</span>
+                      <button type="button" onClick={() => remove(key)} className="text-text-muted hover:text-danger-500 transition-colors shrink-0">
                         <XMarkIcon className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -219,15 +219,15 @@ function ColumnPicker({ allCols, visible, onChange, onClose }: PickerProps) {
             </div>
           </div>
 
-          <div className="flex items-center justify-between px-5 py-3 border-t border-gray-200 shrink-0">
-            <button onClick={() => setDraft(allCols.map((c) => c.key))} className="text-xs text-brand-600 hover:underline">
+          <div className="flex items-center justify-between px-5 py-3 border-t border-border shrink-0">
+            <button onClick={() => setDraft(allCols.map((c) => c.key))} className="text-xs text-ryze-600 dark:text-ryze-400 hover:underline">
               Select all
             </button>
             <div className="flex gap-2">
-              <button onClick={onClose} className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+              <button onClick={onClose} className="px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
                 Cancel
               </button>
-              <button onClick={apply} className="px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs font-medium hover:bg-brand-700 transition-colors">
+              <button onClick={apply} className="px-3 py-1.5 rounded-lg bg-ryze-600 text-white text-xs font-medium hover:bg-ryze-700 transition-colors">
                 Apply
               </button>
             </div>
@@ -289,10 +289,10 @@ function ImportModal({ moduleKey, allCols, onClose, onDone }: ImportModalProps) 
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md pointer-events-auto flex flex-col">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-900">Import {toLabel(moduleKey)}</h3>
-            <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors">
+        <div className="bg-surface-elevated rounded-xl shadow-2xl w-full max-w-md pointer-events-auto flex flex-col">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+            <h3 className="text-sm font-semibold text-text-primary">Import {toLabel(moduleKey)}</h3>
+            <button onClick={onClose} className="p-1.5 rounded-lg text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
               <XMarkIcon className="h-4 w-4" />
             </button>
           </div>
@@ -300,40 +300,40 @@ function ImportModal({ moduleKey, allCols, onClose, onDone }: ImportModalProps) 
           <div className="px-5 py-4 space-y-4">
             {status === 'idle' && (
               <>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-text-muted">
                   Upload a CSV or Excel file matching the template format. Each row becomes one record.
                 </p>
                 <div
                   onClick={() => fileRef.current?.click()}
-                  className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-brand-400 hover:bg-brand-50 transition-colors"
+                  className="border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-ryze-400 hover:bg-ryze-600/5 transition-colors"
                 >
-                  <ArrowUpTrayIcon className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-gray-600">Click to select file</p>
-                  <p className="text-xs text-gray-400 mt-0.5">.xlsx or .csv</p>
+                  <ArrowUpTrayIcon className="h-8 w-8 text-text-muted mx-auto mb-2" />
+                  <p className="text-sm font-medium text-text-primary">Click to select file</p>
+                  <p className="text-xs text-text-muted mt-0.5">.xlsx or .csv</p>
                   <input ref={fileRef} type="file" accept=".xlsx,.csv" className="hidden" onChange={handleFile} />
                 </div>
-                {errorMsg && <p className="text-xs text-red-500">{errorMsg}</p>}
+                {errorMsg && <p className="text-xs text-danger-500">{errorMsg}</p>}
               </>
             )}
 
             {status === 'parsed' && (
               <>
-                <div className="bg-green-50 rounded-lg px-4 py-3 text-sm text-green-700">
+                <div className="bg-success-500/10 rounded-lg px-4 py-3 text-sm text-success-700 dark:text-success-500">
                   <span className="font-semibold">{rows.length} rows</span> ready to import
                 </div>
-                <div className="max-h-32 overflow-y-auto border border-gray-100 rounded-lg">
+                <div className="max-h-32 overflow-y-auto border border-border rounded-lg">
                   <table className="w-full text-xs">
                     <tbody>
                       {rows.slice(0, 5).map((r, i) => (
-                        <tr key={i} className="border-b border-gray-50">
+                        <tr key={i} className="border-b border-border">
                           {Object.values(r).slice(0, 3).map((v, j) => (
-                            <td key={j} className="px-3 py-1.5 text-gray-600 truncate max-w-[120px]">{String(v)}</td>
+                            <td key={j} className="px-3 py-1.5 text-text-muted truncate max-w-[120px]">{String(v)}</td>
                           ))}
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  {rows.length > 5 && <p className="px-3 py-1.5 text-xs text-gray-400">+{rows.length - 5} more rows…</p>}
+                  {rows.length > 5 && <p className="px-3 py-1.5 text-xs text-text-muted">+{rows.length - 5} more rows…</p>}
                 </div>
               </>
             )}
@@ -342,22 +342,22 @@ function ImportModal({ moduleKey, allCols, onClose, onDone }: ImportModalProps) 
               <div className="text-center py-6">
                 <div className="flex gap-1.5 justify-center mb-3">
                   {[0,1,2].map((i) => (
-                    <span key={i} className="h-2.5 w-2.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                    <span key={i} className="h-2.5 w-2.5 rounded-full bg-ryze-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
                   ))}
                 </div>
-                <p className="text-sm text-gray-600">Importing {rows.length} records…</p>
+                <p className="text-sm text-text-muted">Importing {rows.length} records…</p>
               </div>
             )}
 
             {status === 'done' && (
               <div className="space-y-2">
                 {results.ok > 0 && (
-                  <div className="bg-green-50 rounded-lg px-4 py-3 text-sm text-green-700">
+                  <div className="bg-success-500/10 rounded-lg px-4 py-3 text-sm text-success-700 dark:text-success-500">
                     ✓ <span className="font-semibold">{results.ok} records</span> imported successfully
                   </div>
                 )}
                 {results.fail > 0 && (
-                  <div className="bg-red-50 rounded-lg px-4 py-3 text-sm text-red-600">
+                  <div className="bg-danger-500/10 rounded-lg px-4 py-3 text-sm text-danger-600 dark:text-danger-500">
                     ✗ <span className="font-semibold">{results.fail} records</span> failed
                   </div>
                 )}
@@ -367,20 +367,20 @@ function ImportModal({ moduleKey, allCols, onClose, onDone }: ImportModalProps) 
 
           <div className="px-5 pb-4 flex gap-2 justify-end">
             {status === 'done' ? (
-              <button onClick={() => { onDone(); onClose(); }} className="px-4 py-2 rounded-lg bg-brand-600 text-white text-xs font-medium hover:bg-brand-700 transition-colors">
+              <button onClick={() => { onDone(); onClose(); }} className="px-4 py-2 rounded-lg bg-ryze-600 text-white text-xs font-medium hover:bg-ryze-700 transition-colors">
                 Done
               </button>
             ) : status === 'parsed' ? (
               <>
-                <button onClick={() => { setRows([]); setStatus('idle'); if (fileRef.current) fileRef.current.value = ''; }} className="px-3 py-2 rounded-lg border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                <button onClick={() => { setRows([]); setStatus('idle'); if (fileRef.current) fileRef.current.value = ''; }} className="px-3 py-2 rounded-lg border border-border text-xs font-medium text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
                   Change file
                 </button>
-                <button onClick={handleImport} className="px-4 py-2 rounded-lg bg-brand-600 text-white text-xs font-medium hover:bg-brand-700 transition-colors">
+                <button onClick={handleImport} className="px-4 py-2 rounded-lg bg-ryze-600 text-white text-xs font-medium hover:bg-ryze-700 transition-colors">
                   Import {rows.length} rows
                 </button>
               </>
             ) : (
-              <button onClick={onClose} className="px-3 py-2 rounded-lg border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+              <button onClick={onClose} className="px-3 py-2 rounded-lg border border-border text-xs font-medium text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
                 Cancel
               </button>
             )}
@@ -581,7 +581,7 @@ export default function FSTable({
       <div className="flex-1 flex items-center justify-center py-20">
         <div className="flex gap-2">
           {[0, 1, 2].map((i) => (
-            <span key={i} className="h-2.5 w-2.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+            <span key={i} className="h-2.5 w-2.5 rounded-full bg-ryze-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
           ))}
         </div>
       </div>
@@ -591,10 +591,10 @@ export default function FSTable({
   /* ── Permission-denied state — never rendered identically to "empty" ──── */
   if (errorStatus === 403) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center py-20 text-gray-400">
-        <LockClosedIcon className="h-12 w-12 mb-3 text-amber-300" />
-        <p className="text-sm font-medium text-gray-600">You don't have permission to view this</p>
-        <p className="text-xs text-gray-400 mt-1">Ask a Tenant Admin to grant access under Settings → Permissions.</p>
+      <div className="flex-1 flex flex-col items-center justify-center py-20 text-text-muted">
+        <LockClosedIcon className="h-12 w-12 mb-3 text-amber-400" />
+        <p className="text-sm font-medium text-text-primary">You don't have permission to view this</p>
+        <p className="text-xs text-text-muted mt-1">Ask a Tenant Admin to grant access under Settings → Permissions.</p>
       </div>
     );
   }
@@ -613,11 +613,11 @@ export default function FSTable({
       {/* Column picker */}
       <button
         onClick={() => setPickerOpen(true)}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
       >
         <AdjustmentsHorizontalIcon className="h-3.5 w-3.5" />
         Edit columns
-        <span className="ml-0.5 text-brand-600 font-semibold">({safeVisible.length})</span>
+        <span className="ml-0.5 text-ryze-600 dark:text-ryze-400 font-semibold">({safeVisible.length})</span>
       </button>
     </div>
   ) : null;
@@ -627,8 +627,8 @@ export default function FSTable({
     return (
       <div className="flex-1 flex flex-col">
         {Toolbar}
-        <div className="flex-1 flex flex-col items-center justify-center py-20 text-gray-400">
-          <EmptyIcon className="h-12 w-12 mb-3 text-gray-300" />
+        <div className="flex-1 flex flex-col items-center justify-center py-20 text-text-muted">
+          <EmptyIcon className="h-12 w-12 mb-3 text-text-muted/70" />
           <p className="text-sm font-medium">{emptyLabel}</p>
         </div>
         {pickerOpen && <ColumnPicker allCols={allTableCols} visible={safeVisible} onChange={saveVisible} onClose={() => setPickerOpen(false)} />}
@@ -643,51 +643,51 @@ export default function FSTable({
 
       <div className="flex-1 overflow-auto">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
+          <thead className="sticky top-0 bg-background border-b border-border z-10">
             <tr>
               {/* S.No. — always first, never in picker */}
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-14">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider w-14">
                 S.No.
               </th>
               {orderedVisible.map((col) => (
-                <th key={col.key} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                <th key={col.key} className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">
                   {col.label}
                 </th>
               ))}
-              <th className="sticky right-0 z-20 px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+              <th className="sticky right-0 z-20 px-4 py-3 text-right text-xs font-semibold text-text-muted uppercase tracking-wider bg-background shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 bg-white">
+          <tbody className="divide-y divide-border bg-surface">
             {data.map((row, idx) => (
               <tr
                 key={row._id ?? idx}
-                className={`group hover:bg-gray-50 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+                className={`group hover:bg-black/[0.02] dark:hover:bg-white/[0.03] transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
               >
                 {/* S.No. cell */}
-                <td className="px-4 py-3 text-xs text-gray-400 tabular-nums font-medium whitespace-nowrap">
+                <td className="px-4 py-3 text-xs text-text-muted tabular-nums font-medium whitespace-nowrap">
                   {row.isLocked && (
                     <span className="inline-block mr-1 text-amber-500" title="Record locked">&#128274;</span>
                   )}
                   {(page - 1) * limit + idx + 1}
                 </td>
                 {orderedVisible.map((col) => (
-                  <td key={col.key} className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                  <td key={col.key} className="px-4 py-3 text-text-primary whitespace-nowrap">
                     {col.render ? col.render(row) : (row[col.key] ?? '—')}
                   </td>
                 ))}
                 <td
-                  className="sticky right-0 z-10 px-4 py-3 text-right bg-white group-hover:bg-gray-50 transition-colors shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]"
+                  className="sticky right-0 z-10 px-4 py-3 text-right bg-surface group-hover:bg-black/[0.02] dark:group-hover:bg-white/[0.03] transition-colors shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-center justify-end gap-1">
                     {extraRowActions?.(row)}
-                    <button onClick={(e) => { e.stopPropagation(); onEdit(row); }} title="Edit" className="p-1.5 rounded-lg text-gray-400 hover:text-brand-600 hover:bg-brand-50 transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); onEdit(row); }} title="Edit" className="p-1.5 rounded-lg text-text-muted hover:text-ryze-600 dark:hover:text-ryze-400 hover:bg-ryze-600/10 transition-colors">
                       <PencilSquareIcon className="h-4 w-4" />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); onDelete(row); }} title="Delete" className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); onDelete(row); }} title="Delete" className="p-1.5 rounded-lg text-text-muted hover:text-danger-600 dark:hover:text-danger-500 hover:bg-danger-500/10 transition-colors">
                       <TrashIcon className="h-4 w-4" />
                     </button>
                   </div>
@@ -699,19 +699,19 @@ export default function FSTable({
       </div>
 
       {/* Pagination footer */}
-      <div className="border-t border-gray-200 px-6 py-3 flex items-center justify-between bg-white shrink-0">
-        <p className="text-xs text-gray-500">
+      <div className="border-t border-border px-6 py-3 flex items-center justify-between bg-surface shrink-0">
+        <p className="text-xs text-text-muted">
           {total > 0 ? (
-            <>Page <span className="font-medium text-gray-700">{page}</span> of <span className="font-medium text-gray-700">{totalPages}</span> &middot; <span className="font-medium text-gray-700">{total}</span> total</>
+            <>Page <span className="font-medium text-text-primary">{page}</span> of <span className="font-medium text-text-primary">{totalPages}</span> &middot; <span className="font-medium text-text-primary">{total}</span> total</>
           ) : (
-            <><span className="font-medium text-gray-700">{data.length}</span> record{data.length !== 1 ? 's' : ''}</>
+            <><span className="font-medium text-text-primary">{data.length}</span> record{data.length !== 1 ? 's' : ''}</>
           )}
         </p>
         <div className="flex gap-2">
-          <button onClick={() => onPageChange(page - 1)} disabled={page <= 1} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+          <button onClick={() => onPageChange(page - 1)} disabled={page <= 1} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-border text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
             Previous
           </button>
-          <button onClick={() => onPageChange(page + 1)} disabled={page >= totalPages} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+          <button onClick={() => onPageChange(page + 1)} disabled={page >= totalPages} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-border text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
             Next
           </button>
         </div>
@@ -746,7 +746,7 @@ function FileActionsDropdown({ onExportExcel, onExportCsv, onTemplate, onImport 
   const item = (label: string, icon: React.ReactNode, onClick: () => void) => (
     <button
       onClick={() => { onClick(); setOpen(false); }}
-      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors text-left"
+      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors text-left"
     >
       {icon}
       {label}
@@ -757,7 +757,7 @@ function FileActionsDropdown({ onExportExcel, onExportCsv, onTemplate, onImport 
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
       >
         <ArrowDownTrayIcon className="h-3.5 w-3.5" />
         File
@@ -767,19 +767,19 @@ function FileActionsDropdown({ onExportExcel, onExportCsv, onTemplate, onImport 
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-20 overflow-hidden py-1">
+        <div className="absolute right-0 top-full mt-1 w-48 bg-surface-elevated rounded-xl shadow-lg border border-border z-20 overflow-hidden py-1">
           {/* Export section */}
-          <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Export</p>
-          {item('Excel (.xlsx)', <ArrowDownTrayIcon className="h-3.5 w-3.5 text-green-600" />, onExportExcel)}
+          <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-text-muted uppercase tracking-wider">Export</p>
+          {item('Excel (.xlsx)', <ArrowDownTrayIcon className="h-3.5 w-3.5 text-success-600 dark:text-success-500" />, onExportExcel)}
           {item('CSV (.csv)',    <ArrowDownTrayIcon className="h-3.5 w-3.5 text-blue-500" />,  onExportCsv)}
 
           {/* Divider */}
-          <div className="border-t border-gray-100 my-1" />
+          <div className="border-t border-border my-1" />
 
           {/* Import section */}
-          <p className="px-3 pt-1 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Import</p>
-          {item('Download Template', <DocumentArrowDownIcon className="h-3.5 w-3.5 text-gray-500" />, onTemplate)}
-          {item('Import from File',  <ArrowUpTrayIcon      className="h-3.5 w-3.5 text-brand-500" />, onImport)}
+          <p className="px-3 pt-1 pb-1 text-[10px] font-semibold text-text-muted uppercase tracking-wider">Import</p>
+          {item('Download Template', <DocumentArrowDownIcon className="h-3.5 w-3.5 text-text-muted" />, onTemplate)}
+          {item('Import from File',  <ArrowUpTrayIcon      className="h-3.5 w-3.5 text-ryze-500" />, onImport)}
         </div>
       )}
     </div>
