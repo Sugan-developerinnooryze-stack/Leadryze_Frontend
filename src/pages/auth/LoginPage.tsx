@@ -15,7 +15,7 @@ const INP =
   'focus:border-ryze-500 focus:shadow-[0_0_0_3px_rgba(0,158,181,0.12)]';
 
 export default function LoginPage() {
-  const { handleClientIdLogin, isLoading } = useAuth();
+  const { handleLogin, handleClientIdLogin, isLoading } = useAuth();
   const [clientId, setClientId] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd]   = useState(false);
@@ -24,7 +24,18 @@ export default function LoginPage() {
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    handleClientIdLogin(clientId, password);
+    // This one field doubles as either a Login ID (always uppercase hex,
+    // e.g. ADFE7895 or ADFE7895-U001 — see auth.service.ts's
+    // loginUserByClientId(), which uppercases and only ever matches
+    // Tenant.clientId/User.loginId, never an email) or a real email
+    // address. Route to the matching backend path instead of always
+    // going through the Client-ID-only lookup, which could never
+    // succeed for an email no matter how it was cased.
+    if (clientId.includes('@')) {
+      handleLogin(clientId, password);
+    } else {
+      handleClientIdLogin(clientId, password);
+    }
   };
 
   return (
@@ -73,7 +84,16 @@ export default function LoginPage() {
                   className={INP}
                   placeholder="Enter your login ID or email"
                   value={clientId}
-                  onChange={(e) => setClientId(e.target.value.toUpperCase())}
+                  // No case transformation while typing — this used to force
+                  // .toUpperCase() on every keystroke, which mangled an email
+                  // address as soon as its first letter went in (before "@"
+                  // even appeared, so it couldn't be detected and skipped)
+                  // and broke browser autofill matching in the process. It
+                  // was also redundant for a real Login ID: the backend's
+                  // loginUserByClientId() already does .trim().toUpperCase()
+                  // itself, so a lowercase-typed Login ID authenticates fine
+                  // either way.
+                  onChange={(e) => setClientId(e.target.value)}
                 />
               </div>
             </div>
