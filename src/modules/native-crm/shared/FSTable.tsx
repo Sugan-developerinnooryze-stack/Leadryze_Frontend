@@ -409,18 +409,31 @@ interface FSTableProps {
   moduleKey?:       string;
   onRefresh?:       () => void;
   extraRowActions?: (row: any) => React.ReactNode;
+  /** Rendered in the same right-aligned toolbar row as File/Edit columns,
+   * just to their left — e.g. a date-range filter. Only shown when a caller
+   * actually passes one; most FSTable pages don't. */
+  extraToolbar?:    React.ReactNode;
   /** HTTP status of the list query's own error, if any (e.g. 403) — lets the
    * table distinguish "you don't have permission" from "genuinely empty,"
    * which otherwise render identically and hide real permission problems
    * (a role with a stale/missing permission grant looks indistinguishable
    * from "no records yet" with no way to tell which one it actually is). */
   errorStatus?:     number;
+  /** LR-UX-004: a 403 means either "you lack the RBAC permission" or "this
+   * module isn't enabled for your plan" — two different problems with two
+   * different fixes, previously shown as the identical generic permission
+   * message even to a Tenant Admin, who can't grant themselves a
+   * permission they're missing because the real cause is a disabled
+   * module. Pass the server's own error message (it already distinguishes
+   * the two) through; falls back to the old generic text if omitted, so
+   * every existing caller that doesn't pass this is unaffected. */
+  errorMessage?:    string;
 }
 
 export default function FSTable({
   columns, data, loading, total, page, limit = 20, totalPages,
   onPageChange, onEdit, onDelete, emptyIcon: EmptyIcon, emptyLabel, onRowClick,
-  moduleKey, onRefresh, extraRowActions, errorStatus,
+  moduleKey, onRefresh, extraRowActions, errorStatus, errorMessage, extraToolbar,
 }: FSTableProps) {
   const storageKey = moduleKey ? `fs-cols-${moduleKey}` : null;
   const branches = useBranchStore((s) => s.branches);
@@ -468,7 +481,17 @@ export default function FSTable({
   }, [moduleKey]);
 
   useEffect(() => {
-    if (!seenKey) { seenRef.current = new Set(); return; }
+    // LR-UI-001: no moduleKey means nothing persists across mounts (an
+    // embedded related-list table, e.g. Company's Contacts/Deals tabs) — but
+    // seeding this as an EMPTY Set meant the very next effect below treated
+    // every raw auto-derived field (branchId, isLocked, clientId, ...) as
+    // "newly discovered" on every single mount and force-added all of them,
+    // silently defeating the caller's own curated `columns` prop. Seed with
+    // the curated set instead, so only genuinely new fields (added to the
+    // API response after this component was built) would ever auto-append —
+    // and since there's no persistence here, that's a no-op difference from
+    // moduleKey-backed tables' own first-run behavior just above.
+    if (!seenKey) { seenRef.current = new Set(columns.map((c) => c.key)); return; }
     try {
       const s = localStorage.getItem(seenKey);
       if (s) {
@@ -593,8 +616,12 @@ export default function FSTable({
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-20 text-text-muted">
         <LockClosedIcon className="h-12 w-12 mb-3 text-amber-400" />
-        <p className="text-sm font-medium text-text-primary">You don't have permission to view this</p>
-        <p className="text-xs text-text-muted mt-1">Ask a Tenant Admin to grant access under Settings → Permissions.</p>
+        <p className="text-sm font-medium text-text-primary">
+          {errorMessage && errorMessage.toLowerCase().includes('not enabled') ? "This module isn't available" : "You don't have permission to view this"}
+        </p>
+        <p className="text-xs text-text-muted mt-1">
+          {errorMessage ?? 'Ask a Tenant Admin to grant access under Settings → Permissions.'}
+        </p>
       </div>
     );
   }
@@ -602,6 +629,8 @@ export default function FSTable({
   /* ── Toolbar (shared between empty + data states) ────────────────────── */
   const Toolbar = moduleKey ? (
     <div className="flex items-center justify-end px-4 pt-2 pb-1 shrink-0 gap-2">
+      {extraToolbar}
+
       {/* File actions dropdown (Export / Template / Import) */}
       <FileActionsDropdown
         onExportExcel={() => handleExport('excel')}

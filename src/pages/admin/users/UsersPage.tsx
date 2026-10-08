@@ -11,16 +11,19 @@ import AddUserModal from './AddUserModal';
 
 interface AdminUserRow {
   _id: string; firstName: string; lastName: string; email: string; role: string;
-  emailVerified: boolean; createdAt: string;
+  emailVerified: boolean; createdAt: string; isActive?: boolean;
   tenantId?: { name: string; slug: string; plan: string; isActive: boolean; clientId?: string };
   // This user's own login identifier — the tenant's Client ID for a Tenant
   // Admin, or ClientID-U001 style for anyone else. Distinct per person,
   // unlike tenantId.clientId above which is the same for everyone at a
   // company.
   loginId?: string;
-  // Present only when a Super Admin issued/regenerated this credential —
-  // never for a self-chosen password.
+  // Only ever populated client-side, right after this admin sets/resets it
+  // in this same session (the one-time reveal) — the server never returns
+  // a stored password (LR-SEC-001). Gone again on the next page load.
   password?: string | null;
+  // True while an admin-issued password hasn't been changed by the user yet.
+  mustChangePassword?: boolean;
 }
 
 export default function UsersPage() {
@@ -96,7 +99,8 @@ export default function UsersPage() {
     }
   };
 
-  const filtered = users.filter((u) => `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(search.toLowerCase()));
+  // LR-ADMIN-005: search didn't match a user's Login ID at all.
+  const filtered = users.filter((u) => `${u.firstName} ${u.lastName} ${u.email} ${u.loginId ?? ''}`.toLowerCase().includes(search.toLowerCase()));
 
   if (loading) return <AdminLoadingState label="Loading users…" />;
   if (error) return <AdminErrorState description="Couldn't load the platform user list." onRetry={load} />;
@@ -131,7 +135,7 @@ export default function UsersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-black/[0.015] dark:bg-white/[0.02] border-b border-border text-text-muted text-xs uppercase tracking-wider">
-                {['User', 'Company', 'Password', 'Role', 'Verified', 'Joined', 'Actions'].map((h) => (
+                {['User', 'Company', 'Password', 'Role', 'Status', 'Verified', 'Joined', 'Actions'].map((h) => (
                   <th key={h} className="px-4 py-3 text-left font-semibold">{h}</th>
                 ))}
               </tr>
@@ -170,10 +174,17 @@ export default function UsersPage() {
                   <td className="px-4 py-3">
                     {u.password
                       ? <div className="flex items-center gap-1"><p className="text-xs text-text-primary font-mono">{u.password}</p><CopyIconButton value={u.password} /></div>
-                      : <span className="text-xs italic text-text-muted/60">self-changed</span>}
+                      : u.mustChangePassword
+                        ? <span className="text-xs italic text-text-muted/60">not yet changed</span>
+                        : <span className="text-xs italic text-text-muted/60">self-changed</span>}
                   </td>
                   <td className="px-4 py-3">
                     <span className="text-xs bg-black/[0.04] dark:bg-white/[0.06] border border-border text-text-muted px-2 py-0.5 rounded-full">{u.role.replace('_', ' ')}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {u.isActive !== false
+                      ? <span className="text-xs text-success-700 dark:text-success-500">Active</span>
+                      : <span className="text-xs text-danger-700 dark:text-danger-500">Deactivated</span>}
                   </td>
                   <td className="px-4 py-3">
                     {u.emailVerified

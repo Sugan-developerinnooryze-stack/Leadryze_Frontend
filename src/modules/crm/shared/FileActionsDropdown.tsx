@@ -27,12 +27,32 @@ function toLabel(key: string): string {
     .trim();
 }
 
-export function fmtVal(v: unknown, type: FieldConfig['type']): string {
+// LR-UI-003: a 'staffSelect' field stores the staff's business-id
+// ("4066EA51-ST-0002"), not their name — this used to render that raw id
+// verbatim. staffNameMap/userNameMap/companyNameMap are all optional so
+// every other caller (and every other field type) is completely unaffected.
+export function fmtVal(
+  v: unknown, type: FieldConfig['type'],
+  staffNameMap?: Map<string, string>, userNameMap?: Map<string, string>, companyNameMap?: Map<string, string>,
+): string {
   if (v === null || v === undefined || v === '') return '—';
   const s = String(v);
+  if (type === 'staffSelect' && staffNameMap) return staffNameMap.get(s) ?? s;
+  if (type === 'userSelect' && userNameMap) return userNameMap.get(s) ?? s;
+  if (type === 'companySelect' && companyNameMap) return companyNameMap.get(s) ?? s;
   if (type === 'date' && s.includes('T')) return s.slice(0, 10);
   if (type === 'datetime' && s.includes('T')) return s.slice(0, 16).replace('T', ' ');
   if (type === 'currency') return `$${Number(s).toLocaleString()}`;
+  // LR-UI-005: a 'select'/'categorySelect' field's raw stored value is a
+  // snake_case/camelCase code (e.g. "closed_won", "in_progress") — shown
+  // here verbatim before this, since no FieldConfig carries a separate
+  // display label for its own options list (just string[] of the same
+  // codes). Humanize for readability, same safe transform already used by
+  // RecordTimeline.tsx's MetadataChips for the identical kind of raw value.
+  if (type === 'select' || type === 'categorySelect') {
+    const spaced = s.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
+    return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
+  }
   return s;
 }
 
@@ -43,6 +63,28 @@ export function getCellValue(row: CrmRecord, col: FieldConfig): string {
     return String(cfs?.[subKey] ?? '');
   }
   return fmtVal(row[col.key], col.type);
+}
+
+/** LR-REPORT-001: exportExcel()/exportCsvFn() below used to reuse
+ * getCellValue()/fmtVal() — meant for on-screen display — which baked a "$"
+ * into every currency cell (breaking SUM in the exported file and any
+ * re-import) and wrote "—" for a blank cell (not a parseable empty value).
+ * This is the same data, formatted for a file instead of a screen: plain
+ * numbers, and a truly empty string for "no value". */
+function getExportValue(row: CrmRecord, col: FieldConfig): string {
+  let v: unknown;
+  if (col.key.startsWith('cf__')) {
+    const cfs = row.customFields as Record<string, unknown> | undefined;
+    v = cfs?.[col.key.slice(4)];
+  } else {
+    v = row[col.key];
+  }
+  if (v === null || v === undefined || v === '') return '';
+  if (col.type === 'currency') return String(Number(v));
+  const s = String(v);
+  if (col.type === 'date' && s.includes('T')) return s.slice(0, 10);
+  if (col.type === 'datetime' && s.includes('T')) return s.slice(0, 16).replace('T', ' ');
+  return s;
 }
 
 /** Merges a module's declared fields with whatever extra keys show up on
@@ -218,7 +260,7 @@ export default function FileActionsDropdown({
     const headers = ['S.No.', ...tableCols.map((c) => c.label)];
     const data = rows.map((r, i) => [
       (page - 1) * limit + i + 1,
-      ...tableCols.map((c) => getCellValue(r, c)),
+      ...tableCols.map((c) => getExportValue(r, c)),
     ]);
     const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
     const wb = XLSX.utils.book_new();
@@ -233,7 +275,7 @@ export default function FileActionsDropdown({
       ['S.No.', ...tableCols.map((c) => c.label)].join(','),
       ...rows.map((r, i) => [
         (page - 1) * limit + i + 1,
-        ...tableCols.map((c) => esc(getCellValue(r, c))),
+        ...tableCols.map((c) => esc(getExportValue(r, c))),
       ].join(',')),
     ];
     const a = document.createElement('a');

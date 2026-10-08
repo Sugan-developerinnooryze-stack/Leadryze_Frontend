@@ -125,6 +125,7 @@ export default function VehiclesPage() {
         data={items}
         loading={isLoading}
         errorStatus={(error as any)?.response?.status}
+        errorMessage={(error as any)?.response?.data?.message}
         total={meta.total}
         page={meta.page}
         totalPages={meta.totalPages}

@@ -157,7 +157,7 @@ export default function LogsPage() {
         <div>
           <h1 className="text-2xl font-bold text-text-primary">Activity Logs</h1>
           <p className="text-sm text-text-muted mt-0.5">
-            Every CRM change, sync, and AI event — with full detail
+            AI agent activity and CRM sync events — with full detail. For CRM record changes (Create/Update/Delete), see Native Logs.
           </p>
         </div>
         <button onClick={fetchLogs}

@@ -28,8 +28,37 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'controls',   label: 'Controls' },
 ];
 
-function AiUsageTab({ tenantId }: { tenantId: string }) {
-  const { data: usage, isLoading, isError } = useTenantAiUsageQuery(tenantId);
+/** Only Super Admin can set a tenant's AI budget — see tenant.service.ts's
+ * updateTenant() allow-list, which deliberately excludes these 4 fields from
+ * the TENANT_ADMIN-reachable PUT /tenants/:id so a tenant can't raise its
+ * own limit. This tab is the one place that write actually happens now
+ * (PUT /admin/tenants/:id/ai-config); the tenant's own Widget Settings page
+ * only displays these numbers read-only. Blank input = no override, use the
+ * plan default (Platform Defaults → Plan Defaults, editable there). */
+function AiUsageTab({ tenantId, tenantName }: { tenantId: string; tenantName: string }) {
+  const { data: usage, isLoading, isError, refetch } = useTenantAiUsageQuery(tenantId);
+  const [hydrated, setHydrated]   = useState(false);
+  const [tokenLimit, setTokenLimit]     = useState('');
+  const [voiceLimit, setVoiceLimit]     = useState('');
+  const [warningPct, setWarningPct]     = useState('80');
+  const [criticalPct, setCriticalPct]   = useState('95');
+  const [saving, setSaving] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
+  // Hydrate the edit form once, from the first successful load — not on
+  // every 60s poll tick (useTenantAiUsageQuery refetches live usage in the
+  // background), so an admin mid-edit never has their in-progress changes
+  // silently overwritten.
+  useEffect(() => {
+    if (usage && !hydrated) {
+      setTokenLimit(usage.customTokenLimit != null ? String(usage.customTokenLimit) : '');
+      setVoiceLimit(usage.customVoiceMinutesLimit != null ? String(usage.customVoiceMinutesLimit) : '');
+      setWarningPct(String(usage.warningThresholdPercent));
+      setCriticalPct(String(usage.criticalThresholdPercent));
+      setHydrated(true);
+    }
+  }, [usage, hydrated]);
 
   if (isLoading) return <AdminLoadingState label="Loading AI usage…" />;
   if (isError || !usage) return <AdminErrorState description="Couldn't load this tenant's AI usage." />;
@@ -40,15 +69,55 @@ function AiUsageTab({ tenantId }: { tenantId: string }) {
   const statusCls = usage.status === 'exceeded' || usage.status === 'critical' ? 'bg-danger-500/10 text-danger-700 dark:text-danger-500 border-danger-500/20'
     : usage.status === 'warning' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/20' : 'bg-success-500/10 text-success-700 dark:text-success-500 border-success-500/20';
 
+  const handleSave = async () => {
+    const warning = Number(warningPct);
+    const critical = Number(criticalPct);
+    if (!Number.isFinite(warning) || warning < 1 || warning > 100 || !Number.isFinite(critical) || critical < 1 || critical > 100) {
+      toast.error('Thresholds must be between 1 and 100'); return;
+    }
+    if (warning >= critical) {
+      toast.error('Warning threshold must be lower than critical threshold'); return;
+    }
+    setSaving(true);
+    try {
+      await authService.adminUpdateTenantAiConfig(tenantId, {
+        monthlyTokenLimit: tokenLimit.trim() ? Number(tokenLimit) : null,
+        monthlyVoiceMinutesLimit: voiceLimit.trim() ? Number(voiceLimit) : null,
+        tokenWarningThresholdPercent: warning,
+        tokenCriticalThresholdPercent: critical,
+      });
+      toast.success(`AI usage limits saved for ${tenantName}`);
+      await refetch();
+    } catch {
+      toast.error('Failed to save AI usage limits');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleReset = async () => {
+    setResetting(true);
+    try {
+      await authService.adminUpdateTenantAiConfig(tenantId, { resetUsageCounter: true });
+      toast.success(`Usage counter reset for ${tenantName} — full balance available again`);
+      setShowResetConfirm(false);
+      await refetch();
+    } catch {
+      toast.error('Failed to reset usage counter');
+    } finally {
+      setResetting(false);
+    }
+  };
+
   return (
     <AdminCard>
       <AdminCardHeader
         icon={ChartBarIcon}
-        title="AI Token Usage — This Month"
+        title="AI Token Usage — Prepaid Credits"
         description={`Plan default: ${usage.planDefaultTokenLimit.toLocaleString()} tokens (${usage.plan})`}
         right={<span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${statusCls}`}>{statusLabel}</span>}
       />
-      <div className="p-6 space-y-4">
+      <div className="p-6 space-y-5">
         <div>
           <div className="flex items-baseline justify-between mb-1.5">
             <span className="text-sm text-text-muted">{usage.tokensUsedThisMonth.toLocaleString()} / {usage.monthlyTokenLimit.toLocaleString()} tokens</span>
@@ -57,9 +126,21 @@ function AiUsageTab({ tenantId }: { tenantId: string }) {
           <div className="w-full h-2 rounded-full bg-black/[0.06] dark:bg-white/[0.08] overflow-hidden">
             <div className={`h-full rounded-full ${statusTone}`} style={{ width: `${Math.min(100, usage.percentUsed)}%` }} />
           </div>
-          <p className="text-xs text-text-muted mt-1.5">
-            {usage.tokensRemaining.toLocaleString()} tokens remaining this month
-            {usage.customTokenLimit != null ? ' · custom limit set' : ' · using plan default'}
+          <div className="flex items-center justify-between mt-1.5">
+            <p className="text-xs text-text-muted">
+              {usage.tokensRemaining.toLocaleString()} tokens remaining
+              {usage.customTokenLimit != null ? ' · custom limit set' : ' · using plan default'}
+              {' · '}granted {new Date(usage.creditsLastResetAt).toLocaleDateString()}
+            </p>
+            <button
+              onClick={() => setShowResetConfirm(true)}
+              className="text-xs font-medium text-ryze-600 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300 shrink-0"
+            >
+              Grant more credits
+            </button>
+          </div>
+          <p className="text-xs text-text-muted mt-1">
+            This is a prepaid balance, not a monthly subscription — it does not refill on its own. It only resets when you grant more credits here.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
@@ -72,10 +153,68 @@ function AiUsageTab({ tenantId }: { tenantId: string }) {
             <p className="text-sm font-semibold text-text-primary mt-0.5">{usage.warningThresholdPercent}% / {usage.criticalThresholdPercent}%</p>
           </div>
         </div>
-        <Link to={`/admin/tenants/${tenantId}?tab=controls`} className="text-xs font-medium text-ryze-600 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300">
-          To change the token limit or thresholds, use this tenant's own Widget Settings → AI Usage & Limits page.
-        </Link>
+
+        <div className="pt-4 border-t border-border">
+          <p className="text-xs font-semibold text-text-primary uppercase tracking-wide mb-3">Set this tenant's limits</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1">Monthly Token Limit</label>
+              <input
+                type="number" min={0} value={tokenLimit} onChange={(e) => setTokenLimit(e.target.value)}
+                placeholder={`Blank = plan default (${usage.planDefaultTokenLimit.toLocaleString()})`}
+                className="w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1">Monthly Voice Minutes Limit</label>
+              <input
+                type="number" min={0} value={voiceLimit} onChange={(e) => setVoiceLimit(e.target.value)}
+                placeholder={`Blank = plan default (${usage.planDefaultVoiceMinutesLimit})`}
+                className="w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1">Warning Threshold %</label>
+              <input
+                type="number" min={1} max={100} value={warningPct} onChange={(e) => setWarningPct(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1">Critical Threshold %</label>
+              <input
+                type="number" min={1} max={100} value={criticalPct} onChange={(e) => setCriticalPct(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400"
+              />
+            </div>
+          </div>
+          <button
+            onClick={handleSave} disabled={saving}
+            className="mt-4 px-4 py-2 rounded-lg bg-ryze-600 hover:bg-ryze-700 text-white text-sm font-medium disabled:opacity-50 transition-colors"
+          >
+            {saving ? 'Saving…' : 'Save Changes'}
+          </button>
+          <p className="text-xs text-text-muted mt-2">
+            Per-plan defaults (used when a field above is left blank) are editable in{' '}
+            <Link to="/admin/platform-defaults" className="font-medium text-ryze-600 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300">Platform Defaults</Link>.
+          </p>
+        </div>
       </div>
+
+      <ConfirmDangerousAction
+        open={showResetConfirm}
+        title={`Grant more credits to ${tenantName}?`}
+        consequences={[
+          `Their usage counter goes back to 0 / ${usage.monthlyTokenLimit.toLocaleString()} tokens immediately.`,
+          'This does not change their token or voice-minute limit — only use this if they\'ve actually run out and need a fresh balance.',
+          'To also change their limit, set it in the fields above first, then grant credits.',
+        ]}
+        confirmWord={tenantName}
+        confirmLabel="Grant Credits"
+        loading={resetting}
+        onCancel={() => setShowResetConfirm(false)}
+        onConfirm={handleReset}
+      />
     </AdminCard>
   );
 }
@@ -283,7 +422,11 @@ export default function TenantDetailPage() {
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <p className="text-xs text-text-muted font-mono">
-                          Password: {u.password ?? <span className="italic text-text-muted/60">self-changed, not available</span>}
+                          Password: {u.password ?? (
+                            <span className="italic text-text-muted/60">
+                              {u.mustChangePassword ? 'not yet changed' : 'self-changed'}
+                            </span>
+                          )}
                         </p>
                         {u.password && <CopyIconButton value={u.password} />}
                       </div>
@@ -356,7 +499,7 @@ export default function TenantDetailPage() {
         </AdminCard>
       )}
 
-      {tab === 'ai-usage' && <AiUsageTab tenantId={id} />}
+      {tab === 'ai-usage' && <AiUsageTab tenantId={id} tenantName={tenant.name} />}
 
       {tab === 'campaigns' && (
         <AdminCard>

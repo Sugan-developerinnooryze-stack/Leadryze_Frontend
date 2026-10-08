@@ -1,4 +1,5 @@
 import { useEffect, useState, FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth.store';
@@ -18,14 +19,18 @@ interface Campaign {
 
 const STATUS_BADGE: Record<string, string> = {
   draft: 'badge-gray',
-  active: 'badge-green',
+  scheduled: 'badge-blue',
+  running: 'badge-green',
   paused: 'badge-yellow',
   completed: 'badge-blue',
+  cancelled: 'badge-gray',
+  failed: 'badge-red',
 };
 
-const EMPTY = { name: '', type: 'broadcast', channel: 'whatsapp', description: '' };
+const EMPTY = { name: '', type: 'broadcast', channel: 'email' };
 
 export default function CampaignsPage() {
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,18 +53,17 @@ export default function CampaignsPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.post('/api/v1/campaigns', {
+      const res = await api.post('/api/v1/campaigns', {
         name: form.name,
         type: form.type,
         channel: form.channel,
-        description: form.description,
-        status: 'draft',
-        stats: { sent: 0, delivered: 0, replied: 0, converted: 0 },
       });
       toast.success('Campaign created!');
       setShowModal(false);
       setForm(EMPTY);
-      fetchCampaigns();
+      const created = res.data?.data;
+      if (created?._id) navigate(`/campaigns/${created._id}`);
+      else fetchCampaigns();
     } catch {
       toast.error('Failed to create campaign');
     } finally {
@@ -93,7 +97,7 @@ export default function CampaignsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {campaigns.map((c) => (
-            <div key={c._id} className="card hover:shadow-md transition-shadow cursor-pointer">
+            <div key={c._id} className="card hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/campaigns/${c._id}`)}>
               <div className="flex items-start justify-between mb-3">
                 <h3 className="font-semibold text-text-primary truncate">{c.name}</h3>
                 <span className={`ml-2 shrink-0 badge ${STATUS_BADGE[c.status] || 'badge-gray'} capitalize`}>
@@ -139,19 +143,14 @@ export default function CampaignsPage() {
             <div>
               <label className="label">Channel</label>
               <select className="input" value={form.channel} onChange={f('channel')}>
-                <option value="whatsapp">WhatsApp</option>
-                <option value="email">Email</option>
-                <option value="sms">SMS</option>
-                <option value="instagram">Instagram</option>
+                <option value="email">Email — fully supported</option>
+                <option value="sms">SMS — supported if Twilio is configured</option>
+                <option value="whatsapp">WhatsApp — development / limited-window only</option>
               </select>
             </div>
           </div>
-          <div>
-            <label className="label">Description <span className="text-text-muted font-normal">(optional)</span></label>
-            <textarea className="input" rows={3} placeholder="What is this campaign about?" value={form.description} onChange={f('description')} />
-          </div>
           <div className="bg-blue-50 rounded-xl p-4 text-sm text-blue-700">
-            Campaign will be saved as <strong>Draft</strong>. You can activate it after adding a message template.
+            Campaign will be saved as <strong>Draft</strong>. You'll set up its audience, message template and schedule next.
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" className="btn-secondary" onClick={() => { setShowModal(false); setForm(EMPTY); }}>Cancel</button>

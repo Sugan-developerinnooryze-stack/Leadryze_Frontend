@@ -171,7 +171,13 @@ export default function ChatWidget() {
       {/* ── Open panel ── */}
       {open && (
         <div
-          className={`fixed bottom-24 right-6 z-50 flex flex-col transition-all duration-300 print:hidden ${
+          /* LR-UI-007: was z-50, the same layer every drawer/modal in the
+             app uses — ties resolve by DOM order, and this widget (mounted
+             at the Layout level, rendered after page content) was winning,
+             covering Save/Create buttons at the bottom of open drawers.
+             z-40 keeps it above normal page content but below any real
+             modal/drawer, where it belongs. */
+          className={`fixed bottom-24 right-6 z-40 flex flex-col transition-all duration-300 print:hidden ${
             minimised ? 'h-14' : 'h-[580px]'
           }`}
           style={{ width: 420 }}
@@ -347,7 +353,8 @@ export default function ChatWidget() {
       <button
         onClick={() => { setOpen((v) => !v); setMin(false); setPulse(false); }}
         aria-label="Open AI assistant"
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 active:scale-90 hover:scale-105 print:hidden"
+        // LR-UI-007: see the open-panel comment above — same fix.
+        className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 active:scale-90 hover:scale-105 print:hidden"
         style={{ background: 'linear-gradient(135deg, rgb(var(--color-ryze-500)) 0%, rgb(var(--color-ryze-700)) 100%)' }}
       >
         {pulse && !open && (

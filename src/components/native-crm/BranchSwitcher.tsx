@@ -9,7 +9,14 @@ const ADMIN_ROLES = ['SUPER_ADMIN', 'TENANT_ADMIN'];
 
 export function BranchSwitcher() {
   const user          = useAuthStore((s) => s.user);
-  const { currentBranch, setBranch, branches } = useBranchStore();
+  // Filtered here (not trusted pre-filtered from the store) — the store is
+  // shared globally, and FSSettingsPage populates it with inactive
+  // companies included too (so it can offer a Reactivate action), so this
+  // dropdown must defensively exclude them itself, same as every other
+  // consumer of this store (FSDrawer, ContractFormDrawer, CompanyFilterBar,
+  // LeadsPage) already does.
+  const { currentBranch, setBranch, branches: allBranches } = useBranchStore();
+  const branches = allBranches.filter((b) => b.status === 'active');
   const qc            = useQueryClient();
   const navigate      = useNavigate();
   const [open, setOpen] = useState(false);
@@ -33,7 +40,11 @@ export function BranchSwitcher() {
     qc.invalidateQueries();
   }
 
-  const label = currentBranch?.branchName ?? 'All Branches';
+  // Same underlying state as FS Settings' own "Default Company" tab (no
+  // X-Branch-Id header sent = no branch filter applied anywhere) — labeled
+  // to make that connection obvious, without changing what selecting it
+  // actually does (still shows/creates records across every company).
+  const label = currentBranch?.branchName ?? 'All Branches (Default Company)';
 
   return (
     <div className="relative" ref={ref}>
@@ -58,8 +69,11 @@ export function BranchSwitcher() {
               >
                 {!currentBranch && <span className="text-ryze-500">&#10003;</span>}
                 {!!currentBranch && <span className="w-4" />}
-                <span>All Branches</span>
-                <span className="ml-auto text-xs text-text-muted">Admin view</span>
+                <span className="flex-1 min-w-0">
+                  <span className="block truncate">All Branches</span>
+                  <span className="block text-xs text-text-muted font-normal">a.k.a. "Default Company" in FS Settings</span>
+                </span>
+                <span className="text-xs text-text-muted shrink-0">Admin view</span>
               </button>
               {branches.length > 0 && <div className="mx-2 border-t border-border my-1" />}
             </>

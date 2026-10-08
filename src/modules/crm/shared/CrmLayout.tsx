@@ -12,6 +12,9 @@ import api from '../../../services/api';
 import RecordDrawer from './RecordDrawer';
 import ColumnEditor from './ColumnEditor';
 import FileActionsDropdown, { deriveAllColumns, fmtVal } from './FileActionsDropdown';
+import { useStaffNameMap } from '../../native-crm/shared/useStaffNameMap';
+import { useUserNameMap } from '../../native-crm/shared/useUserNameMap';
+import { useCompanyNameMap } from '../../native-crm/shared/useCompanyNameMap';
 import KanbanBoard from './KanbanBoard';
 import CalendarView from './CalendarView';
 import FsRelationPicker, { FsRelation } from './FsRelationPicker';
@@ -315,6 +318,17 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
   // genuinely empty list — both used to render identically, silently
   // hiding a permission problem behind what looked like "no records yet."
   const [errorStatus, setErrorStatus] = useState<number | undefined>(undefined);
+  // LR-UI-003: resolves a staffSelect column's stored staffId to a display
+  // name for on-screen rendering — see fmtVal's own comment.
+  const staffNameMap = useStaffNameMap();
+  const userNameMap = useUserNameMap();
+  const companyNameMap = useCompanyNameMap();
+  // LR-UX-004: a 403 means either "you lack the permission" or "this
+  // module isn't enabled for your plan" — the server's own message already
+  // distinguishes them; showing one hardcoded permission-only message for
+  // both told a Tenant Admin to grant themselves a permission that was
+  // never the real problem.
+  const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
 
   /* ── filters / pagination ── */
   const [search,  setSearch]  = useState('');
@@ -406,11 +420,18 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
   const fetchRecords = useCallback(async () => {
     setLoading(true);
     setErrorStatus(undefined);
+    setErrorMessage(undefined);
     try {
       const params: Record<string, unknown> = { page, limit };
       if (search)  params.search = search;
       if (statusF) params.status = statusF;
       if (viewTab !== 'all') params.owner = viewTab;
+      // LR-UX-010: sort was previously client-side only, over whatever page
+      // happened to be loaded — this asks the backend to sort the full
+      // dataset too (harmless no-op for any module whose backend doesn't
+      // read sortBy/sortDir yet; the existing client-side sort below still
+      // runs regardless, so nothing regresses either way).
+      if (sortKey) { params.sortBy = sortKey; params.sortDir = sortDir; }
       if (upcomingOnly && config.upcomingDateField) params.upcoming = true;
       if (linkedFilter.relatedModule && linkedFilter.relatedId) {
         params.relatedModule = linkedFilter.relatedModule;
@@ -426,9 +447,10 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
     } catch (err: any) {
       setRecords([]);
       setErrorStatus(err?.response?.status);
+      setErrorMessage(err?.response?.data?.message);
     }
     finally { setLoading(false); }
-  }, [config.apiBase, config.upcomingDateField, page, limit, search, statusF, viewTab, upcomingOnly, linkedFilter, filterValues]);
+  }, [config.apiBase, config.upcomingDateField, page, limit, search, statusF, viewTab, upcomingOnly, linkedFilter, filterValues, sortKey, sortDir]);
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
@@ -503,6 +525,10 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
 
   return (
     <div className="flex flex-col h-full bg-surface">
+
+      {config.description && (
+        <p className="text-xs text-text-muted px-6 pt-3 shrink-0">{config.description}</p>
+      )}
 
       {/* ── View tabs ─────────────────────────────────────────────────────── */}
       <div className="border-b border-border px-6 shrink-0">
@@ -741,7 +767,10 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
             className="flex items-center gap-2 px-4 py-2 bg-ryze-600 hover:bg-ryze-700 text-white text-sm font-medium rounded-lg transition-colors"
           >
             <PlusIcon className="h-4 w-4" />
-            <span>Add {config.labelSingular}s</span>
+            {/* LR-UI-006: naive "append s" broke for Company -> Companys —
+                this button always adds exactly one record, so the singular
+                form is also just correct, not only grammatical. */}
+            <span>Add {config.labelSingular}</span>
             <ChevronDownIcon className="h-3.5 w-3.5 text-text-muted" />
           </button>
         </div>
@@ -851,8 +880,12 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
               <LockClosedIcon className="h-8 w-8 text-amber-500" />
             </div>
             <div>
-              <p className="text-text-primary font-semibold">You don't have permission to view this</p>
-              <p className="text-text-muted text-sm mt-1">Ask a Tenant Admin to grant access under Settings → Permissions.</p>
+              <p className="text-text-primary font-semibold">
+                {errorMessage && errorMessage.toLowerCase().includes('not enabled') ? "This module isn't available" : "You don't have permission to view this"}
+              </p>
+              <p className="text-text-muted text-sm mt-1">
+                {errorMessage ?? 'Ask a Tenant Admin to grant access under Settings → Permissions.'}
+              </p>
             </div>
           </div>
         ) : sortedRecords.length === 0 ? (
@@ -868,7 +901,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
               <p className="text-text-muted text-sm mt-1">
                 {search || statusF
                   ? 'No records match your filters'
-                  : `Click "Add ${config.labelSingular}s" to get started`}
+                  : `Click "Add ${config.labelSingular}" to get started`}
               </p>
             </div>
             {!search && !statusF && (
@@ -1007,7 +1040,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
                             ) : isStatus ? (
                               <StatusBadge value={String(v ?? '')} />
                             ) : (
-                              <span className="truncate block">{fmtVal(v, col.type)}</span>
+                              <span className="truncate block">{fmtVal(v, col.type, staffNameMap, userNameMap, companyNameMap)}</span>
                             )}
                           </td>
                         );

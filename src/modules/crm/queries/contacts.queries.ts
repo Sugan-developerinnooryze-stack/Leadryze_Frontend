@@ -4,7 +4,7 @@ import api from '../../../services/api';
 const BASE = '/api/v1/native-crm/contacts';
 const KEY  = ['crm', 'contacts'] as const;
 
-interface ListParams { page?: number; limit?: number; search?: string; status?: string; }
+interface ListParams { page?: number; limit?: number; search?: string; status?: string; companyId?: string; }
 interface Meta       { total: number; page: number; totalPages: number; }
 
 export function useContactsListQuery(params: ListParams) {

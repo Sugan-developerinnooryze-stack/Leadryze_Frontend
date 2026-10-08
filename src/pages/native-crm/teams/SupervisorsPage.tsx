@@ -7,8 +7,8 @@ import {
   ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/24/outline';
 import { useUsersListQuery } from '../../../modules/native-crm/queries/users.queries';
-import { useTeamsListQuery, useTeamCreate } from '../../../modules/native-crm/queries/teams.queries';
-import { useStaffsListQuery, useStaffCreate } from '../../../modules/native-crm/queries/staffs.queries';
+import { useTeamsListQuery, useTeamCreate, useTeamUpdate } from '../../../modules/native-crm/queries/teams.queries';
+import { useStaffsListQuery, useStaffCreate, useStaffUpdate } from '../../../modules/native-crm/queries/staffs.queries';
 import api from '../../../services/api';
 
 interface TeamStats { staffCount: number; leads: number; meetings: number; customers: number; }
@@ -17,6 +17,60 @@ function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return '?';
   return (parts[0][0] + (parts[1]?.[0] ?? '')).toUpperCase();
+}
+
+/** Inline "+ Assign an existing team" — used only when a supervisor has zero
+ * teams yet AND at least one already-created team (from the Teams module)
+ * has no manager set. Lets a supervisor be paired with real existing team
+ * data instead of forcing a brand-new team every time. */
+function AssignExistingTeamInline({
+  managerUserId, unassignedTeams, onAssigned,
+}: { managerUserId: string; unassignedTeams: any[]; onAssigned: () => void }) {
+  const [open, setOpen]     = useState(false);
+  const [teamId, setTeamId] = useState('');
+  const updateTeam = useTeamUpdate();
+
+  if (!unassignedTeams.length) return null;
+
+  const submit = async () => {
+    if (!teamId) return;
+    await updateTeam.mutateAsync({ id: teamId, data: { managerUserId } });
+    setTeamId('');
+    setOpen(false);
+    onAssigned();
+  };
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1 text-xs font-medium text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:hover:text-ryze-300"
+      >
+        <PlusIcon className="h-3.5 w-3.5" /> Assign an existing team
+      </button>
+    );
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <select
+        autoFocus
+        value={teamId}
+        onChange={(e) => setTeamId(e.target.value)}
+        className="flex-1 px-2.5 py-1.5 text-xs border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-ryze-400 bg-background text-text-primary"
+      >
+        <option value="">Select a team…</option>
+        {unassignedTeams.map((t) => <option key={t._id} value={t._id}>{t.name}</option>)}
+      </select>
+      <button
+        onClick={submit}
+        disabled={!teamId || updateTeam.isPending}
+        className="px-2.5 py-1.5 rounded-lg bg-ryze-600 text-white text-xs font-medium hover:bg-ryze-700 disabled:opacity-50"
+      >
+        {updateTeam.isPending ? '…' : 'Assign'}
+      </button>
+      <button onClick={() => setOpen(false)} className="text-xs text-text-muted hover:text-text-primary">Cancel</button>
+    </div>
+  );
 }
 
 /** Inline "+ Create a team for this person" — used only when a supervisor
@@ -62,6 +116,68 @@ function CreateTeamInline({ managerUserId, onCreated }: { managerUserId: string;
         className="px-2.5 py-1.5 rounded-lg bg-ryze-600 text-white text-xs font-medium hover:bg-ryze-700 disabled:opacity-50"
       >
         {createTeam.isPending ? '…' : 'Create'}
+      </button>
+      <button onClick={() => setOpen(false)} className="text-xs text-text-muted hover:text-text-primary">Cancel</button>
+    </div>
+  );
+}
+
+/** Inline "+ Assign existing staff" — moves an already-existing Staff
+ * record (unassigned, or currently on a different team) onto this team,
+ * instead of always creating a brand-new one. */
+function AddExistingStaffInline({ teamId, onAdded }: { teamId: string; onAdded: () => void }) {
+  const [open, setOpen]       = useState(false);
+  const [staffId, setStaffId] = useState('');
+  // Unscoped (no teamId param) so it returns everyone, then filtered below —
+  // this is the one place that needs to see staff NOT already on this team.
+  const { data: allStaffData } = useStaffsListQuery({ page: 1, limit: 200 });
+  const updateStaff = useStaffUpdate();
+
+  const candidates = (allStaffData?.items ?? []).filter(
+    (s: any) => s.teamId !== teamId && (s.status ?? 'active') === 'active',
+  );
+
+  if (!candidates.length) return null;
+
+  const submit = async () => {
+    if (!staffId) return;
+    await updateStaff.mutateAsync({ id: staffId, data: { teamId } });
+    setStaffId('');
+    setOpen(false);
+    onAdded();
+  };
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1 text-xs font-medium text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:hover:text-ryze-300"
+      >
+        <PlusIcon className="h-3.5 w-3.5" /> Assign existing staff
+      </button>
+    );
+  }
+  return (
+    <div className="flex items-center gap-1.5">
+      <select
+        autoFocus
+        value={staffId}
+        onChange={(e) => setStaffId(e.target.value)}
+        className="w-40 px-2 py-1.5 text-xs border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-ryze-400 bg-background text-text-primary"
+      >
+        <option value="">Select staff…</option>
+        {candidates.map((s: any) => (
+          <option key={s._id} value={s._id}>
+            {[s.firstName, s.lastName].filter(Boolean).join(' ')}{s.teamId ? ' (on another team)' : ''}
+          </option>
+        ))}
+      </select>
+      <button
+        onClick={submit}
+        disabled={!staffId || updateStaff.isPending}
+        className="px-2.5 py-1.5 rounded-lg bg-ryze-600 text-white text-xs font-medium hover:bg-ryze-700 disabled:opacity-50"
+      >
+        {updateStaff.isPending ? '…' : 'Add'}
       </button>
       <button onClick={() => setOpen(false)} className="text-xs text-text-muted hover:text-text-primary">Cancel</button>
     </div>
@@ -124,8 +240,11 @@ function AddStaffInline({ teamId, onCreated }: { teamId: string; onCreated: () =
 
 /** One managed team, expandable in place to show its real staff roster (who
  * round robin will actually rotate through) plus a way to add more staff —
- * all without navigating away from the Supervisors page. */
-function TeamRoster({ team, onOpenTeam }: { team: any; onOpenTeam: (id: string) => void }) {
+ * all without navigating away from the Supervisors page. `onUnassign` detaches
+ * this team from the current supervisor (managerUserId -> null) without
+ * deleting the team itself — the "D" in this page's CRUD, paired with
+ * AssignExistingTeamInline's "assign" as the corresponding create/update. */
+function TeamRoster({ team, onOpenTeam, onUnassign, unassigning }: { team: any; onOpenTeam: (id: string) => void; onUnassign: () => void; unassigning: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const qc = useQueryClient();
   const { data: staffData, isLoading } = useStaffsListQuery({ page: 1, limit: 100, teamId: team._id });
@@ -139,14 +258,21 @@ function TeamRoster({ team, onOpenTeam }: { team: any; onOpenTeam: (id: string) 
 
   return (
     <div className="border border-border rounded-xl overflow-hidden">
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors text-left"
-      >
-        {expanded ? <ChevronDownIcon className="h-3.5 w-3.5 text-text-muted shrink-0" /> : <ChevronRightIcon className="h-3.5 w-3.5 text-text-muted shrink-0" />}
-        <span className="text-sm font-medium text-text-primary truncate flex-1">{team.name}</span>
+      <div className="w-full flex items-center gap-2 px-3 py-2 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
+        <button onClick={() => setExpanded((v) => !v)} className="flex items-center gap-2 text-left flex-1 min-w-0">
+          {expanded ? <ChevronDownIcon className="h-3.5 w-3.5 text-text-muted shrink-0" /> : <ChevronRightIcon className="h-3.5 w-3.5 text-text-muted shrink-0" />}
+          <span className="text-sm font-medium text-text-primary truncate">{team.name}</span>
+        </button>
         <span className="text-[11px] text-text-muted shrink-0">{isLoading ? '…' : `${activeStaff.length} staff`}</span>
-      </button>
+        <button
+          onClick={onUnassign}
+          disabled={unassigning}
+          title="Unassign this team from this supervisor"
+          className="text-[11px] text-text-muted hover:text-red-600 dark:hover:text-red-400 shrink-0 disabled:opacity-50"
+        >
+          {unassigning ? '…' : 'Unassign'}
+        </button>
+      </div>
 
       {expanded && (
         <div className="px-4 pb-3 pt-1 bg-black/[0.015] dark:bg-white/[0.02] border-t border-border">
@@ -165,11 +291,14 @@ function TeamRoster({ team, onOpenTeam }: { team: any; onOpenTeam: (id: string) 
               ))}
             </ul>
           )}
-          <div className="flex items-center justify-between mt-1">
-            <AddStaffInline teamId={team._id} onCreated={refresh} />
+          <div className="flex items-center justify-between mt-1 gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <AddExistingStaffInline teamId={team._id} onAdded={refresh} />
+              <AddStaffInline teamId={team._id} onCreated={refresh} />
+            </div>
             <button
               onClick={() => onOpenTeam(team._id)}
-              className="inline-flex items-center gap-1 text-[11px] text-text-muted hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300 transition-colors"
+              className="inline-flex items-center gap-1 text-[11px] text-text-muted hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300 transition-colors shrink-0"
             >
               Full team page <ArrowTopRightOnSquareIcon className="h-3 w-3" />
             </button>
@@ -181,14 +310,16 @@ function TeamRoster({ team, onOpenTeam }: { team: any; onOpenTeam: (id: string) 
 }
 
 function SupervisorCard({
-  supervisor, teams, onOpenTeam, onDataChanged,
+  supervisor, teams, unassignedTeams, onOpenTeam, onDataChanged,
 }: {
   supervisor: { _id: string; email: string; firstName?: string; lastName?: string };
   teams: any[];
+  unassignedTeams: any[];
   onOpenTeam: (id: string) => void;
   onDataChanged: () => void;
 }) {
   const name = [supervisor.firstName, supervisor.lastName].filter(Boolean).join(' ') || supervisor.email;
+  const unassignTeam = useTeamUpdate();
 
   // One real per-team stats fetch per managed team, run in parallel and
   // summed below — useQueries (not a manual child-per-team component) is
@@ -226,20 +357,28 @@ function SupervisorCard({
         </span>
       </div>
 
-      {/* Teams managed — expandable in place, or a quick way to create the first one */}
+      {/* Teams managed — a supervisor can manage several teams at once, so
+          this list plus the assign/create controls below it are both always
+          shown, not gated behind "only if zero teams" like before. */}
       <div className="px-5 py-4">
         <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2">
           {teams.length === 0 ? 'No teams assigned' : teams.length === 1 ? 'Manages 1 team' : `Manages ${teams.length} teams`}
         </p>
-        {teams.length === 0 ? (
+        <div className="space-y-1.5">
+          {teams.map((t) => (
+            <TeamRoster
+              key={t._id}
+              team={t}
+              onOpenTeam={onOpenTeam}
+              unassigning={unassignTeam.isPending && unassignTeam.variables?.id === t._id}
+              onUnassign={() => unassignTeam.mutateAsync({ id: t._id, data: { managerUserId: null } }).then(onDataChanged)}
+            />
+          ))}
+        </div>
+        <div className={`space-y-2 ${teams.length > 0 ? 'mt-2.5 pt-2.5 border-t border-border' : ''}`}>
+          <AssignExistingTeamInline managerUserId={supervisor._id} unassignedTeams={unassignedTeams} onAssigned={onDataChanged} />
           <CreateTeamInline managerUserId={supervisor._id} onCreated={onDataChanged} />
-        ) : (
-          <div className="space-y-1.5">
-            {teams.map((t) => (
-              <TeamRoster key={t._id} team={t} onOpenTeam={onOpenTeam} />
-            ))}
-          </div>
-        )}
+        </div>
       </div>
 
       {/* Stats */}
@@ -281,6 +420,7 @@ export default function SupervisorsPage() {
   const isLoading = usersLoading || teamsLoading;
   const supervisors = (usersData?.items ?? []).filter((u) => u.role === 'MANAGER');
   const teams = teamsData?.items ?? [];
+  const unassignedTeams = teams.filter((t: any) => !t.managerUserId);
 
   const refreshAll = () => {
     qc.invalidateQueries({ queryKey: ['native-crm', 'teams'] });
@@ -334,6 +474,7 @@ export default function SupervisorsPage() {
                 key={sup._id}
                 supervisor={sup}
                 teams={teams.filter((t: any) => t.managerUserId === sup._id)}
+                unassignedTeams={unassignedTeams}
                 onOpenTeam={(id) => navigate(`/native-crm/teams/${id}`)}
                 onDataChanged={refreshAll}
               />

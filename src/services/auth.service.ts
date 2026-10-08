@@ -30,8 +30,16 @@ export const authService = {
   adminSetFeatureFlags: (id: string, flags: Record<string, boolean>, accessConfigMode?: 'default' | 'custom', maxUsers?: number | null) =>
                           api.put(`/api/v1/admin/tenants/${id}/features`, { flags, ...(accessConfigMode ? { accessConfigMode } : {}), ...(maxUsers !== undefined ? { maxUsers } : {}) }),
   adminGetPlatformDefaults: () => api.get('/api/v1/admin/platform-defaults'),
-  adminSetPlatformDefaults: (flags: Record<string, boolean>) =>
-                              api.put('/api/v1/admin/platform-defaults', { flags }),
+  adminSetPlatformDefaults: (
+    flags: Record<string, boolean>,
+    aiPlanDefaults?: Record<string, { monthlyTokenLimit: number; monthlyVoiceMinutesLimit: number; priceUsdPerMonth: number }>,
+  ) =>
+    api.put('/api/v1/admin/platform-defaults', { flags, ...(aiPlanDefaults ? { aiPlanDefaults } : {}) }),
+  adminUpdateTenantAiConfig: (id: string, limits: {
+    monthlyTokenLimit?: number | null; monthlyVoiceMinutesLimit?: number | null;
+    tokenWarningThresholdPercent?: number | null; tokenCriticalThresholdPercent?: number | null;
+    resetUsageCounter?: boolean;
+  }) => api.put(`/api/v1/admin/tenants/${id}/ai-config`, limits),
   adminGetKeyStats:       () => api.get('/api/v1/admin/system/key-stats'),
   adminGetAiUsage:        () => api.get('/api/v1/admin/ai-usage'),
   adminGetConversations:  (params?: Record<string, string>) => api.get('/api/v1/admin/conversations', { params }),

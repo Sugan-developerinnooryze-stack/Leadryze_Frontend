@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Bars3Icon, BellIcon, ArrowLeftStartOnRectangleIcon, SunIcon, MoonIcon, Cog6ToothIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, ArrowLeftStartOnRectangleIcon, SunIcon, MoonIcon, Cog6ToothIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
 import api from '../../services/api';
 import { useSourceFilterStore } from '../../stores/sourceFilter.store';
 import { useFeatureFlagsStore } from '../../stores/featureFlags.store';
 import UniversalSearch from './UniversalSearch';
+import NotificationBell from './NotificationBell';
 import { BranchSwitcher } from '../native-crm/BranchSwitcher';
 
 interface ConnectorInfo {
@@ -27,7 +28,7 @@ const CHANNEL_DOT: Record<string, string> = {
   mongodb:    'bg-green-500',
 };
 
-const ROLE_LABEL: Record<string, string> = {
+export const ROLE_LABEL: Record<string, string> = {
   TENANT_ADMIN: 'Admin',
   ADMIN:        'Admin',
   AGENT:        'Agent',
@@ -190,9 +191,7 @@ export default function Header({ onOpenMobileNav }: { onOpenMobileNav: () => voi
         </button>
 
         {/* Bell */}
-        <button className="relative p-2 text-text-muted hover:text-text-primary rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150">
-          <BellIcon className="h-5 w-5" />
-        </button>
+        <NotificationBell />
 
         {/* Divider */}
         <div className="h-7 w-px bg-border mx-1 hidden sm:block lg:hidden xl:block" />

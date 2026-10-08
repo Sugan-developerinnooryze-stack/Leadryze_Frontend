@@ -152,7 +152,7 @@ export default function ManagementPage() {
           </div>
           <div>
             <h1 className="text-base font-bold text-text-primary">Management</h1>
-            <p className="text-xs text-text-muted">Tasks, bookings, follow-ups & more</p>
+            <p className="text-xs text-text-muted">Your personal task list, bookings & follow-ups across every module — separate from CRM Tasks</p>
           </div>
         </div>
         <button

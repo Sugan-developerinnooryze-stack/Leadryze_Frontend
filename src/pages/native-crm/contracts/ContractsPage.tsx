@@ -3,6 +3,8 @@ import { DocumentDuplicateIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons
 import { useNavigate, useLocation } from 'react-router-dom';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import FSDeleteModal from '../../../modules/native-crm/shared/FSDeleteModal';
+import DateRangeFilter, { type DateRangeFilterValue } from '../../../modules/native-crm/shared/DateRangeFilter';
+import DynamicFilterPanel, { serializeConditions, type FilterCondition } from '../../../modules/native-crm/shared/DynamicFilterPanel';
 import { FSStatusBadge } from '../../../modules/native-crm/shared/types';
 import type { FSColumnDef } from '../../../modules/native-crm/shared/types';
 import ContractFormDrawer from './ContractFormDrawer';
@@ -11,6 +13,7 @@ import {
   useContractCreate,
   useContractUpdate,
   useContractDelete,
+  useContractFilterFieldsQuery,
 } from '../../../modules/native-crm/queries/contracts.queries';
 import { CompanyBadge } from '../../../components/native-crm/CompanyBadge';
 import { CompanyFilterBar } from '../../../components/native-crm/CompanyFilterBar';
@@ -18,7 +21,12 @@ import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-setti
 import { buildPrefill } from '../../../modules/native-crm/shared/buildPrefill';
 import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import { useCustomerNameMap } from '../../../modules/native-crm/shared/useCustomerNameMap';
+import { useTeamNameMap } from '../../../modules/native-crm/shared/useTeamNameMap';
+import { useStaffNameMap } from '../../../modules/native-crm/shared/useStaffNameMap';
 
+// LR-UI-004: matches the symbol map Quotations/Invoices/Receipts already
+// resolve from settings.currency — this list page was still hardcoding "$".
+const CUR_SYMBOL: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
 const STEP_LABEL: Record<string, string> = { quotation: 'Quotation', workorder: 'WO', invoice: 'Invoice' };
 const STEP_PATH:  Record<string, string> = {
   quotation: '/native-crm/quotations',
@@ -39,9 +47,13 @@ export default function ContractsPage() {
   const location = useLocation();
   const [search,    setSearch]    = useState('');
   const [status,    setStatus]    = useState('');
+  const [dateFilter, setDateFilter] = useState<DateRangeFilterValue>({});
+  const [conditions, setConditions] = useState<FilterCondition[]>([]);
   const [page,      setPage]      = useState(1);
   const [drawer,    setDrawer]    = useState<{ open: boolean; record: any | null }>({ open: false, record: null });
   const [delTarget, setDelTarget] = useState<any | null>(null);
+
+  const { data: filterCatalog = [] } = useContractFilterFieldsQuery();
 
   const { data: settings } = useFSSettingsQuery();
 
@@ -53,6 +65,8 @@ export default function ContractsPage() {
     : STATUS_OPTIONS;
 
   const customerNames = useCustomerNameMap();
+  const teamNames  = useTeamNameMap();
+  const staffNames = useStaffNameMap();
   const columns: FSColumnDef[] = useMemo(() => [
     { key: 'contractId',  label: 'ID' },
     { key: 'title',       label: 'Title' },
@@ -60,6 +74,20 @@ export default function ContractsPage() {
       render: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '—',
       exportValue: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '' },
     { key: 'customerId',  label: 'Customer ID' },
+    { key: 'teamName', label: 'Team', render: (r) => teamNames.get(r.teamId) ?? r.teamId ?? '—',
+      exportValue: (r) => teamNames.get(r.teamId) ?? r.teamId ?? '' },
+    { key: 'teamId',   label: 'Team ID' },
+    { key: 'staffNames', label: 'Staff', render: (r) => {
+      const ids: string[] = r.staffIds?.length ? r.staffIds : (r.staffId ? [r.staffId] : []);
+      return ids.length ? ids.map((id) => staffNames.get(id) ?? id).join(', ') : '—';
+    }, exportValue: (r) => {
+      const ids: string[] = r.staffIds?.length ? r.staffIds : (r.staffId ? [r.staffId] : []);
+      return ids.map((id) => staffNames.get(id) ?? id).join(', ');
+    }},
+    { key: 'staffIds', label: 'Staff ID', render: (r) => {
+      const ids: string[] = r.staffIds?.length ? r.staffIds : (r.staffId ? [r.staffId] : []);
+      return ids.length ? ids.join(', ') : '—';
+    }},
     { key: 'serviceRangeSummary', label: 'Service Range', render: (r) =>
       r.serviceRangeSummary || (r.recurringUnit ? RECURRING_LABEL[r.recurringUnit] : '—') },
     { key: 'serviceBalance', label: 'Service Balance', render: (r) => {
@@ -74,11 +102,11 @@ export default function ContractsPage() {
     }},
     { key: 'startDate',   label: 'Start', render: (r) => r.startDate ? new Date(r.startDate).toLocaleDateString() : '—' },
     { key: 'endDate',     label: 'End',   render: (r) => r.endDate   ? new Date(r.endDate).toLocaleDateString()   : '—' },
-    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `$${Number(r.servicesAmountWithTax).toFixed(2)}` : '—' },
+    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `${CUR_SYMBOL[settings?.currency ?? 'AUD'] ?? '$'}${Number(r.servicesAmountWithTax).toFixed(2)}` : '—' },
     { key: 'status',   label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
     { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
     { key: 'createdAt', label: 'Created Date', render: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—' },
-  ], [customerNames]);
+  ], [customerNames, teamNames, staffNames, settings?.currency]);
 
   useEffect(() => {
     const state = location.state as any;
@@ -89,9 +117,13 @@ export default function ContractsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { setPage(1); }, [search, status]);
+  useEffect(() => { setPage(1); }, [search, status, dateFilter, conditions]);
 
-  const { data: result, isLoading, error } = useContractsListQuery({ page, limit: 20, search: search || undefined, status: status || undefined });
+  const { data: result, isLoading, error } = useContractsListQuery({
+    page, limit: 20, search: search || undefined, status: status || undefined,
+    range: dateFilter.range, dateFrom: dateFilter.dateFrom, dateTo: dateFilter.dateTo,
+    filters: serializeConditions(conditions, filterCatalog),
+  });
   const items = result?.items ?? [];
   const meta  = result?.meta  ?? { total: 0, page: 1, totalPages: 1 };
 
@@ -159,6 +191,12 @@ export default function ContractsPage() {
         onEdit={(r) => setDrawer({ open: true, record: r })}
         onDelete={setDelTarget}
         moduleKey="contracts"
+        extraToolbar={(
+          <>
+            <DynamicFilterPanel catalog={filterCatalog} value={conditions} onChange={setConditions} />
+            <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
+          </>
+        )}
         emptyIcon={DocumentDuplicateIcon}
         emptyLabel="No contracts yet - create your first one"
         onRowClick={(r) => navigate(`/native-crm/contracts/${r._id}`)}

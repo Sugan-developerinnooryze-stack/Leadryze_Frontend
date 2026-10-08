@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../../stores/auth.store';
 import {
   useBranchesQuery,
@@ -9,6 +10,7 @@ import {
   useDeactivateBranch,
 } from '../../../modules/native-crm/queries/branch.queries';
 import { Branch, useBranchStore } from '../../../stores/branch.store';
+import FSDeleteModal from '../../../modules/native-crm/shared/FSDeleteModal';
 
 const BRANCH_TYPES = [
   { value: 'headquarters', label: 'Headquarters' },
@@ -45,6 +47,7 @@ export default function BranchesPage() {
   const [form, setForm]               = useState<typeof EMPTY_FORM>(EMPTY_FORM);
   const [saving, setSaving]           = useState(false);
   const [error, setError]             = useState('');
+  const [deactivateTarget, setDeactivateTarget] = useState<Branch | null>(null);
 
   const isAdmin = ['SUPER_ADMIN', 'TENANT_ADMIN'].includes(user?.role ?? '');
   const items   = data?.items ?? [];
@@ -84,9 +87,9 @@ export default function BranchesPage() {
     }
   }
 
-  async function handleDeactivate(id: string) {
-    if (!confirm('Deactivate this branch? Its data will remain accessible in All Branches view.')) return;
-    await deactivate.mutateAsync(id);
+  async function confirmDeactivate() {
+    if (!deactivateTarget) return;
+    await deactivate.mutateAsync(deactivateTarget._id);
   }
 
   function field(key: keyof typeof EMPTY_FORM, label: string, placeholder = '') {
@@ -195,8 +198,10 @@ export default function BranchesPage() {
                         ⚙ Settings
                       </button>
                       <button onClick={() => openEdit(b)} className="text-xs text-ryze-600 dark:text-ryze-400 hover:underline mr-3">Edit</button>
-                      {b.status === 'active' && (
-                        <button onClick={() => handleDeactivate(b._id)} className="text-xs text-danger-500 hover:underline">Deactivate</button>
+                      {b.status === 'active' ? (
+                        <button onClick={() => setDeactivateTarget(b)} className="text-xs text-danger-500 hover:underline">Deactivate</button>
+                      ) : (
+                        <button onClick={() => updateBranch.mutateAsync({ id: b._id, data: { status: 'active' } })} className="text-xs text-success-600 dark:text-success-500 hover:underline">Reactivate</button>
                       )}
                     </td>
                   )}
@@ -255,6 +260,20 @@ export default function BranchesPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {deactivateTarget && (
+        <FSDeleteModal
+          label={deactivateTarget.branchName}
+          icon={ExclamationTriangleIcon}
+          tone="warning"
+          title={`Deactivate "${deactivateTarget.branchName}"?`}
+          description="Its data will remain accessible in All Branches view — this just stops new records being assigned to it."
+          confirmLabel="Deactivate"
+          confirmingLabel="Deactivating…"
+          onClose={() => setDeactivateTarget(null)}
+          onConfirm={confirmDeactivate}
+        />
       )}
     </div>
   );

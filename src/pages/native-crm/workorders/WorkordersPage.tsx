@@ -4,6 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import FSDrawer from '../../../modules/native-crm/shared/FSDrawer';
 import FSDeleteModal from '../../../modules/native-crm/shared/FSDeleteModal';
+import DateRangeFilter, { type DateRangeFilterValue } from '../../../modules/native-crm/shared/DateRangeFilter';
+import DynamicFilterPanel, { serializeConditions, type FilterCondition } from '../../../modules/native-crm/shared/DynamicFilterPanel';
 import { FSStatusBadge } from '../../../modules/native-crm/shared/types';
 import type { FSFieldDef, FSColumnDef } from '../../../modules/native-crm/shared/types';
 import {
@@ -11,6 +13,7 @@ import {
   useWorkorderCreate,
   useWorkorderUpdate,
   useWorkorderDelete,
+  useWorkorderFilterFieldsQuery,
 } from '../../../modules/native-crm/queries/workorders.queries';
 import { CompanyBadge } from '../../../components/native-crm/CompanyBadge';
 import { CompanyFilterBar } from '../../../components/native-crm/CompanyFilterBar';
@@ -19,6 +22,8 @@ import { buildPrefill } from '../../../modules/native-crm/shared/buildPrefill';
 import { formatDuration } from '../../../modules/native-crm/shared/duration';
 import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import { useCustomerNameMap } from '../../../modules/native-crm/shared/useCustomerNameMap';
+import { useTeamNameMap } from '../../../modules/native-crm/shared/useTeamNameMap';
+import { useStaffNameMap } from '../../../modules/native-crm/shared/useStaffNameMap';
 
 const STEP_LABEL: Record<string, string> = { quotation: 'Quotation', contract: 'Contract', invoice: 'Invoice' };
 const STEP_PATH:  Record<string, string> = {
@@ -32,6 +37,7 @@ const FIELDS: FSFieldDef[] = [
   { key: 'customerId',    label: 'Customer',        type: 'lookup',       required: true,
     lookupModule: 'customers', lookupValueField: 'customerId', lookupLabelField: 'name' },
   { key: 'title',         label: 'Title',           type: 'text',         required: true },
+  { key: 'address',       label: 'Address',         type: 'textarea',     autofillFrom: 'customerId', autofillComposeKeys: ['city', 'state', 'postcode', 'country'] },
   { key: 'siteId',        label: 'Site',            type: 'lookup',
     lookupModule: 'sites', lookupValueField: 'siteId', lookupLabelField: 'name',
     cascadeParentField: 'customerId' },
@@ -43,6 +49,10 @@ const FIELDS: FSFieldDef[] = [
   { key: 'categoryId',    label: 'Category Filter', type: 'lookup',       filterOnly: true,
     lookupModule: 'categories', lookupValueField: '_id', lookupLabelField: 'name' },
   { key: 'services',      label: 'Service Lines',   type: 'servicelines', categoryFilterField: 'categoryId' },
+  { key: 'discount',      label: 'Discount %',      type: 'number',       placeholder: '0',
+    autofillFrom: 'branchId', autofillSourceKey: 'discountPercentage' },
+  { key: 'gstPercentage', label: 'GST %',           type: 'number',       placeholder: '0',
+    autofillFrom: 'branchId', autofillSourceKey: 'taxPercentage' },
   { key: 'scheduledDate', label: 'Scheduled Date & Time', type: 'datetime' },
   { key: 'skills',        label: 'Required Skills', type: 'multiselect',
     options: ['electrical', 'plumbing', 'hvac', 'cleaning', 'carpentry', 'painting', 'roofing'] },
@@ -59,11 +69,14 @@ export default function WorkordersPage() {
   const location = useLocation();
   const [search,    setSearch]    = useState('');
   const [status,    setStatus]    = useState('');
+  const [dateFilter, setDateFilter] = useState<DateRangeFilterValue>({});
+  const [conditions, setConditions] = useState<FilterCondition[]>([]);
   const [page,      setPage]      = useState(1);
   const [drawer,    setDrawer]    = useState<{ open: boolean; record: any | null }>({ open: false, record: null });
   const [delTarget, setDelTarget] = useState<any | null>(null);
 
   const { data: settings } = useFSSettingsQuery();
+  const { data: filterCatalog = [] } = useWorkorderFilterFieldsQuery();
 
   // Tenant-configurable pipeline stages override the static defaults above —
   // falls back to today's hardcoded list while loading/on error/unconfigured.
@@ -77,6 +90,8 @@ export default function WorkordersPage() {
   );
 
   const customerNames = useCustomerNameMap();
+  const teamNames  = useTeamNameMap();
+  const staffNames = useStaffNameMap();
   const columns: FSColumnDef[] = useMemo(() => [
     { key: 'workOrderId',   label: 'ID' },
     { key: 'title',         label: 'Title' },
@@ -90,10 +105,20 @@ export default function WorkordersPage() {
       const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0;
       return hasTime ? d.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : d.toLocaleDateString();
     }},
-    { key: 'staffIds', label: 'Staff', render: (r) => {
+    { key: 'staffNames', label: 'Staff', render: (r) => {
+      const ids: string[] = r.staffIds?.length ? r.staffIds : (r.staffId ? [r.staffId] : []);
+      return ids.length ? ids.map((id) => staffNames.get(id) ?? id).join(', ') : '—';
+    }, exportValue: (r) => {
+      const ids: string[] = r.staffIds?.length ? r.staffIds : (r.staffId ? [r.staffId] : []);
+      return ids.map((id) => staffNames.get(id) ?? id).join(', ');
+    }},
+    { key: 'staffIds', label: 'Staff ID', render: (r) => {
       const ids: string[] = r.staffIds?.length ? r.staffIds : (r.staffId ? [r.staffId] : []);
       return ids.length ? ids.join(', ') : '—';
     }},
+    { key: 'teamName', label: 'Team', render: (r) => teamNames.get(r.teamId) ?? r.teamId ?? '—',
+      exportValue: (r) => teamNames.get(r.teamId) ?? r.teamId ?? '' },
+    { key: 'teamId',   label: 'Team ID' },
     { key: 'durationHours', label: 'Duration', render: (r) => formatDuration(r.durationHours) },
     { key: 'priority',      label: 'Priority',  render: (r) => {
       const colors: Record<string, string> = { high: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/15', medium: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/15', low: 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/15' };
@@ -103,7 +128,7 @@ export default function WorkordersPage() {
     { key: 'status',   label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
     { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
     { key: 'createdAt', label: 'Created Date', render: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—' },
-  ], [customerNames]);
+  ], [customerNames, teamNames, staffNames]);
 
   useEffect(() => {
     const state = location.state as any;
@@ -114,9 +139,13 @@ export default function WorkordersPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { setPage(1); }, [search, status]);
+  useEffect(() => { setPage(1); }, [search, status, dateFilter, conditions]);
 
-  const { data: result, isLoading, error } = useWorkordersListQuery({ page, limit: 20, search: search || undefined, status: status || undefined });
+  const { data: result, isLoading, error } = useWorkordersListQuery({
+    page, limit: 20, search: search || undefined, status: status || undefined,
+    range: dateFilter.range, dateFrom: dateFilter.dateFrom, dateTo: dateFilter.dateTo,
+    filters: serializeConditions(conditions, filterCatalog),
+  });
   const items = result?.items ?? [];
   const meta  = result?.meta  ?? { total: 0, page: 1, totalPages: 1 };
 
@@ -188,6 +217,12 @@ export default function WorkordersPage() {
         })}
         onDelete={setDelTarget}
         moduleKey="workorders"
+        extraToolbar={(
+          <>
+            <DynamicFilterPanel catalog={filterCatalog} value={conditions} onChange={setConditions} />
+            <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
+          </>
+        )}
         emptyIcon={ClipboardDocumentListIcon}
         emptyLabel="No work orders yet - create your first one"
         onRowClick={(r) => navigate(`/native-crm/workorders/${r._id}`)}

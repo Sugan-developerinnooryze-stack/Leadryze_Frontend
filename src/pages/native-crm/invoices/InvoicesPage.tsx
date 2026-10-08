@@ -4,6 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import FSDrawer from '../../../modules/native-crm/shared/FSDrawer';
 import FSDeleteModal from '../../../modules/native-crm/shared/FSDeleteModal';
+import DateRangeFilter, { type DateRangeFilterValue } from '../../../modules/native-crm/shared/DateRangeFilter';
+import DynamicFilterPanel, { serializeConditions, type FilterCondition } from '../../../modules/native-crm/shared/DynamicFilterPanel';
 import { FSStatusBadge } from '../../../modules/native-crm/shared/types';
 import type { FSFieldDef, FSColumnDef } from '../../../modules/native-crm/shared/types';
 import {
@@ -11,11 +13,18 @@ import {
   useInvoiceCreate,
   useInvoiceUpdate,
   useInvoiceDelete,
+  useInvoiceFilterFieldsQuery,
 } from '../../../modules/native-crm/queries/invoices.queries';
 import { CompanyBadge } from '../../../components/native-crm/CompanyBadge';
 import { CompanyFilterBar } from '../../../components/native-crm/CompanyFilterBar';
 import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import { useCustomerNameMap } from '../../../modules/native-crm/shared/useCustomerNameMap';
+import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-settings.queries';
+
+// LR-QUOTE-002: matches the symbol map every Invoice view/print page
+// already resolves from settings.currency — this list page was the one
+// place still hardcoding "$".
+const CUR_SYMBOL: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
 
 const FIELDS: FSFieldDef[] = [
   { key: 'branchId',      label: 'Company',           type: 'branch-select' },
@@ -23,10 +32,12 @@ const FIELDS: FSFieldDef[] = [
     lookupModule: 'customers', lookupValueField: 'customerId', lookupLabelField: 'name' },
   { key: 'workOrderId',   label: 'Linked Work Order', type: 'lookup',
     lookupModule: 'workorders', lookupValueField: 'workOrderId', lookupLabelField: 'title' },
-  { key: 'address',       label: 'Address',           type: 'textarea',     required: true },
+  { key: 'address',       label: 'Address',           type: 'textarea',     required: true, autofillFrom: 'customerId', autofillComposeKeys: ['city', 'state', 'postcode', 'country'] },
   { key: 'services',      label: 'Service Lines',     type: 'servicelines', withTotals: true },
-  { key: 'discount',      label: 'Discount %',        type: 'number',       placeholder: '0' },
-  { key: 'gstPercentage', label: 'GST %',             type: 'number',       placeholder: '0' },
+  { key: 'discount',      label: 'Discount %',        type: 'number',       placeholder: '0',
+    autofillFrom: 'branchId', autofillSourceKey: 'discountPercentage' },
+  { key: 'gstPercentage', label: 'GST %',             type: 'number',       placeholder: '0',
+    autofillFrom: 'branchId', autofillSourceKey: 'taxPercentage' },
   { key: 'dueDate',       label: 'Due Date',          type: 'date' },
   { key: 'status',        label: 'Status',            type: 'select',       options: ['draft', 'sent', 'paid', 'overdue', 'cancelled'] },
   { key: 'notes',         label: 'Notes',             type: 'textarea' },
@@ -40,9 +51,14 @@ export default function InvoicesPage() {
   const location = useLocation();
   const [search,    setSearch]    = useState('');
   const [status,    setStatus]    = useState('');
+  const [dateFilter, setDateFilter] = useState<DateRangeFilterValue>({});
+  const [conditions, setConditions] = useState<FilterCondition[]>([]);
   const [page,      setPage]      = useState(1);
   const [drawer,    setDrawer]    = useState<{ open: boolean; record: any | null }>({ open: false, record: null });
   const [delTarget, setDelTarget] = useState<any | null>(null);
+
+  const { data: filterCatalog = [] } = useInvoiceFilterFieldsQuery();
+  const { data: settings } = useFSSettingsQuery();
 
   // Tenant-configurable pipeline stages override the static defaults above —
   // falls back to today's hardcoded list while loading/on error/unconfigured.
@@ -62,7 +78,7 @@ export default function InvoicesPage() {
       render: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '—',
       exportValue: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '' },
     { key: 'customerId', label: 'Customer ID' },
-    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `$${Number(r.servicesAmountWithTax).toFixed(2)}` : '—' },
+    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `${CUR_SYMBOL[settings?.currency ?? 'AUD'] ?? '$'}${Number(r.servicesAmountWithTax).toFixed(2)}` : '—' },
     { key: 'dueDate',    label: 'Due Date', render: (r) => r.dueDate ? new Date(r.dueDate).toLocaleDateString() : '—' },
     { key: 'paid',       label: 'Paid',     render: (r) => (
       <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${r.paid ? 'bg-green-100 dark:bg-green-500/15 text-green-700 dark:text-green-400' : 'bg-black/[0.06] dark:bg-white/[0.08] text-text-muted'}`}>
@@ -72,7 +88,7 @@ export default function InvoicesPage() {
     { key: 'status',    label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
     { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
     { key: 'createdAt', label: 'Created Date', render: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—' },
-  ], [customerNames]);
+  ], [customerNames, settings?.currency]);
 
   useEffect(() => {
     const state = location.state as any;
@@ -83,9 +99,13 @@ export default function InvoicesPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { setPage(1); }, [search, status]);
+  useEffect(() => { setPage(1); }, [search, status, dateFilter, conditions]);
 
-  const { data: result, isLoading, error } = useInvoicesListQuery({ page, limit: 20, search: search || undefined, status: status || undefined });
+  const { data: result, isLoading, error } = useInvoicesListQuery({
+    page, limit: 20, search: search || undefined, status: status || undefined,
+    range: dateFilter.range, dateFrom: dateFilter.dateFrom, dateTo: dateFilter.dateTo,
+    filters: serializeConditions(conditions, filterCatalog),
+  });
   const items = result?.items ?? [];
   const meta  = result?.meta  ?? { total: 0, page: 1, totalPages: 1 };
 
@@ -153,6 +173,12 @@ export default function InvoicesPage() {
         onEdit={(r) => setDrawer({ open: true, record: r })}
         onDelete={setDelTarget}
         moduleKey="invoices"
+        extraToolbar={(
+          <>
+            <DynamicFilterPanel catalog={filterCatalog} value={conditions} onChange={setConditions} />
+            <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
+          </>
+        )}
         emptyIcon={BanknotesIcon}
         emptyLabel="No invoices yet - create your first one"
         onRowClick={(r) => navigate(`/native-crm/invoices/${r._id}`)}

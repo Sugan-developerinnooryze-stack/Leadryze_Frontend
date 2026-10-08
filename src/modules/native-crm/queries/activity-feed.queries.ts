@@ -5,7 +5,7 @@ const BASE = '/api/v1/native-crm/activity-feed';
 const KEY  = ['native-crm', 'activity-feed'] as const;
 
 export type ActivityKind = 'task' | 'ticket' | 'call' | 'meeting' | 'email';
-export type RelatedModule = 'contact' | 'company' | 'deal' | 'customer' | 'quotation' | 'workorder' | 'contract';
+export type RelatedModule = 'contact' | 'company' | 'deal' | 'customer' | 'quotation' | 'workorder' | 'contract' | 'lead';
 
 export interface ActivityFeedItem {
   _id: string;

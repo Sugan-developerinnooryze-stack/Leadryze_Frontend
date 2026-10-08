@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import toast from 'react-hot-toast';
 import {
   PlusIcon, MagnifyingGlassIcon, Squares2X2Icon, TableCellsIcon,
   XMarkIcon, BriefcaseIcon, ChevronDownIcon, CheckIcon, AdjustmentsHorizontalIcon,
@@ -15,6 +16,10 @@ import {
   useDealDelete, useDealUpdateStage,
 } from '../../../modules/native-crm/queries/deals.queries';
 import { useCustomersListQuery } from '../../../modules/native-crm/queries/customers.queries';
+import { useContactsListQuery } from '../../../modules/crm/queries/contacts.queries';
+import { useCompaniesListQuery } from '../../../modules/crm/queries/companies.queries';
+import { useStaffsListQuery } from '../../../modules/native-crm/queries/staffs.queries';
+import { useUsersListQuery } from '../../../modules/native-crm/queries/users.queries';
 import { RecordLockBanner } from '../../../components/native-crm/RecordLockBanner';
 import { usePipelineStages, type PipelineStage } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import { useCustomFieldsQuery } from '../../../modules/native-crm/queries/custom-fields.queries';
@@ -42,6 +47,7 @@ const DEFAULT_DEAL_STAGES: PipelineStage[] = [
 const EMPTY_FORM = {
   title: '', amount: '', currency: 'INR', stage: 'prospect',
   contactName: '', companyName: '', closeDate: '', notes: '',
+  assignedStaffId: '', contactId: '', companyId: '',
   customFields: {} as Record<string, any>,
 };
 
@@ -381,6 +387,44 @@ function CustomerPicker({ contactName, companyName, onSelect }: {
   );
 }
 
+// LR-OPP-001: a Deal could only ever link to a Field Service Customer (via
+// CustomerPicker above) — this gives it a second, independent link to a
+// real native-CRM Contact, so a Deal made directly (not via Lead
+// conversion, the only other path that ever set contactId) can reference
+// one too. Deliberately separate from CustomerPicker/contactName — doesn't
+// touch that existing field or flow at all.
+function ContactLinker({ contactId, onSelect }: { contactId?: string; onSelect: (id: string) => void }) {
+  const { data } = useContactsListQuery({ limit: 200 });
+  const contacts = data?.items ?? [];
+  return (
+    <Field label="Link to CRM Contact (optional)">
+      <select className={inp()} value={contactId ?? ''} onChange={(e) => onSelect(e.target.value)}>
+        <option value="">None</option>
+        {contacts.map((c: any) => (
+          <option key={c._id} value={c._id}>{`${c.firstName ?? ''} ${c.lastName ?? ''}`.trim()}</option>
+        ))}
+      </select>
+    </Field>
+  );
+}
+
+// LR-OPP-001 (Company half): same reasoning as ContactLinker above, mirrored
+// exactly — a second, independent link to a real native-CRM Company.
+function CompanyLinker({ companyId, onSelect }: { companyId?: string; onSelect: (id: string) => void }) {
+  const { data } = useCompaniesListQuery({ limit: 200 });
+  const companies = data?.items ?? [];
+  return (
+    <Field label="Link to CRM Company (optional)">
+      <select className={inp()} value={companyId ?? ''} onChange={(e) => onSelect(e.target.value)}>
+        <option value="">None</option>
+        {companies.map((c: any) => (
+          <option key={c._id} value={c._id}>{c.name}</option>
+        ))}
+      </select>
+    </Field>
+  );
+}
+
 // ─── Deal Form ────────────────────────────────────────────────────────────────
 
 function DealForm({ form, setForm, onSubmit, saving, submitLabel }: {
@@ -389,6 +433,17 @@ function DealForm({ form, setForm, onSubmit, saving, submitLabel }: {
 }) {
   const { stages } = usePipelineStages('deal', DEFAULT_DEAL_STAGES);
   const set = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
+
+  // LR-OPP-001: Deals had no Owner field in the UI at all (assignedStaffId
+  // was only ever set programmatically, via lead conversion) — same pattern
+  // LeadsPage.tsx's own Owner selector already uses.
+  const { data: staffData } = useStaffsListQuery({ page: 1, limit: 1000 });
+  const staffOptions = staffData?.items ?? [];
+  // LR-RULE-003: Owner should be a CRM/sales user, not only Field-Service
+  // staff — assignedStaffId is a plain string (no Mongoose ref), so a
+  // platform User's _id is just as valid a value as a NativeStaff staffId.
+  const { data: userData } = useUsersListQuery({ limit: 500 });
+  const userOptions = userData?.items ?? [];
 
   const { data: customFields = [] } = useCustomFieldsQuery('deals');
   const activeCustomFields = customFields.filter((cf) => cf.isActive);
@@ -427,6 +482,23 @@ function DealForm({ form, setForm, onSubmit, saving, submitLabel }: {
             {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
         </Field>
+        <Field label="Owner">
+          <select className={inp()} value={form.assignedStaffId ?? ''} onChange={(e) => set('assignedStaffId', e.target.value)}>
+            <option value="">Unassigned</option>
+            {userOptions.length > 0 && (
+              <optgroup label="CRM Users">
+                {userOptions.map((u: any) => (
+                  <option key={u._id} value={u._id}>{`${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email}</option>
+                ))}
+              </optgroup>
+            )}
+            {staffOptions.length > 0 && <optgroup label="Field Service Staff">
+            {staffOptions.map((s: any) => (
+              <option key={s.staffId} value={s.staffId}>{`${s.firstName ?? ''} ${s.lastName ?? ''}`.trim()}</option>
+            ))}
+            </optgroup>}
+          </select>
+        </Field>
 
         {/* Customer picker — fills contactName + companyName together */}
         <CustomerPicker
@@ -434,6 +506,8 @@ function DealForm({ form, setForm, onSubmit, saving, submitLabel }: {
           companyName={form.companyName}
           onSelect={(name, company) => setForm((p: any) => ({ ...p, contactName: name, companyName: company }))}
         />
+        <ContactLinker contactId={form.contactId} onSelect={(id) => set('contactId', id)} />
+        <CompanyLinker companyId={form.companyId} onSelect={(id) => set('companyId', id)} />
 
         <div className="col-span-2">
           <Field label="Expected Close Date">
@@ -501,6 +575,16 @@ function DealDetailPanel({
   const stageMeta = stages.find((s) => s.key === deal.stage);
   const { data: customFields = [] } = useCustomFieldsQuery('deals');
   const activeCustomFields = customFields.filter((cf) => cf.isActive);
+  // LR-UX-011: these were plain <span>s with no onClick at all — styled
+  // exactly like a clickable chip, but clicking one did nothing.
+  const updateStage = useDealUpdateStage();
+  const moveToStage = (key: string) => {
+    if (key === deal.stage || updateStage.isPending) return;
+    updateStage.mutate({ id: deal._id, stage: key }, {
+      onSuccess: () => { toast.success('Stage updated'); onClose(); },
+      onError: () => toast.error('Failed to update stage'),
+    });
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -561,16 +645,19 @@ function DealDetailPanel({
           <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">Move to Stage</p>
           <div className="flex flex-wrap gap-2">
             {stages.map((s) => (
-              <span
+              <button
                 key={s.key}
-                className={`text-xs px-2.5 py-1 rounded-full font-semibold cursor-default
+                type="button"
+                onClick={() => moveToStage(s.key)}
+                disabled={updateStage.isPending}
+                className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-colors disabled:opacity-50
                   ${deal.stage === s.key
-                    ? 'text-white'
-                    : 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'}`}
+                    ? 'text-white cursor-default'
+                    : 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted hover:bg-black/[0.08] dark:hover:bg-white/[0.12] cursor-pointer'}`}
                 style={deal.stage === s.key ? { backgroundColor: s.color } : undefined}
               >
                 {s.label}
-              </span>
+              </button>
             ))}
           </div>
         </div>
@@ -662,9 +749,12 @@ export default function DealsPage() {
   // hardcoded 'closed_won' string, so a tenant renaming that stage (or using
   // a different key entirely) doesn't silently break these numbers.
   const wonStageKeys = new Set(stages.filter((s) => s.outcome === 'won').map((s) => s.key));
-  const totalValue = deals.reduce((s, d) => s + (d.amount ?? 0), 0);
   const wonDeals   = deals.filter((d) => wonStageKeys.has(d.stage)).length;
   const wonValue   = deals.filter((d) => wonStageKeys.has(d.stage)).reduce((s, d) => s + (d.amount ?? 0), 0);
+  // "Pipeline Value" means still-open deals — excludes both Won and Lost
+  // (and any other terminal stage), not every deal regardless of stage.
+  const openStageKeys = new Set(stages.filter((s) => !s.isTerminal).map((s) => s.key));
+  const pipelineValue = deals.filter((d) => openStageKeys.has(d.stage)).reduce((s, d) => s + (d.amount ?? 0), 0);
 
   // Kanban grouping (server truth)
   const byStage = stages.reduce<Record<string, any[]>>((acc, s) => {
@@ -873,7 +963,7 @@ export default function DealsPage() {
           <div className="flex gap-3 px-5 py-2.5 bg-surface border-b border-border">
             {[
               { label: 'Total Deals',    value: String(deals.length),         color: 'text-blue-600'   },
-              { label: 'Pipeline Value', value: formatCurrency(totalValue),   color: 'text-violet-600' },
+              { label: 'Pipeline Value', value: formatCurrency(pipelineValue), color: 'text-violet-600' },
               { label: 'Won Deals',      value: String(wonDeals),             color: 'text-emerald-600'},
               { label: 'Won Value',      value: formatCurrency(wonValue),     color: 'text-green-600'  },
             ].map((stat) => (

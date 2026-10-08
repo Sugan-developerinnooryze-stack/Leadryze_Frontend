@@ -1,15 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { XMarkIcon, EnvelopeIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import api from '../../../services/api';
 
 type ShareModule = 'quotations' | 'invoices' | 'contracts' | 'workorders';
-
-const DOC_TYPE: Record<ShareModule, string> = {
-  quotations: 'quotation',
-  invoices:   'invoice',
-  contracts:  'contract',
-  workorders: 'workorder',
-};
 
 const DOC_LABEL: Record<ShareModule, string> = {
   quotations: 'Quotation',
@@ -97,28 +90,10 @@ export default function FSShareModal({ module, docId, docLabel, customer, onClos
       .map((value) => ({ value, checked: true }))
   );
   const [numberInput, setNumberInput] = useState('');
-  const [waMessage, setWaMessage]     = useState('');
-  const [portalLink, setPortalLink]   = useState('');
-  const waMessageInitialized = useRef(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await api.post('/api/v1/portal/generate-token', { docType: DOC_TYPE[module], docId });
-        const token = res.data?.data?.token;
-        if (!cancelled && token) setPortalLink(`${window.location.origin}/portal/${token}`);
-      } catch { /* link generation is a nicety, not fatal */ }
-    })();
-    return () => { cancelled = true; };
-  }, [module, docId]);
-
-  useEffect(() => {
-    if (portalLink && !waMessageInitialized.current) {
-      waMessageInitialized.current = true;
-      setWaMessage(`Hi, please find your ${typeLabel.toLowerCase()} ${docLabel} here: ${portalLink}`);
-    }
-  }, [portalLink, typeLabel, docLabel]);
+  const [waMessage, setWaMessage]     = useState(`Please find attached the ${typeLabel.toLowerCase()} ${docLabel}.`);
+  const [waSending, setWaSending]     = useState(false);
+  const [waError, setWaError]         = useState('');
+  const [waSent, setWaSent]           = useState(false);
 
   const toggleNumber = (i: number) =>
     setNumbers(numbers.map((n, j) => (j === i ? { ...n, checked: !n.checked } : n)));
@@ -131,20 +106,50 @@ export default function FSShareModal({ module, docId, docLabel, customer, onClos
     setNumberInput('');
   };
 
-  const handleSendWhatsApp = () => {
-    // Same "pending, unconfirmed add-box text" trap as CC — a number typed but
-    // never confirmed with + Add should still be sent to, not silently dropped.
+  // Real Meta Cloud API send (replaces the old client-side wa.me deep-link,
+  // which never touched Meta's API at all and couldn't attach the PDF — it
+  // just opened a new tab with a pre-filled message the user had to send
+  // themselves). Meta sends to one recipient per call, so each checked
+  // number gets its own request; a failure on one (e.g. that customer
+  // hasn't messaged this number in the last 24 hours — Meta only allows a
+  // business to START a conversation via an approved template message,
+  // which isn't set up yet) doesn't block the others.
+  const handleSendWhatsApp = async () => {
     const pendingNumber = numberInput.trim();
     const allNumbers = pendingNumber ? [...numbers, { value: pendingNumber, checked: true }] : numbers;
     if (pendingNumber) { setNumbers(allNumbers); setNumberInput(''); }
 
-    allNumbers
-      .filter((n) => n.checked && n.value.trim())
-      .forEach((n) => {
-        const digits = n.value.replace(/\D/g, '');
-        window.open(`https://wa.me/${digits}?text=${encodeURIComponent(waMessage)}`, '_blank');
-      });
-    onClose();
+    const targets = allNumbers.filter((n) => n.checked && n.value.trim());
+    if (targets.length === 0) return;
+
+    setWaSending(true);
+    setWaError('');
+    try {
+      const qs = templateId ? `templateId=${templateId}` : 'template=classic';
+      const failures: string[] = [];
+      for (const n of targets) {
+        try {
+          await api.post(`/api/v1/native-crm/pdf/${module}/${docId}/share-whatsapp?${qs}`, {
+            to: n.value.trim(),
+            message: waMessage,
+          });
+        } catch (err: any) {
+          failures.push(`${n.value}: ${err?.response?.data?.message ?? 'failed'}`);
+        }
+      }
+      if (failures.length === targets.length) {
+        setWaError(failures[0]?.split(': ').slice(1).join(': ') || 'Failed to send WhatsApp message');
+      } else if (failures.length > 0) {
+        setWaError(`Sent to ${targets.length - failures.length} of ${targets.length} — ${failures.join('; ')}`);
+        setWaSent(true);
+        setTimeout(onClose, 1800);
+      } else {
+        setWaSent(true);
+        setTimeout(onClose, 1200);
+      }
+    } finally {
+      setWaSending(false);
+    }
   };
 
   const inputCls = 'w-full rounded-lg bg-surface border border-border px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400 focus:border-transparent';
@@ -260,10 +265,13 @@ export default function FSShareModal({ module, docId, docLabel, customer, onClos
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1 uppercase tracking-wide">Message</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1 uppercase tracking-wide">Caption</label>
                 <textarea rows={4} value={waMessage} onChange={(e) => setWaMessage(e.target.value)} className={`${inputCls} resize-none`} />
-                <p className="mt-1 text-[11px] text-text-muted">Opens WhatsApp with this message pre-filled for each selected number — WhatsApp doesn't support attaching the PDF directly, so a view-online link is included instead.</p>
+                <p className="mt-1 text-[11px] text-text-muted">Sends the PDF directly as a WhatsApp document with this caption. Only delivers to a number that has messaged this WhatsApp number within the last 24 hours — Meta requires an approved message template to start a new conversation, which isn't set up yet.</p>
               </div>
+
+              {waError && <p className="text-xs text-danger-500">{waError}</p>}
+              {waSent && !waError && <p className="text-xs text-success-600 dark:text-success-500">Sent!</p>}
             </>
           )}
         </div>
@@ -289,10 +297,16 @@ export default function FSShareModal({ module, docId, docLabel, customer, onClos
           ) : (
             <button
               onClick={handleSendWhatsApp}
-              disabled={!numbers.some((n) => n.checked && n.value.trim())}
-              className="px-6 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-60 transition-colors"
+              disabled={waSending || !numbers.some((n) => n.checked && n.value.trim())}
+              className="px-6 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-60 transition-colors flex items-center gap-2 min-w-[150px] justify-center"
             >
-              Send via WhatsApp
+              {waSending && (
+                <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+              )}
+              {waSending ? 'Sending…' : 'Send via WhatsApp'}
             </button>
           )}
         </div>

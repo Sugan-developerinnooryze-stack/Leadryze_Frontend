@@ -48,12 +48,17 @@ export default function CompanyViewPage() {
 
   const { data: item, isLoading } = useCompanyQuery(id ?? '');
 
+  // LR-CONTACT-001 (Company half): precise match on the real companyId
+  // link, instead of a fuzzy company-name text search.
   const { data: contactsData, isLoading: contactsLoading } = useContactsListQuery({
-    page: contactsPage, limit: 10, search: item?.name,
+    page: contactsPage, limit: 10, companyId: id,
   });
+  // LR-OPP-001 (Company half): precise match on the real companyId link,
+  // instead of a fuzzy company-name text search (same fix already applied
+  // to Contact's own Deals tab for LR-CONTACT-001).
   const { data: dealsData, isLoading: dealsLoading } = useDealsQuery(
-    { page: dealsPage, limit: 10, search: item?.name },
-    activeTab === 'deals' && !!item?.name,
+    { page: dealsPage, limit: 10, companyId: id },
+    activeTab === 'deals' && !!id,
   );
 
   if (isLoading) return (
@@ -163,9 +168,6 @@ export default function CompanyViewPage() {
 
           {activeTab === 'contacts' && (
             <div className="max-w-4xl">
-              <p className="text-xs text-text-muted mb-3">
-                Matched by company name — Contacts don't yet carry a direct link to Companies.
-              </p>
               <div className="bg-surface rounded-xl border border-border shadow-sm flex flex-col h-[560px] overflow-hidden">
                 <FSTable
                   columns={CONTACT_COLS}

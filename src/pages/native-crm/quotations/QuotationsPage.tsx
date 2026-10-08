@@ -4,6 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import FSDrawer from '../../../modules/native-crm/shared/FSDrawer';
 import FSDeleteModal from '../../../modules/native-crm/shared/FSDeleteModal';
+import DateRangeFilter, { type DateRangeFilterValue } from '../../../modules/native-crm/shared/DateRangeFilter';
+import DynamicFilterPanel, { serializeConditions, type FilterCondition } from '../../../modules/native-crm/shared/DynamicFilterPanel';
 import { FSStatusBadge } from '../../../modules/native-crm/shared/types';
 import type { FSFieldDef, FSColumnDef } from '../../../modules/native-crm/shared/types';
 import {
@@ -11,6 +13,7 @@ import {
   useQuotationCreate,
   useQuotationUpdate,
   useQuotationDelete,
+  useQuotationFilterFieldsQuery,
 } from '../../../modules/native-crm/queries/quotations.queries';
 import { CompanyBadge } from '../../../components/native-crm/CompanyBadge';
 import { CompanyFilterBar } from '../../../components/native-crm/CompanyFilterBar';
@@ -19,15 +22,22 @@ import { buildPrefill } from '../../../modules/native-crm/shared/buildPrefill';
 import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import { useCustomerNameMap } from '../../../modules/native-crm/shared/useCustomerNameMap';
 
+// LR-QUOTE-002: matches the symbol map every Quotation view/print page
+// already resolves from settings.currency — this list page was the one
+// place still hardcoding "$".
+const CUR_SYMBOL: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
+
 const FIELDS: FSFieldDef[] = [
   { key: 'branchId',      label: 'Company',       type: 'branch-select' },
   { key: 'customerId',    label: 'Customer',      type: 'lookup',       required: true,
     lookupModule: 'customers', lookupValueField: 'customerId', lookupLabelField: 'name' },
   { key: 'title',         label: 'Title',         type: 'text',         required: true },
-  { key: 'address',       label: 'Address',       type: 'textarea' },
+  { key: 'address',       label: 'Address',       type: 'textarea',     autofillFrom: 'customerId', autofillComposeKeys: ['city', 'state', 'postcode', 'country'] },
   { key: 'services',      label: 'Service Lines', type: 'servicelines', withTotals: true },
-  { key: 'discount',      label: 'Discount %',    type: 'number',       placeholder: '0' },
-  { key: 'gstPercentage', label: 'GST %',         type: 'number',       placeholder: '0' },
+  { key: 'discount',      label: 'Discount %',    type: 'number',       placeholder: '0',
+    autofillFrom: 'branchId', autofillSourceKey: 'discountPercentage' },
+  { key: 'gstPercentage', label: 'GST %',         type: 'number',       placeholder: '0',
+    autofillFrom: 'branchId', autofillSourceKey: 'taxPercentage' },
   { key: 'validUntil',    label: 'Valid Until',   type: 'date' },
   { key: 'status',        label: 'Status',        type: 'select',       options: ['draft', 'sent', 'approved', 'rejected'] },
   { key: 'notes',         label: 'Notes',         type: 'textarea' },
@@ -48,9 +58,13 @@ export default function QuotationsPage() {
   const location = useLocation();
   const [search,    setSearch]    = useState('');
   const [status,    setStatus]    = useState('');
+  const [dateFilter, setDateFilter] = useState<DateRangeFilterValue>({});
+  const [conditions, setConditions] = useState<FilterCondition[]>([]);
   const [page,      setPage]      = useState(1);
   const [drawer,    setDrawer]    = useState<{ open: boolean; record: any | null }>({ open: false, record: null });
   const [delTarget, setDelTarget] = useState<any | null>(null);
+
+  const { data: filterCatalog = [] } = useQuotationFilterFieldsQuery();
 
   const { data: settings } = useFSSettingsQuery();
 
@@ -79,12 +93,12 @@ export default function QuotationsPage() {
       render: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '—',
       exportValue: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '' },
     { key: 'customerId',  label: 'Customer ID' },
-    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `$${Number(r.servicesAmountWithTax).toFixed(2)}` : '—' },
+    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `${CUR_SYMBOL[settings?.currency ?? 'AUD'] ?? '$'}${Number(r.servicesAmountWithTax).toFixed(2)}` : '—' },
     { key: 'validUntil',  label: 'Valid Until', render: (r) => r.validUntil ? new Date(r.validUntil).toLocaleDateString() : '—' },
     { key: 'status',   label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
     { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
     { key: 'createdAt', label: 'Created Date', render: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—' },
-  ], [customerNames]);
+  ], [customerNames, settings?.currency]);
 
   // Open drawer pre-filled when navigated here from another module
   useEffect(() => {
@@ -96,9 +110,13 @@ export default function QuotationsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { setPage(1); }, [search, status]);
+  useEffect(() => { setPage(1); }, [search, status, dateFilter, conditions]);
 
-  const { data: result, isLoading, error } = useQuotationsListQuery({ page, limit: 20, search: search || undefined, status: status || undefined });
+  const { data: result, isLoading, error } = useQuotationsListQuery({
+    page, limit: 20, search: search || undefined, status: status || undefined,
+    range: dateFilter.range, dateFrom: dateFilter.dateFrom, dateTo: dateFilter.dateTo,
+    filters: serializeConditions(conditions, filterCatalog),
+  });
   const items = result?.items ?? [];
   const meta  = result?.meta  ?? { total: 0, page: 1, totalPages: 1 };
 
@@ -166,6 +184,12 @@ export default function QuotationsPage() {
         onEdit={(r) => setDrawer({ open: true, record: r })}
         onDelete={setDelTarget}
         moduleKey="quotations"
+        extraToolbar={(
+          <>
+            <DynamicFilterPanel catalog={filterCatalog} value={conditions} onChange={setConditions} />
+            <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
+          </>
+        )}
         emptyIcon={DocumentTextIcon}
         emptyLabel="No quotations yet - create your first one"
         onRowClick={(r) => navigate(`/native-crm/quotations/${r._id}`)}

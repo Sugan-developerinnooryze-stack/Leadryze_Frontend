@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useMemo } from 'react';
 import { CubeIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import FSDrawer from '../../../modules/native-crm/shared/FSDrawer';
@@ -7,12 +7,15 @@ import { FSStatusBadge } from '../../../modules/native-crm/shared/types';
 import type { FSFieldDef, FSColumnDef } from '../../../modules/native-crm/shared/types';
 import { CompanyBadge } from '../../../components/native-crm/CompanyBadge';
 import { CompanyFilterBar } from '../../../components/native-crm/CompanyFilterBar';
+import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-settings.queries';
 import {
   usePartsListQuery,
   usePartCreate,
   usePartUpdate,
   usePartDelete,
 } from '../../../modules/native-crm/queries/parts.queries';
+
+const CUR_SYMBOL: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
 
 const FIELDS: FSFieldDef[] = [
   { key: 'branchId', label: 'Company', type: 'branch-select' },
@@ -25,17 +28,6 @@ const FIELDS: FSFieldDef[] = [
   { key: 'status',      label: 'Status',      type: 'select',   options: ['active', 'inactive'] },
 ];
 
-const COLUMNS: FSColumnDef[] = [
-  { key: 'partId',     label: 'ID' },
-  { key: 'name',       label: 'Part Name' },
-  { key: 'partNumber', label: 'Part No.' },
-  { key: 'price',      label: 'Price',    render: (r) => r.price != null ? `$${Number(r.price).toFixed(2)}` : '—' },
-  { key: 'quantity',   label: 'Qty',      render: (r) => r.quantity ?? '—' },
-  { key: 'status',     label: 'Status',   render: (r) => <FSStatusBadge value={r.status ?? 'active'} /> },
-  { key: 'branchId', label: 'Company', render: (r: any) => <CompanyBadge branchId={r.branchId} /> },
-  { key: 'createdAt', label: 'Created Date', render: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—' },
-];
-
 export default function PartsPage() {
   const [search,    setSearch]    = useState('');
   const [status,    setStatus]    = useState('');
@@ -43,7 +35,20 @@ export default function PartsPage() {
   const [drawer,    setDrawer]    = useState<{ open: boolean; record: any | null }>({ open: false, record: null });
   const [delTarget, setDelTarget] = useState<any | null>(null);
 
+  const { data: settings } = useFSSettingsQuery();
+
   useEffect(() => { setPage(1); }, [search, status]);
+
+  const columns: FSColumnDef[] = useMemo(() => [
+    { key: 'partId',     label: 'ID' },
+    { key: 'name',       label: 'Part Name' },
+    { key: 'partNumber', label: 'Part No.' },
+    { key: 'price',      label: 'Price',    render: (r) => r.price != null ? `${CUR_SYMBOL[settings?.currency ?? 'AUD'] ?? '$'}${Number(r.price).toFixed(2)}` : '—' },
+    { key: 'quantity',   label: 'Qty',      render: (r) => r.quantity ?? '—' },
+    { key: 'status',     label: 'Status',   render: (r) => <FSStatusBadge value={r.status ?? 'active'} /> },
+    { key: 'branchId', label: 'Company', render: (r: any) => <CompanyBadge branchId={r.branchId} /> },
+    { key: 'createdAt', label: 'Created Date', render: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—' },
+  ], [settings?.currency]);
 
   const { data: result, isLoading, error } = usePartsListQuery({ page, limit: 20, search: search || undefined, status: status || undefined });
   const items = result?.items ?? [];
@@ -101,7 +106,7 @@ export default function PartsPage() {
       </div>
 
       <FSTable
-        columns={COLUMNS}
+        columns={columns}
         data={items}
         loading={isLoading}
         errorStatus={(error as any)?.response?.status}

@@ -6,6 +6,11 @@ const KEY  = ['native-crm', 'deals'] as const;
 
 interface DealFilters {
   page?: number; limit?: number; search?: string; stage?: string;
+  /** LR-CONTACT-001: precise match on a real Contact link, instead of the
+   * old fuzzy contactName text search. */
+  contactId?: string;
+  /** LR-OPP-001 (Company half): same reasoning as contactId above. */
+  companyId?: string;
   /** Built-in field name, or `customFields.<key>` for a tenant custom field. */
   sortBy?: string;
   sortDir?: 'asc' | 'desc';

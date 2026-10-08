@@ -274,7 +274,7 @@ export default function NativeLogsPage() {
           </div>
           <div>
             <h1 className="text-base font-semibold text-text-primary">Native Logs</h1>
-            <p className="text-xs text-text-muted">{meta.total} total entries</p>
+            <p className="text-xs text-text-muted">CRM record changes — every Create, Update and Delete · {meta.total} total entries</p>
           </div>
         </div>
         <button

@@ -4,7 +4,7 @@ import api from '../../../services/api';
 const BASE = '/api/v1/native-crm/workorders';
 const KEY  = ['native-crm', 'workorders'] as const;
 
-interface ListParams { page?: number; limit?: number; search?: string; status?: string; staffId?: string; customerId?: string; contractId?: string; }
+interface ListParams { page?: number; limit?: number; search?: string; status?: string; staffId?: string; customerId?: string; contractId?: string; range?: string; dateFrom?: string; dateTo?: string; filters?: string; dateField?: string; teamId?: string; owner?: 'my' | 'unassigned' | 'assigned'; }
 interface Meta       { total: number; page: number; totalPages: number; }
 
 export function useWorkordersListQuery(params: ListParams) {
@@ -27,6 +27,17 @@ export function useWorkordersStatsQuery(range?: string, customFrom?: string, cus
       overdue: number;
       byStatus: Record<string, number>;
     }),
+  });
+}
+
+/** Fixed fields + this tenant's active custom fields for "workorders",
+ * server-computed — drives DynamicFilterPanel's field picker. Long staleTime
+ * since the catalog only changes when someone edits Custom Fields config. */
+export function useWorkorderFilterFieldsQuery() {
+  return useQuery({
+    queryKey: [...KEY, 'filter-fields'],
+    queryFn: () => api.get(`${BASE}/filter-fields`).then((r) => r.data.data as any[]),
+    staleTime: 5 * 60_000,
   });
 }
 

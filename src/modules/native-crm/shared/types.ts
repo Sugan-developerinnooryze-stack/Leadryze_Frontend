@@ -34,6 +34,27 @@ export interface FSFieldDef {
   // input afterward, so the user can still type over it by hand.
   copyFromKey?:         string;
   copyFromLabel?:       string;
+
+  // Key of a `type: 'lookup'` or `'branch-select'` field elsewhere in the
+  // same form whose selected record should auto-populate THIS field.
+  // Overwrites on every new selection, same as cascadeParentField's
+  // reset-on-change behavior — the field stays a normal editable input
+  // afterward, so the user can still type over it by hand.
+  autofillFrom?:        string;
+  // Property to read off the selected record — defaults to this field's own
+  // `key` when omitted (e.g. an `address` field reads `selected.address`).
+  // Set this when the source record uses a different name (e.g. a
+  // `gstPercentage` field autofilled from a Company's own
+  // `defaultGstPercentage`/`taxPercentage` field).
+  autofillSourceKey?:   string;
+  // Additional keys to read off the SAME selected record and join with the
+  // primary sourceKey value (filtering out any that are blank), for a field
+  // like `address` whose source record often splits a full address across
+  // several separate fields (city/state/postcode/country) rather than one
+  // single-line field. Omit for every other autofillFrom field — unrelated
+  // to how non-address autofills (e.g. Discount %/GST % from a Company)
+  // should behave, so this never changes their existing single-field read.
+  autofillComposeKeys?: string[];
 }
 
 export interface FSColumnDef<T = any> {

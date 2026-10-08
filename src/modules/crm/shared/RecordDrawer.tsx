@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
 import api from '../../../services/api';
 import CrmField from './CrmField';
 import type { ModulePageConfig, CrmRecord } from './types/crm.types';
@@ -140,8 +141,18 @@ export default function RecordDrawer({
         payload.relatedId     = relation.relatedId ?? '';
         payload.relatedLabel  = relation.relatedLabel ?? '';
       }
-      if (isEdit) await api.put(`${config.apiBase}/${record!._id}`, payload);
-      else        await api.post(config.apiBase, payload);
+      if (isEdit) {
+        await api.put(`${config.apiBase}/${record!._id}`, payload);
+      } else {
+        const res = await api.post(config.apiBase, payload);
+        // LR-CONTACT-003: non-blocking — the record is already created
+        // either way (present on Contact's create response; harmless no-op
+        // for every other module that doesn't send this field).
+        const duplicate = res.data?.data?.duplicateWarning;
+        if (duplicate) {
+          toast(`Possible duplicate: ${duplicate.label} already has this email/phone`, { icon: '⚠️', duration: 6000 });
+        }
+      }
       onSaved();
       if (addAnother) { setForm(initForm()); setCustomForm(initCustomForm()); setRelation({}); setErrors({}); }
       else onClose();
@@ -152,8 +163,19 @@ export default function RecordDrawer({
       // an actual bad-field error apart from a network failure.
       const res = (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response;
       const fieldErrors = res?.data?.errors;
+      // LR-CONTACT-002: "lastName: String must contain at least 1
+      // character(s)" is Zod's raw internal wording — rephrase the common
+      // "empty/missing" case into what a user actually typed into, using
+      // the field's own display label instead of its camelCase key.
+      const friendly = (key: string, msg: string): string => {
+        const label = config.fields.find((f) => f.key === key)?.label ?? key;
+        if (/^Required$/.test(msg) || /must contain at least 1 character/.test(msg)) {
+          return `${label} is required`;
+        }
+        return `${label}: ${msg}`;
+      };
       const detail = fieldErrors
-        ? Object.entries(fieldErrors).map(([k, msgs]) => `${k}: ${msgs?.[0] ?? 'invalid'}`).join('; ')
+        ? Object.entries(fieldErrors).map(([k, msgs]) => friendly(k, msgs?.[0] ?? 'invalid')).join('; ')
         : undefined;
       setErrors({ _global: detail ?? res?.data?.message ?? 'Save failed. Please try again.' });
     } finally { setSaving(false); }

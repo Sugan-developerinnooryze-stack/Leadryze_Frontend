@@ -48,6 +48,38 @@ export interface TenantVoiceConfig {
   voicePreset?: TenantVoicePreset;
 }
 
+/** Full color/font/size customization — every field optional; an unset one
+ * resolves (backend's resolveWidgetTheme(), mirrored client-side below for
+ * the live preview) from the selected template's own default palette. */
+export interface TenantWidgetTheme {
+  accentColor?: string;
+  headerColor?: string;
+  headerTextColor?: string;
+  backgroundColor?: string;
+  botBubbleColor?: string;
+  botTextColor?: string;
+  userBubbleColor?: string;
+  userTextColor?: string;
+  fontFamily?: string;
+  size?: 'compact' | 'standard' | 'large';
+  /** Tiled chat-body background image — server-upload-only, same
+   * write-protection precedent as widget.logoUrl (never sent through the
+   * generic Save Appearance payload directly; see WidgetSettingsPage.tsx's
+   * own handleAppearanceSave()). */
+  backgroundImageUrl?: string;
+}
+
+/** "Connect with an expert" real-time human handoff — OFF by default for
+ * every tenant (see ground rule #1 on the Human Handoff feature). Separate
+ * from the `native_conversations` platform feature flag, which controls
+ * whether the admin Conversations inbox module exists at all. */
+export interface TenantHumanHandoffConfig {
+  enabled: boolean;
+  buttonText: string;
+  waitingMessage: string;
+  offlineMessage?: string;
+}
+
 export interface TenantWidgetConfig {
   enabled: boolean;
   widgetKey?: string;
@@ -73,8 +105,10 @@ export interface TenantWidgetConfig {
   lastSuccessfulCrawlChunksIndexed?: number;
   logoUrl?: string;
   template?: 'modern' | 'minimal' | 'chips' | 'dark';
+  theme?: TenantWidgetTheme;
   booking?: TenantBookingHoursConfig;
   voice?: TenantVoiceConfig;
+  humanHandoff?: TenantHumanHandoffConfig;
 }
 
 export interface CrawlStatus {
@@ -97,6 +131,7 @@ export interface Tenant {
     monthlyTokenLimit?: number; tokenWarningThresholdPercent?: number; tokenCriticalThresholdPercent?: number;
   };
   dataScopeConfig?: Record<string, boolean>;
+  settings?: { timezone?: string; language?: string; [key: string]: unknown };
 }
 
 const BASE = '/api/v1/tenants';
@@ -138,17 +173,20 @@ export function useUpdateTenantBranding(id: string) {
 
 /** Governs only the RAG/catalog/booking tool-calling path — never the
  * plain fast-path/conversational path. `toolModelPreset: null` clears the
- * override back to the global default. */
+ * override back to the global default.
+ *
+ * monthlyTokenLimit/monthlyVoiceMinutesLimit/tokenWarningThresholdPercent/
+ * tokenCriticalThresholdPercent are deliberately NOT accepted here anymore —
+ * the backend's PUT /tenants/:id silently drops them now (see
+ * tenant.service.ts's updateTenant() allow-list); only Super Admin can set
+ * them, via useAdminUpdateTenantAiConfig() below. */
 export function useUpdateTenantAIConfig(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (aiConfig: {
       agentName?: string; toolModelPreset?: ToolModelPreset | null; autoConvertLeadOnMeetingCompleted?: boolean;
-      monthlyTokenLimit?: number | null; tokenWarningThresholdPercent?: number; tokenCriticalThresholdPercent?: number;
     }) =>
       api.put(`${BASE}/${id}`, { aiConfig }).then((r) => r.data.data as Tenant),
-    // Prefix match — also invalidates the ai-usage query below (['tenants', id, 'ai-usage']),
-    // so saving a new limit refreshes the usage view immediately.
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY(id) }),
   });
 }
@@ -164,8 +202,13 @@ export interface TenantAiUsage {
   status: 'normal' | 'warning' | 'critical' | 'exceeded';
   warningThresholdPercent: number;
   criticalThresholdPercent: number;
+  planDefaultVoiceMinutesLimit: number;
+  customVoiceMinutesLimit: number | null;
   monthlyVoiceMinutesLimit: number;
   voiceMinutesUsedThisMonth: number;
+  /** Prepaid-credit model: usage above is summed since this date, not since
+   * the calendar month started — see tenant.service.ts's getAiUsage(). */
+  creditsLastResetAt: string;
 }
 
 /** Backs the "AI Usage & Limits" settings section — a self-service view of
@@ -222,6 +265,28 @@ export function useRemoveWidgetLogo(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => api.delete(`${BASE}/${id}/widget/logo`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY(id) }),
+  });
+}
+
+export function useUploadWidgetBackgroundImage(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      return api.post(`${BASE}/${id}/widget/background-image`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }).then((r) => r.data.data as { backgroundImageUrl: string });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY(id) }),
+  });
+}
+
+export function useRemoveWidgetBackgroundImage(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.delete(`${BASE}/${id}/widget/background-image`),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY(id) }),
   });
 }

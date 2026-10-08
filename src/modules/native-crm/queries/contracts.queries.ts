@@ -4,7 +4,7 @@ import api from '../../../services/api';
 const BASE = '/api/v1/native-crm/contracts';
 const KEY  = ['native-crm', 'contracts'] as const;
 
-interface ListParams { page?: number; limit?: number; search?: string; status?: string; }
+interface ListParams { page?: number; limit?: number; search?: string; status?: string; range?: string; dateFrom?: string; dateTo?: string; filters?: string; dateField?: string; teamId?: string; staffId?: string; }
 interface Meta       { total: number; page: number; totalPages: number; }
 
 export function useContractsListQuery(params: ListParams) {
@@ -15,6 +15,16 @@ export function useContractsListQuery(params: ListParams) {
         items: (r.data.data ?? []) as any[],
         meta:  (r.data.meta  ?? { total: 0, page: 1, totalPages: 1 }) as Meta,
       })),
+  });
+}
+
+/** Fixed fields + this tenant's active custom fields for "contracts",
+ * server-computed — drives DynamicFilterPanel's field picker. */
+export function useContractFilterFieldsQuery() {
+  return useQuery({
+    queryKey: [...KEY, 'filter-fields'],
+    queryFn: () => api.get(`${BASE}/filter-fields`).then((r) => r.data.data as any[]),
+    staleTime: 5 * 60_000,
   });
 }
 

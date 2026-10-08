@@ -338,7 +338,9 @@ export default function ContractViewPage() {
   const combined = svcSubtotal + prtSubtotal;
   const discount = item?.discount ?? 0;
   const gst = item?.gstPercentage ?? 0;
-  const afterDiscount = combined - discount;
+  // discount is a percentage (0-100), not a flat amount.
+  const discountAmt = (combined * discount) / 100;
+  const afterDiscount = combined - discountAmt;
   const total = afterDiscount * (1 + gst / 100);
 
   const steps: string[] = settings?.workflowSteps ?? ['quotation', 'workorder', 'invoice'];
@@ -601,7 +603,7 @@ export default function ContractViewPage() {
                 </>
               )}
               <div className="flex justify-between text-text-muted"><span>Subtotal</span><span>{fmt(combined, cur)}</span></div>
-              {discount > 0 && <div className="flex justify-between text-red-500"><span>Discount</span><span>-{fmt(discount, cur)}</span></div>}
+              {discount > 0 && <div className="flex justify-between text-red-500"><span>Discount ({discount}%)</span><span>-{fmt(discountAmt, cur)}</span></div>}
               {gst > 0 && <div className="flex justify-between text-text-muted"><span>GST ({gst}%)</span><span>{fmt(total - afterDiscount, cur)}</span></div>}
               <div className="flex justify-between font-bold text-base border-t-2 border-border pt-2 text-text-primary">
                 <span>Total</span><span>{fmt(total, cur)}</span>

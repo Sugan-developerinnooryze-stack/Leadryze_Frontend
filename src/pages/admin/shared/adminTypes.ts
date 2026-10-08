@@ -11,9 +11,12 @@ export interface Client {
   messageCount: number; campaignCount: number;
   adminUser: AdminUser | null; createdAt: string;
 }
-// password is present only when a Super Admin issued/regenerated this
-// credential (never for a self-chosen one) — see backend's passwordEnc.
-export interface TenantUser { _id: string; firstName: string; lastName: string; email: string; role: string; emailVerified: boolean; createdAt: string; password?: string | null; loginId?: string }
+// password is only ever populated client-side right after this admin
+// sets/regenerates it in this session (one-time reveal) — the server never
+// returns a stored password (LR-SEC-001). mustChangePassword distinguishes
+// an admin-issued-but-unchanged credential from a self-chosen one once the
+// one-time value is gone.
+export interface TenantUser { _id: string; firstName: string; lastName: string; email: string; role: string; emailVerified: boolean; createdAt: string; password?: string | null; mustChangePassword?: boolean; loginId?: string }
 export interface RecentCustomer { _id: string; name: string; email: string; phone: string; channel: string; createdAt: string }
 export interface ConnectorItem { _id: string; type: string; isActive: boolean; createdAt: string }
 export interface Campaign { _id: string; name: string; type: string; status: string; stats: { sent: number; delivered: number; opened: number }; createdAt: string }

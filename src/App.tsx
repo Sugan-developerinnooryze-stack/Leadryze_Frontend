@@ -27,6 +27,7 @@ const AdminSecurityPage      = lazy(() => import('./pages/admin/security/Securit
 const DashboardPage   = lazy(() => import('./pages/dashboard/DashboardPage'));
 const CustomersPage   = lazy(() => import('./pages/customers/CustomersPage'));
 const CampaignsPage   = lazy(() => import('./pages/campaigns/CampaignsPage'));
+const CampaignDetailPage = lazy(() => import('./pages/campaigns/CampaignDetailPage'));
 const TemplatesPage   = lazy(() => import('./pages/templates/TemplatesPage'));
 const AnalyticsPage   = lazy(() => import('./pages/analytics/AnalyticsPage'));
 const SettingsPage    = lazy(() => import('./pages/settings/SettingsPage'));
@@ -104,6 +105,7 @@ const TasksPage       = lazy(() => import('./modules/crm/tasks/pages/TasksPage')
 const TicketsPage     = lazy(() => import('./modules/crm/tickets/pages/TicketsPage'));
 const CallsPage       = lazy(() => import('./modules/crm/calls/pages/CallsPage'));
 const MeetingsPage    = lazy(() => import('./modules/crm/meetings/pages/MeetingsPage'));
+const ConversationsInboxPage = lazy(() => import('./modules/crm/conversations/pages/ConversationsInboxPage'));
 
 function PageLoader() {
   return (
@@ -182,6 +184,7 @@ export default function App() {
           <Route path="dashboard"         element={S(DashboardPage)} />
           <Route path="customers"         element={S(CustomersPage)} />
           <Route path="campaigns"         element={S(CampaignsPage)} />
+          <Route path="campaigns/:id"     element={S(CampaignDetailPage)} />
           <Route path="templates"         element={S(TemplatesPage)} />
           <Route path="analytics"         element={S(AnalyticsPage)} />
           <Route path="connectors"        element={S(ConnectorsPage)} />
@@ -258,6 +261,8 @@ export default function App() {
           <Route path="crm/tickets/:id"        element={S(TicketViewPage)} />
           <Route path="crm/calls"              element={S(CallsPage)} />
           <Route path="crm/meetings"           element={S(MeetingsPage)} />
+          <Route path="crm/conversations"             element={S(ConversationsInboxPage)} />
+          <Route path="crm/conversations/:sessionId"  element={S(ConversationsInboxPage)} />
         </Route>
 
         {/* Public customer portal — no auth required */}

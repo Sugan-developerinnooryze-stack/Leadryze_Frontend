@@ -5,6 +5,7 @@ import type { ModulePageConfig } from '../../shared/types/crm.types';
 export const config: ModulePageConfig = {
   label:         'Tasks',
   labelSingular: 'Task',
+  description:   'Tasks tied to CRM leads, deals and contacts — for your personal cross-module task list, see My CRM → Management.',
   apiBase:       '/api/v1/native-crm/tasks',
   statusField:   'taskStatus',
   pipelineModule: 'task',

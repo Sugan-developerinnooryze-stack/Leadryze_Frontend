@@ -80,7 +80,8 @@ export default function InvoicePrintPage() {
     const rawSvc = (safeDraft.services ?? []).reduce((s: number, sv: any) => s + (sv.amount ?? 0) * (sv.count ?? 1), 0);
     const rawPrt = (safeDraft.parts ?? []).reduce((s: number, pt: any) => s + (pt.amount ?? 0) * (pt.count ?? 1), 0);
     const combined = rawSvc + rawPrt;
-    const servicesAmount        = combined - (safeDraft.discount ?? 0);
+    // discount is a percentage (0-100), not a flat amount.
+    const servicesAmount        = combined - (combined * (safeDraft.discount ?? 0)) / 100;
     const servicesAmountWithTax = servicesAmount * (1 + (safeDraft.gstPercentage ?? 0) / 100);
     updateMutation.mutate(
       { id: id!, data: { ...safeDraft, servicesAmount, servicesAmountWithTax, partsAmount: rawPrt } },
@@ -164,7 +165,9 @@ export default function InvoicePrintPage() {
   const combined      = svcSubtotal + prtSubtotal;
   const discount      = doc?.discount ?? 0;
   const gst           = doc?.gstPercentage ?? 0;
-  const afterDiscount = combined - discount;
+  // discount is a percentage (0-100), not a flat amount.
+  const discountAmt   = (combined * discount) / 100;
+  const afterDiscount = combined - discountAmt;
   const total         = afterDiscount * (1 + gst / 100);
 
   const companyAddr = [settings?.address1, settings?.address2, settings?.city, settings?.state, settings?.postalCode, settings?.country].filter(Boolean).join(', ');
@@ -527,7 +530,7 @@ export default function InvoicePrintPage() {
             {prtSubtotal > 0 && <div className="flex justify-between text-gray-600"><span>Services</span><span>{fmt(svcSubtotal, cur)}</span></div>}
             {prtSubtotal > 0 && <div className="flex justify-between text-gray-600"><span>Parts</span><span>{fmt(prtSubtotal, cur)}</span></div>}
             <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>{fmt(combined, cur)}</span></div>
-            {discount > 0 && <div className="flex justify-between text-red-600"><span>Discount</span><span>-{fmt(discount, cur)}</span></div>}
+            {discount > 0 && <div className="flex justify-between text-red-600"><span>Discount ({discount}%)</span><span>-{fmt(discountAmt, cur)}</span></div>}
             {gst > 0 && <div className="flex justify-between text-gray-600"><span>GST ({gst}%)</span><span>{fmt(total - afterDiscount, cur)}</span></div>}
             <div className="flex justify-between font-bold text-sm border-t-2 border-gray-300 pt-1.5 text-gray-900">
               <span>TOTAL DUE</span><span>{fmt(total, cur)}</span>

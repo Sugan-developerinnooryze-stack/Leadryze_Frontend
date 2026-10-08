@@ -173,7 +173,9 @@ export default function WorkorderPrintPage() {
   const combined      = svcSubtotal + prtSubtotal;
   const discount      = doc?.discount ?? 0;
   const gst           = doc?.gstPercentage ?? 0;
-  const afterDiscount = combined - discount;
+  // discount is a percentage (0-100), not a flat amount.
+  const discountAmt   = (combined * discount) / 100;
+  const afterDiscount = combined - discountAmt;
   const total         = afterDiscount * (1 + gst / 100);
 
   const priorityColor = item.priority === 'high'
@@ -550,7 +552,7 @@ export default function WorkorderPrintPage() {
               {prtSubtotal > 0 && <div className="flex justify-between text-gray-600"><span>Services</span><span>{fmt(svcSubtotal, cur)}</span></div>}
               {prtSubtotal > 0 && <div className="flex justify-between text-gray-600"><span>Parts</span><span>{fmt(prtSubtotal, cur)}</span></div>}
               <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>{fmt(combined, cur)}</span></div>
-              {discount > 0 && <div className="flex justify-between text-red-600"><span>Discount</span><span>-{fmt(discount, cur)}</span></div>}
+              {discount > 0 && <div className="flex justify-between text-red-600"><span>Discount ({discount}%)</span><span>-{fmt(discountAmt, cur)}</span></div>}
               {gst > 0 && <div className="flex justify-between text-gray-600"><span>GST ({gst}%)</span><span>{fmt(total - afterDiscount, cur)}</span></div>}
               <div className="flex justify-between font-bold text-sm border-t-2 border-gray-300 pt-1.5 text-gray-900">
                 <span>TOTAL</span><span>{fmt(total, cur)}</span>

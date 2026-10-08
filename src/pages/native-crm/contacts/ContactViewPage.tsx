@@ -5,10 +5,14 @@ import {
 } from '@heroicons/react/24/outline';
 import ActivityFeedPanel from '../../../modules/native-crm/shared/ActivityFeedPanel';
 import { useContactQuery } from '../../../modules/crm/queries/contacts.queries';
+import RecordDrawer from '../../../modules/crm/shared/RecordDrawer';
+import { config as contactsConfig } from '../../../modules/crm/contacts/pages/ContactsPage';
 import { useDealsQuery } from '../../../modules/native-crm/queries/deals.queries';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import { FSStatusBadge } from '../../../modules/native-crm/shared/types';
 import type { FSColumnDef } from '../../../modules/native-crm/shared/types';
+import { useUserNameMap } from '../../../modules/native-crm/shared/useUserNameMap';
+import { useCompanyNameMap } from '../../../modules/native-crm/shared/useCompanyNameMap';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: UserCircleIcon },
@@ -47,12 +51,20 @@ export default function ContactViewPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [dealsPage, setDealsPage] = useState(1);
+  const [editing, setEditing] = useState(false);
 
-  const { data: item, isLoading } = useContactQuery(id ?? '');
+  const { data: item, isLoading, refetch } = useContactQuery(id ?? '');
   const fullName = item ? `${item.firstName ?? ''} ${item.lastName ?? ''}`.trim() : '';
+  const userNameMap = useUserNameMap();
+  const companyNameMap = useCompanyNameMap();
+  const companyDisplay = (item?.companyId && companyNameMap.get(item.companyId)) || item?.company;
+  const ownerDisplay = (item?.contactOwner && userNameMap.get(item.contactOwner)) || item?.contactOwner;
+  // LR-CONTACT-001: matches the real contactId link (set via the Deal
+  // form's "Link to CRM Contact" field) instead of a fuzzy name search,
+  // which could show another contact's deals just for sharing a name.
   const { data: dealsData, isLoading: dealsLoading } = useDealsQuery(
-    { page: dealsPage, limit: 10, search: fullName },
-    activeTab === 'deals' && !!fullName,
+    { page: dealsPage, limit: 10, contactId: item?._id },
+    activeTab === 'deals' && !!item?._id,
   );
 
   if (isLoading) return (
@@ -75,7 +87,7 @@ export default function ContactViewPage() {
             <ArrowLeftIcon className="h-4 w-4" /> Back to Contacts
           </button>
           <button
-            onClick={() => navigate('/crm/contacts')}
+            onClick={() => setEditing(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-primary border border-border rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
           >
             <PencilSquareIcon className="h-4 w-4" /> Edit
@@ -89,9 +101,9 @@ export default function ContactViewPage() {
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold text-text-primary truncate">{fullName || 'Unnamed Contact'}</h1>
             <div className="flex flex-wrap gap-x-6 gap-y-1 mt-1.5 text-sm text-text-muted">
-              {item.jobTitle && item.company && <p>{item.jobTitle} at <strong className="text-text-primary">{item.company}</strong></p>}
-              {item.jobTitle && !item.company && <p>{item.jobTitle}</p>}
-              {!item.jobTitle && item.company && <p><strong className="text-text-primary">{item.company}</strong></p>}
+              {item.jobTitle && companyDisplay && <p>{item.jobTitle} at <strong className="text-text-primary">{companyDisplay}</strong></p>}
+              {item.jobTitle && !companyDisplay && <p>{item.jobTitle}</p>}
+              {!item.jobTitle && companyDisplay && <p><strong className="text-text-primary">{companyDisplay}</strong></p>}
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm text-text-muted">
               {item.email && <p>{item.email}</p>}
@@ -145,9 +157,9 @@ export default function ContactViewPage() {
                   <InfoRow label="Last Name" value={item.lastName} />
                   <InfoRow label="Email" value={item.email} />
                   <InfoRow label="Phone" value={item.phone} />
-                  <InfoRow label="Company" value={item.company} />
+                  <InfoRow label="Company" value={companyDisplay} />
                   <InfoRow label="Job Title" value={item.jobTitle} />
-                  <InfoRow label="Contact Owner" value={item.contactOwner} />
+                  <InfoRow label="Contact Owner" value={ownerDisplay} />
                   <InfoRow label="Lead Status" value={item.leadStatus?.replace(/_/g, ' ')} />
                   <InfoRow label="Source" value={item.source} />
                   <InfoRow label="Notes" value={item.notes} />
@@ -203,6 +215,16 @@ export default function ContactViewPage() {
           )}
         </div>
       </div>
+
+      {editing && (
+        <RecordDrawer
+          config={contactsConfig}
+          record={item}
+          moduleName="contacts"
+          onClose={() => setEditing(false)}
+          onSaved={() => { setEditing(false); refetch(); }}
+        />
+      )}
     </div>
   );
 }

@@ -16,7 +16,13 @@ interface ConversationMessageTrace {
   stageTimingsMs?: { guardrails: number; rag: number; llm: number };
   toolCalls?: Array<{ name: string; ok: boolean; ms: number }>;
 }
-interface ConversationMessage { role: 'user' | 'assistant'; content: string; timestamp: string; trace: ConversationMessageTrace | null }
+interface ConversationMessage {
+  role: 'user' | 'assistant' | 'staff' | 'system';
+  content: string;
+  timestamp: string;
+  trace: ConversationMessageTrace | null;
+  metadata?: { staffName?: string };
+}
 interface ConversationDetail {
   sessionId: string; tenantId: string; tenantName: string;
   visitorName?: string; visitorEmail?: string; visitorPhone?: string;
@@ -157,9 +163,20 @@ export default function ConversationsPage() {
                   <ArrowPathIcon className="h-5 w-5 animate-spin text-text-muted" />
                 </div>
               ) : (detail?.messages ?? []).map((m, i) => (
-                <div key={i} className={`rounded-xl p-4 ${m.role === 'user' ? 'bg-black/[0.02] dark:bg-white/[0.03] ml-8' : 'bg-ryze-600/[0.06] border border-ryze-600/20 mr-8'}`}>
+                m.role === 'system' ? (
+                  <div key={i} className="flex justify-center">
+                    <span className="text-[11px] text-text-muted bg-black/[0.03] dark:bg-white/[0.05] px-2.5 py-1 rounded-full">{m.content}</span>
+                  </div>
+                ) : (
+                <div key={i} className={`rounded-xl p-4 ${
+                  m.role === 'user' ? 'bg-black/[0.02] dark:bg-white/[0.03] ml-8'
+                  : m.role === 'staff' ? 'bg-emerald-600/[0.06] border border-emerald-600/20 mr-8'
+                  : 'bg-ryze-600/[0.06] border border-ryze-600/20 mr-8'
+                }`}>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">{m.role === 'user' ? 'Visitor' : 'AI'}</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                      {m.role === 'user' ? 'Visitor' : m.role === 'staff' ? (m.metadata?.staffName || 'Staff') : 'AI'}
+                    </span>
                     <span className="text-[11px] text-text-muted">{new Date(m.timestamp).toLocaleTimeString()}</span>
                   </div>
                   <p className="text-sm text-text-primary whitespace-pre-wrap">{m.content}</p>
@@ -184,6 +201,7 @@ export default function ConversationsPage() {
                     </div>
                   )}
                 </div>
+                )
               ))}
             </div>
           </div>

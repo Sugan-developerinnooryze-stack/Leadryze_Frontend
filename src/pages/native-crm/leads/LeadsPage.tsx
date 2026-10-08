@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
+import toast from 'react-hot-toast';
 import {
   PlusIcon, MagnifyingGlassIcon, Squares2X2Icon, TableCellsIcon,
   XMarkIcon, UserPlusIcon, PhoneIcon, EnvelopeIcon, BuildingOfficeIcon,
@@ -22,7 +23,10 @@ import {
   useLeadConvertToOpportunity, useLeadConvertToCustomer,
 } from '../../../modules/native-crm/queries/leads.queries';
 import RecordTimeline from '../../../modules/native-crm/shared/RecordTimeline';
+import ActivityFeedPanel from '../../../modules/native-crm/shared/ActivityFeedPanel';
+import FSDeleteModal from '../../../modules/native-crm/shared/FSDeleteModal';
 import { useStaffsListQuery } from '../../../modules/native-crm/queries/staffs.queries';
+import { useUsersListQuery } from '../../../modules/native-crm/queries/users.queries';
 import { usePipelineStages, type PipelineStage } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import { RecordLockBanner } from '../../../components/native-crm/RecordLockBanner';
 import { CompanyBadge } from '../../../components/native-crm/CompanyBadge';
@@ -397,6 +401,11 @@ function LeadForm({ form, setForm, onSubmit, saving, submitLabel }: {
   const { stages } = usePipelineStages('lead', DEFAULT_LEAD_STAGES);
   const { data: staffData } = useStaffsListQuery({ page: 1, limit: 1000 });
   const staffOptions = staffData?.items ?? [];
+  // LR-RULE-003: Owner should be a CRM/sales user, not only Field-Service
+  // staff — leadOwnerStaffId is a plain string (no Mongoose ref), so a
+  // platform User's _id is just as valid a value as a NativeStaff staffId.
+  const { data: userData } = useUsersListQuery({ limit: 500 });
+  const userOptions = userData?.items ?? [];
 
   const { data: customFields = [] } = useCustomFieldsQuery('leads');
   const activeCustomFields = customFields.filter((cf) => cf.isActive);
@@ -423,10 +432,13 @@ function LeadForm({ form, setForm, onSubmit, saving, submitLabel }: {
   // can actually email the assigned owner — leadOwner is kept in sync as
   // that staff's display name for existing exports/search that read it as
   // plain text.
-  const setOwner = (staffId: string) => {
-    const staff = staffOptions.find((s: any) => s.staffId === staffId);
-    const name = staff ? `${staff.firstName ?? ''} ${staff.lastName ?? ''}`.trim() : '';
-    setForm((p: any) => ({ ...p, leadOwnerStaffId: staffId, leadOwner: name }));
+  const setOwner = (ownerId: string) => {
+    const staff = staffOptions.find((s: any) => s.staffId === ownerId);
+    const user  = !staff ? userOptions.find((u: any) => u._id === ownerId) : undefined;
+    const name = staff ? `${staff.firstName ?? ''} ${staff.lastName ?? ''}`.trim()
+      : user ? (`${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email)
+      : '';
+    setForm((p: any) => ({ ...p, leadOwnerStaffId: ownerId, leadOwner: name }));
   };
 
   const tabs = [
@@ -506,9 +518,20 @@ function LeadForm({ form, setForm, onSubmit, saving, submitLabel }: {
           <Field label="Owner">
             <select className={inp()} value={form.leadOwnerStaffId ?? ''} onChange={(e) => setOwner(e.target.value)}>
               <option value="">Unassigned</option>
-              {staffOptions.map((s: any) => (
-                <option key={s.staffId} value={s.staffId}>{`${s.firstName ?? ''} ${s.lastName ?? ''}`.trim()}</option>
-              ))}
+              {userOptions.length > 0 && (
+                <optgroup label="CRM Users">
+                  {userOptions.map((u: any) => (
+                    <option key={u._id} value={u._id}>{`${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email}</option>
+                  ))}
+                </optgroup>
+              )}
+              {staffOptions.length > 0 && (
+                <optgroup label="Field Service Staff">
+                  {staffOptions.map((s: any) => (
+                    <option key={s.staffId} value={s.staffId}>{`${s.firstName ?? ''} ${s.lastName ?? ''}`.trim()}</option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </Field>
           <div className="col-span-2">
@@ -707,11 +730,20 @@ function ConvertTab({ lead, stages }: { lead: any; stages: PipelineStage[] }) {
 
   const history: any[] = lead.conversionHistory ?? [];
 
-  const handleAction = async (mutate: (id: string) => Promise<any>) => {
+  // LR-UX-009: conversion fired instantly on click with no confirmation
+  // and no success message at all — the only feedback was the card
+  // eventually turning green once the drawer happened to refresh. Also
+  // fixes a bare browser alert() on failure (same class as LR-UX-005).
+  const [confirmConvert, setConfirmConvert] = useState<{ label: string; mutate: (id: string) => Promise<any>; successMsg: string } | null>(null);
+
+  const handleAction = async (mutate: (id: string) => Promise<any>, successMsg: string) => {
     try {
       await mutate(lead._id);
+      toast.success(successMsg);
     } catch (e: any) {
-      alert(e?.response?.data?.message ?? e?.message ?? 'Conversion failed');
+      toast.error(e?.response?.data?.message ?? e?.message ?? 'Conversion failed');
+    } finally {
+      setConfirmConvert(null);
     }
   };
 
@@ -738,7 +770,7 @@ function ConvertTab({ lead, stages }: { lead: any; stages: PipelineStage[] }) {
         description="Create a CRM Contact from this lead"
         done={!!lead.contactId}
         doneLabel="Contact created"
-        onClick={() => handleAction(contactMut.mutateAsync)}
+        onClick={() => setConfirmConvert({ label: 'Convert to Contact', mutate: contactMut.mutateAsync, successMsg: 'Contact created' })}
         loading={contactMut.isPending}
       />
       <ConvertButton
@@ -746,7 +778,7 @@ function ConvertTab({ lead, stages }: { lead: any; stages: PipelineStage[] }) {
         description="Create a Deal / Opportunity linked to this lead"
         done={!!lead.opportunityId}
         doneLabel="Opportunity created"
-        onClick={() => handleAction(opportunityMut.mutateAsync)}
+        onClick={() => setConfirmConvert({ label: 'Convert to Opportunity', mutate: opportunityMut.mutateAsync, successMsg: 'Opportunity created' })}
         loading={opportunityMut.isPending}
       />
       <ConvertButton
@@ -754,9 +786,30 @@ function ConvertTab({ lead, stages }: { lead: any; stages: PipelineStage[] }) {
         description="Create a Customer record for billing and field service"
         done={!!lead.isConverted}
         doneLabel={lead.convertedCustomerId ? `Customer: ${lead.convertedCustomerId}` : 'Customer created'}
-        onClick={() => handleAction(customerMut.mutateAsync)}
+        onClick={() => setConfirmConvert({ label: 'Convert to Customer', mutate: customerMut.mutateAsync, successMsg: 'Customer created' })}
         loading={customerMut.isPending}
       />
+
+      {confirmConvert && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setConfirmConvert(null)}>
+          <div className="bg-surface-elevated border border-border rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-text-primary font-semibold text-base">{confirmConvert.label}?</h3>
+            <p className="text-sm text-text-muted mt-1 mb-5">
+              This creates a new record from {fullName(lead) || 'this lead'}'s current details right away. It can't be undone from here.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmConvert(null)}
+                className="flex-1 px-4 py-2 text-sm bg-surface hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-border text-text-primary rounded-xl transition-colors">
+                Cancel
+              </button>
+              <button onClick={() => handleAction(confirmConvert.mutate, confirmConvert.successMsg)}
+                className="flex-1 px-4 py-2 text-sm bg-ryze-600 hover:bg-ryze-700 text-white rounded-xl transition-colors">
+                {confirmConvert.label}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {history.length > 0 && (
         <div className="pt-4">
@@ -787,7 +840,7 @@ function LeadDetailPanel({
   lead: any; onClose: () => void;
   onEdit: (lead: any) => void;
 }) {
-  const [tab, setTab] = useState<'overview'|'sales'|'timeline'|'convert'>('overview');
+  const [tab, setTab] = useState<'overview'|'sales'|'activity'|'timeline'|'convert'>('overview');
   const { stages } = usePipelineStages('lead', DEFAULT_LEAD_STAGES);
   // The list response (listLead) omits supervisorName (live-resolved,
   // single-record only — see lead.controller.ts's own comment on why it's
@@ -845,6 +898,7 @@ function LeadDetailPanel({
         {[
           { key: 'overview',  label: 'Overview' },
           { key: 'sales',     label: 'Sales' },
+          { key: 'activity',  label: 'Activity' },
           { key: 'timeline',  label: 'Timeline' },
           { key: 'convert', label: '🎉 Convert' },
         ].map((t) => (
@@ -863,9 +917,15 @@ function LeadDetailPanel({
           <div>
             <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Contact</p>
             <InfoRow label="Email"         value={lead.email} />
+            {/* LR-UX-007: these 4 are captured and saved but were only ever
+                visible by opening Edit — never shown here at all. */}
+            <InfoRow label="Secondary Email" value={lead.secondaryEmail} />
             <InfoRow label="Phone"         value={lead.phone} />
             <InfoRow label="Mobile"        value={lead.mobile} />
+            <InfoRow label="Alternate Phone" value={lead.alternatePhone} />
             <InfoRow label="WhatsApp"      value={lead.whatsapp} />
+            <InfoRow label="LinkedIn"      value={lead.linkedin} />
+            <InfoRow label="Twitter"       value={lead.twitter} />
             <InfoRow label="Industry"      value={lead.industry} />
             <InfoRow label="Website"       value={lead.website} />
             <InfoRow label="Rating"        value={lead.rating} />
@@ -877,6 +937,7 @@ function LeadDetailPanel({
             <InfoRow label="Supervisor"    value={lead.supervisorName} />
             <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2 mt-4">Address</p>
             <InfoRow label="Address"    value={lead.address} />
+            <InfoRow label="Address Line 2" value={lead.address2} />
             <InfoRow label="City"       value={lead.city} />
             <InfoRow label="State"      value={lead.state} />
             <InfoRow label="Country"    value={lead.country} />
@@ -938,6 +999,10 @@ function LeadDetailPanel({
           </div>
         )}
 
+        {tab === 'activity' && (
+          <ActivityFeedPanel relatedModule="lead" relatedId={lead._id} relatedLabel={fullName(lead)} />
+        )}
+
         {tab === 'timeline' && (
           <RecordTimeline entityModule="leads" entityId={lead._id} />
         )}
@@ -952,8 +1017,23 @@ function LeadDetailPanel({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+// LR-UX-008: the chosen list/Kanban view was forgotten on every reload,
+// always resetting to Kanban — this reads/writes the one preference to
+// localStorage, guarded against a private-browsing/blocked-storage tab
+// where it should just silently fall back to the old default.
+function initialLeadsView(): 'kanban' | 'list' {
+  try {
+    const stored = localStorage.getItem('leadryze-leads-view');
+    return stored === 'list' ? 'list' : 'kanban';
+  } catch { return 'kanban'; }
+}
+
 export default function LeadsPage() {
-  const [view,        setView]        = useState<'kanban'|'list'>('kanban');
+  const [view,        setViewState]   = useState<'kanban'|'list'>(initialLeadsView);
+  const setView = (v: 'kanban' | 'list') => {
+    setViewState(v);
+    try { localStorage.setItem('leadryze-leads-view', v); } catch { /* ignore */ }
+  };
   const [search,      setSearch]      = useState('');
   const [filterSrc,   setFilterSrc]   = useState('');
   const [filterRating,setFilterRating]= useState('');
@@ -962,6 +1042,7 @@ export default function LeadsPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [panelMode,   setPanelMode]   = useState<'none'|'create'|'edit'|'detail'>('none');
   const [selectedLead,setSelectedLead]= useState<any | null>(null);
+  const [delTarget,   setDelTarget]   = useState<any | null>(null);
   const [form,        setForm]        = useState<any>({ ...EMPTY_FORM });
   const [saving,      setSaving]      = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -1148,21 +1229,25 @@ export default function LeadsPage() {
         score:           Number(form.score ?? 0),
       };
       if (panelMode === 'create') {
-        await createMut.mutateAsync(payload);
+        const created = await createMut.mutateAsync(payload);
+        toast.success('Lead created');
+        // LR-LEAD-001: non-blocking — the lead is already created either way.
+        if (created?.duplicateWarning) {
+          toast(`Possible duplicate: ${created.duplicateWarning.label} already has this email/phone`, { icon: '⚠️', duration: 6000 });
+        }
       } else if (panelMode === 'edit' && selectedLead) {
         await updateMut.mutateAsync({ id: selectedLead._id, data: payload });
+        toast.success('Lead updated');
       }
       closePanel();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Failed to save lead');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (lead: any) => {
-    if (!confirm(`Delete lead "${fullName(lead)}"?`)) return;
-    await deleteMut.mutateAsync(lead._id);
-    closePanel();
-  };
+  const handleDelete = (lead: any) => setDelTarget(lead);
 
   const panelOpen = panelMode !== 'none';
 
@@ -1354,7 +1439,11 @@ export default function LeadsPage() {
                       <th className="px-4 py-3 text-left font-semibold">Stage</th>
                       <th className="px-4 py-3 text-left font-semibold">Rating</th>
                       <th className="px-4 py-3 text-right font-semibold">Revenue</th>
-                      <th className="px-4 py-3 text-left font-semibold">Company</th>
+                      {/* LR-UX-008: this cell renders CompanyBadge, the
+                          tenant's own Branch/business-unit — "Company"
+                          read as if it showed the lead's own company
+                          (already shown, easy to miss, under "Lead"). */}
+                      <th className="px-4 py-3 text-left font-semibold">Branch</th>
                       {extraCols.map((col) => (
                         <th key={col.key} className="px-4 py-3 text-left font-semibold">{col.label}</th>
                       ))}
@@ -1470,6 +1559,17 @@ export default function LeadsPage() {
           visibleKeys={extraVisibleKeys}
           onApply={handleApplyExtraColumns}
           onClose={() => setColumnEditorOpen(false)}
+        />
+      )}
+
+      {delTarget && (
+        <FSDeleteModal
+          label={fullName(delTarget) || 'this lead'}
+          onClose={() => setDelTarget(null)}
+          onConfirm={async () => {
+            await deleteMut.mutateAsync(delTarget._id);
+            if (selectedLead?._id === delTarget._id) closePanel();
+          }}
         />
       )}
     </div>

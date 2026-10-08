@@ -166,3 +166,16 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+// LR-AUTH-001: signing in (or out) on one tab silently switched every other
+// open tab to the same session, with no indication anything changed — each
+// tab's in-memory Zustand state never learned the localStorage write
+// another tab just made. `storage` only fires in OTHER tabs of the same
+// origin, never the one that made the change, so this can't loop.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'leadryze-auth' && e.newValue !== e.oldValue) {
+      window.location.reload();
+    }
+  });
+}

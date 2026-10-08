@@ -17,6 +17,11 @@ interface VariablePickerProps {
   value: string;
   onChange: (newValue: string) => void;
   className?: string;
+  // When present, bypasses the module/useFieldCatalogQuery lookup entirely
+  // and offers exactly this list instead — for callers (like Templates)
+  // that aren't scoped to an AutomationModule the way an automation-rule
+  // config is. Undefined behaves exactly as before this prop existed.
+  catalogOverride?: { key: string; label: string }[];
 }
 
 /** Advanced-Mode variable/token inserter — click-to-insert `{{token}}` at the
@@ -25,7 +30,7 @@ interface VariablePickerProps {
  * `record.<catalogKey>` entries are sourced live from the same
  * getFieldCatalog/useFieldCatalogQuery every other field picker in this app
  * already uses — no separate catalog to maintain. */
-export default function VariablePicker({ module, targetRef, value, onChange, className }: VariablePickerProps) {
+export default function VariablePicker({ module, targetRef, value, onChange, className, catalogOverride }: VariablePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -42,10 +47,10 @@ export default function VariablePicker({ module, targetRef, value, onChange, cla
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const options = [
+  const options = (catalogOverride ?? [
     ...SYSTEM_TOKENS,
     ...fieldCatalog.map((f) => ({ key: `record.${f.key}`, label: f.label })),
-  ].filter((o) => {
+  ]).filter((o) => {
     const q = filter.toLowerCase();
     return !q || o.key.toLowerCase().includes(q) || o.label.toLowerCase().includes(q);
   });

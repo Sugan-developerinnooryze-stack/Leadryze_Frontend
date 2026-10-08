@@ -1,6 +1,7 @@
 import {
   UserGroupIcon, BuildingOffice2Icon, BriefcaseIcon,
   ClipboardDocumentListIcon, LifebuoyIcon, PhoneIcon, CalendarDaysIcon,
+  ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline';
 import type { FC, SVGProps } from 'react';
 
@@ -33,13 +34,19 @@ export interface ModuleConfig {
 // Service entry avoids showing the same data as two different, confusing
 // nav items. The route (/crm/deals) and NativeModule/MODULE_CONFIGS entry
 // still exist — only the sidebar link was removed.
-export const NATIVE_MODULES: { key: NativeModule; label: string; icon: ModuleConfig['icon']; color: string }[] = [
+// 'conversations' (Human Handoff inbox) is deliberately NOT part of
+// NativeModule/MODULE_CONFIGS below — like Tickets/Calls/Meetings it gets
+// its own bespoke page, not the generic table+drawer CrmLayout, but unlike
+// them it has no FieldDef/listColumns shape at all (a conversation isn't a
+// form-editable record), so it's typed as an addition on this array only.
+export const NATIVE_MODULES: { key: NativeModule | 'conversations'; label: string; icon: ModuleConfig['icon']; color: string }[] = [
   { key: 'contacts',  label: 'Contacts',  icon: UserGroupIcon,              color: '#6366f1' },
   { key: 'companies', label: 'Companies', icon: BuildingOffice2Icon,        color: '#3b82f6' },
   { key: 'tasks',     label: 'Tasks',     icon: ClipboardDocumentListIcon,  color: '#f97316' },
   { key: 'tickets',   label: 'Tickets',   icon: LifebuoyIcon,               color: '#ef4444' },
   { key: 'calls',     label: 'Calls',     icon: PhoneIcon,                  color: '#8b5cf6' },
   { key: 'meetings',  label: 'Meetings',  icon: CalendarDaysIcon,           color: '#0ea5e9' },
+  { key: 'conversations', label: 'Conversations', icon: ChatBubbleLeftRightIcon, color: '#14b8a6' },
 ];
 
 export const MODULE_CONFIGS: Record<NativeModule, ModuleConfig> = {

@@ -1,52 +1,58 @@
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { 
-  WrenchScrewdriverIcon, 
-  DocumentTextIcon, 
-  DocumentCheckIcon, 
-  ClipboardDocumentListIcon 
+import {
+  WrenchScrewdriverIcon,
+  DocumentTextIcon,
+  DocumentCheckIcon,
+  ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
+import { MODULE_COLORS } from '../calendar-status';
 
 interface Props {
   selectedDate: Date | null;
   onClose: () => void;
 }
 
+// Colors pulled from the single shared MODULE_COLORS map (calendar-status.ts)
+// instead of being hardcoded a second time here — this is exactly the kind
+// of drift (this modal was still on the old indigo/rose palette after the
+// rest of the calendar moved to purple/red) that having one shared source
+// is meant to prevent.
 const MODULES = [
-  { 
-    id: 'workorder', 
-    title: 'Work Order', 
-    desc: 'Schedule a new technician visit', 
-    icon: WrenchScrewdriverIcon, 
-    color: 'text-success-700 dark:text-success-500', 
-    bg: 'bg-success-500/15',
-    dateField: 'scheduledDate' 
+  {
+    id: 'workorder',
+    title: 'Work Order',
+    desc: 'Schedule a new technician visit',
+    icon: WrenchScrewdriverIcon,
+    color: MODULE_COLORS.workorder.text,
+    bg: MODULE_COLORS.workorder.bg,
+    dateField: 'scheduledDate'
   },
-  { 
-    id: 'invoice', 
-    title: 'Invoice', 
-    desc: 'Create an invoice due on this date', 
-    icon: DocumentTextIcon, 
-    color: 'text-rose-600 dark:text-rose-400', 
-    bg: 'bg-rose-100 dark:bg-rose-500/15',
+  {
+    id: 'invoice',
+    title: 'Invoice',
+    desc: 'Create an invoice due on this date',
+    icon: DocumentTextIcon,
+    color: MODULE_COLORS.invoice.text,
+    bg: MODULE_COLORS.invoice.bg,
     dateField: 'dueDate'
   },
-  { 
-    id: 'contract', 
-    title: 'Contract', 
-    desc: 'Start a new maintenance contract', 
-    icon: DocumentCheckIcon, 
-    color: 'text-indigo-600 dark:text-indigo-400', 
-    bg: 'bg-indigo-100 dark:bg-indigo-500/15',
+  {
+    id: 'contract',
+    title: 'Contract',
+    desc: 'Start a new maintenance contract',
+    icon: DocumentCheckIcon,
+    color: MODULE_COLORS.contract.text,
+    bg: MODULE_COLORS.contract.bg,
     dateField: 'startDate'
   },
-  { 
-    id: 'quotation', 
-    title: 'Quotation', 
-    desc: 'Draft a new quote valid until this date', 
-    icon: ClipboardDocumentListIcon, 
-    color: 'text-amber-600 dark:text-amber-400', 
-    bg: 'bg-amber-100 dark:bg-amber-500/15',
+  {
+    id: 'quotation',
+    title: 'Quotation',
+    desc: 'Draft a new quote valid until this date',
+    icon: ClipboardDocumentListIcon,
+    color: MODULE_COLORS.quotation.text,
+    bg: MODULE_COLORS.quotation.bg,
     dateField: 'validUntil'
   },
 ];

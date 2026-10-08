@@ -10,6 +10,7 @@ import {
 } from '../../../modules/native-crm/queries/custom-fields.queries';
 import { useCustomFormTemplatesQuery } from '../../../modules/native-crm/queries/custom-form-templates.queries';
 import { useCustomModulesQuery } from '../../../modules/native-crm/queries/custom-modules.queries';
+import FSDeleteModal from '../../../modules/native-crm/shared/FSDeleteModal';
 
 // Mirrors the sidebar's own two sections (Sidebar.tsx's NATIVE_MODULES and
 // FIELD_SERVICE_MODULES) — 'deals' lives only under Field Service here,
@@ -84,6 +85,9 @@ export default function CustomFieldsAdminPage() {
   const createMutation = useCustomFieldCreate();
   const updateMutation = useCustomFieldUpdate();
   const deleteMutation = useCustomFieldDelete();
+  // LR-UX-014: delete fired immediately on click, with no warning that
+  // records already hold values for this field.
+  const [deleteTarget, setDeleteTarget] = useState<NativeCustomField | null>(null);
 
   // Real, confirmed bug this fixes: this page's module list was a fully
   // static array — a newly created Custom Module never appeared here, so
@@ -293,7 +297,7 @@ export default function CustomFieldsAdminPage() {
                               <PencilIcon className="h-3.5 w-3.5" /> Edit
                             </button>
                             <button
-                              onClick={() => deleteMutation.mutate(field._id)}
+                              onClick={() => setDeleteTarget(field)}
                               className="px-3 py-1.5 text-xs font-medium bg-surface border border-border text-text-primary hover:text-red-600 hover:border-red-200 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1.5"
                             >
                               <TrashIcon className="h-3.5 w-3.5" /> Delete
@@ -309,7 +313,12 @@ export default function CustomFieldsAdminPage() {
             {/* Side panel form */}
             {showForm && (
               <div className="w-96 border-l border-border bg-surface flex flex-col overflow-y-auto shrink-0 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)]">
-                <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-black/[0.015] dark:bg-white/[0.02] sticky top-0 z-10">
+                {/* LR-UX-014: this header is sticky while the panel scrolls
+                    underneath it — its background was a near-transparent
+                    1.5%/2% tint, so the first field visibly bled through
+                    instead of being cleanly covered. bg-surface matches the
+                    panel's own opaque background. */}
+                <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-surface sticky top-0 z-10">
                   <h3 className="text-base font-bold text-text-primary">{editId ? 'Edit Field' : 'New Field'}</h3>
                   <button onClick={() => setShowForm(false)} className="p-1.5 text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] rounded-lg transition-colors">
                     <XMarkIcon className="h-5 w-5" />
@@ -461,6 +470,15 @@ export default function CustomFieldsAdminPage() {
           </div>
         </div>
       </div>
+
+      {deleteTarget && (
+        <FSDeleteModal
+          label={deleteTarget.label}
+          description="Records that already hold a value for this field will keep it in the database, but it will no longer be shown or editable anywhere. This cannot be undone."
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={() => deleteMutation.mutateAsync(deleteTarget._id)}
+        />
+      )}
     </div>
   );
 }

@@ -422,7 +422,20 @@ export default function SecurityPage() {
                           <td className="px-4 py-3 text-xs text-text-primary">{log.actorEmail}</td>
                           <td className="px-4 py-3"><span className="text-xs px-2 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-text-muted border border-border">{log.actorRole}</span></td>
                           <td className="px-4 py-3"><span className="text-xs font-mono text-ryze-700 dark:text-ryze-400">{log.action}</span></td>
-                          <td className="px-4 py-3 text-xs text-text-muted">{log.target ?? '—'}</td>
+                          {/* LR-UX-003: this only ever showed the target
+                              TYPE ("Tenant", "User") with no way to tell
+                              which one — detail already carries a name on
+                              most events (tenantName/userEmail/etc.), and
+                              targetId is always there as a fallback. */}
+                          <td className="px-4 py-3 text-xs text-text-muted">
+                            {log.target ?? '—'}
+                            {(() => {
+                              const d = log.detail as Record<string, unknown> | undefined;
+                              const name = (d?.tenantName ?? d?.userEmail ?? d?.name ?? d?.email) as string | undefined;
+                              const label = name ?? log.targetId;
+                              return label ? <span className="text-text-primary font-medium"> · {label}</span> : null;
+                            })()}
+                          </td>
                           <td className="px-4 py-3 text-xs text-text-muted font-mono">{log.ip}</td>
                         </tr>
                       ))}

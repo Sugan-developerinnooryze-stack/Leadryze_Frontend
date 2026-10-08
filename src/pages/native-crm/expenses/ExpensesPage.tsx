@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useMemo } from 'react';
 import { CreditCardIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import FSDrawer from '../../../modules/native-crm/shared/FSDrawer';
@@ -6,12 +6,15 @@ import FSDeleteModal from '../../../modules/native-crm/shared/FSDeleteModal';
 import type { FSFieldDef, FSColumnDef } from '../../../modules/native-crm/shared/types';
 import { CompanyBadge } from '../../../components/native-crm/CompanyBadge';
 import { CompanyFilterBar } from '../../../components/native-crm/CompanyFilterBar';
+import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-settings.queries';
 import {
   useExpensesListQuery,
   useExpenseCreate,
   useExpenseUpdate,
   useExpenseDelete,
 } from '../../../modules/native-crm/queries/expenses.queries';
+
+const CUR_SYMBOL: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
 
 const FIELDS: FSFieldDef[] = [
   { key: 'branchId',    label: 'Company',        type: 'branch-select' },
@@ -31,26 +34,6 @@ const STATUS_COLORS: Record<string, string> = {
   pending:  'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400',
 };
 
-const COLUMNS: FSColumnDef[] = [
-  { key: 'expenseId',   label: 'ID' },
-  { key: 'title',       label: 'Title' },
-  { key: 'category',    label: 'Category', render: (r) => r.category ?? '—' },
-  { key: 'amount',      label: 'Amount',   render: (r) => r.amount != null ? `$${Number(r.amount).toFixed(2)}` : '—' },
-  { key: 'paidBy',      label: 'Paid By',  render: (r) => r.paidBy ?? '—' },
-  { key: 'date',        label: 'Date',     render: (r) => r.date ? new Date(r.date).toLocaleDateString() : '—' },
-  {
-    key: 'status',
-    label: 'Status',
-    render: (r) => (
-      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[r.status] ?? 'bg-black/[0.06] dark:bg-white/[0.08] text-text-muted'}`}>
-        {r.status}
-      </span>
-    ),
-  },
-  { key: 'branchId', label: 'Company', render: (r: any) => <CompanyBadge branchId={r.branchId} /> },
-  { key: 'createdAt', label: 'Created Date', render: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—' },
-];
-
 export default function ExpensesPage() {
   const [search,    setSearch]    = useState('');
   const [status,    setStatus]    = useState('');
@@ -58,7 +41,29 @@ export default function ExpensesPage() {
   const [drawer,    setDrawer]    = useState<{ open: boolean; record: any | null }>({ open: false, record: null });
   const [delTarget, setDelTarget] = useState<any | null>(null);
 
+  const { data: settings } = useFSSettingsQuery();
+
   useEffect(() => { setPage(1); }, [search, status]);
+
+  const columns: FSColumnDef[] = useMemo(() => [
+    { key: 'expenseId',   label: 'ID' },
+    { key: 'title',       label: 'Title' },
+    { key: 'category',    label: 'Category', render: (r) => r.category ?? '—' },
+    { key: 'amount',      label: 'Amount',   render: (r) => r.amount != null ? `${CUR_SYMBOL[settings?.currency ?? 'AUD'] ?? '$'}${Number(r.amount).toFixed(2)}` : '—' },
+    { key: 'paidBy',      label: 'Paid By',  render: (r) => r.paidBy ?? '—' },
+    { key: 'date',        label: 'Date',     render: (r) => r.date ? new Date(r.date).toLocaleDateString() : '—' },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (r) => (
+        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[r.status] ?? 'bg-black/[0.06] dark:bg-white/[0.08] text-text-muted'}`}>
+          {r.status}
+        </span>
+      ),
+    },
+    { key: 'branchId', label: 'Company', render: (r: any) => <CompanyBadge branchId={r.branchId} /> },
+    { key: 'createdAt', label: 'Created Date', render: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—' },
+  ], [settings?.currency]);
 
   const { data: result, isLoading, error } = useExpensesListQuery({ page, limit: 20, search: search || undefined, status: status || undefined });
   const items = result?.items ?? [];
@@ -117,7 +122,7 @@ export default function ExpensesPage() {
       </div>
 
       <FSTable
-        columns={COLUMNS}
+        columns={columns}
         data={items}
         loading={isLoading}
         errorStatus={(error as any)?.response?.status}

@@ -92,6 +92,12 @@ export default function WorkorderViewPage() {
   const svcSubtotal = (item?.services ?? []).reduce((s: number, sv: any) => s + (sv.amount ?? 0) * (sv.count ?? 1), 0);
   const prtSubtotal = (item?.parts ?? []).reduce((s: number, pt: any) => s + (pt.amount ?? 0) * (pt.count ?? 1), 0);
   const combined = svcSubtotal + prtSubtotal;
+  const discount = item?.discount ?? 0;
+  const gst = item?.gstPercentage ?? 0;
+  // discount is a percentage (0-100), not a flat amount — matches Quotation/Invoice.
+  const discountAmt = (combined * discount) / 100;
+  const afterDiscount = combined - discountAmt;
+  const total = afterDiscount * (1 + gst / 100);
 
   const steps: string[] = settings?.workflowSteps ?? ['quotation', 'workorder', 'invoice'];
   const idx = steps.indexOf('workorder');
@@ -148,9 +154,16 @@ export default function WorkorderViewPage() {
           <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${STATUS_COLORS[item.status] ?? 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'}`}>
             {item.status?.replace('_',' ')}
           </span>
-          {item.workflowState && (
-            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ring-1 capitalize ${WF_COLORS[item.workflowState] ?? ''}`}>
-              {item.workflowState.replace('_',' ')}
+          {/* LR-UX-012: workflowState tracks a different axis entirely
+              (has this WO already been converted to an Invoice), not an
+              alternate status — showing it unconditionally next to the
+              real status ("Scheduled" + "In Progress") read as two
+              contradictory statuses. Only the one state worth surfacing
+              here is "already converted"; pending/in_progress are just
+              "not yet", which isn't news. */}
+          {item.workflowState === 'complete' && (
+            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ring-1 ${WF_COLORS[item.workflowState] ?? ''}`}>
+              Converted
             </span>
           )}
         </div>
@@ -217,9 +230,10 @@ export default function WorkorderViewPage() {
                 <div className="mt-2 flex md:justify-end flex-wrap gap-1.5">
                   <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${STATUS_COLORS[item.status] ?? 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'}`}>{item.status?.replace('_', ' ')}</span>
                   <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${PRIORITY_COLORS[item.priority] ?? 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'}`}>{item.priority ?? 'medium'}</span>
-                  {item.workflowState && (
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ring-1 capitalize ${WF_COLORS[item.workflowState] ?? ''}`}>
-                      {item.workflowState.replace('_', ' ')}
+                  {/* LR-UX-012: see the same fix above. */}
+                  {item.workflowState === 'complete' && (
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ring-1 ${WF_COLORS[item.workflowState] ?? ''}`}>
+                      Converted
                     </span>
                   )}
                 </div>
@@ -341,8 +355,10 @@ export default function WorkorderViewPage() {
                 </>
               )}
               <div className="flex justify-between text-text-muted"><span>Subtotal</span><span>{fmt(combined, cur)}</span></div>
+              {discount > 0 && <div className="flex justify-between text-red-500"><span>Discount ({discount}%)</span><span>-{fmt(discountAmt, cur)}</span></div>}
+              {gst > 0 && <div className="flex justify-between text-text-muted"><span>GST ({gst}%)</span><span>{fmt(total - afterDiscount, cur)}</span></div>}
               <div className="flex justify-between font-bold text-base border-t-2 border-border pt-2 text-text-primary">
-                <span>Total</span><span>{fmt(combined, cur)}</span>
+                <span>Total</span><span>{fmt(total, cur)}</span>
               </div>
             </div>
           </div>

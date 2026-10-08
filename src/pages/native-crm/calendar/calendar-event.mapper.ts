@@ -1,39 +1,53 @@
 import { BusinessEvent, CalendarEventStatus } from './calendar.types';
-import { 
-  WrenchScrewdriverIcon, 
-  DocumentTextIcon, 
-  DocumentCheckIcon, 
+import { MODULE_COLORS } from './calendar-status';
+import {
+  WrenchScrewdriverIcon,
+  DocumentTextIcon,
+  DocumentCheckIcon,
   ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
 
-const getStatusColor = (status: string): { bg: string; color: string; text: string } => {
-  const s = status.toLowerCase();
-  if (s.includes('completed') || s.includes('paid')) return { color: '#059669', bg: '#d1fae5', text: '#065f46' }; // Green
-  if (s.includes('scheduled') || s.includes('active')) return { color: '#2563eb', bg: '#dbeafe', text: '#1e40af' }; // Blue
-  if (s.includes('overdue')) return { color: '#e11d48', bg: '#ffe4e6', text: '#9f1239' }; // Red
-  if (s.includes('cancelled') || s.includes('draft')) return { color: '#6b7280', bg: '#f3f4f6', text: '#374151' }; // Gray
-  return { color: '#d97706', bg: '#fef3c7', text: '#92400e' }; // Orange (Upcoming/Pending)
+// Event card color is the record's MODULE identity (Work Order green /
+// Invoice red / Contract purple / Quotation yellow) — fixed, not derived
+// from status. It was previously derived from getEventStatusClasses(status),
+// which meant two records in the same module showed different card colors
+// (or the SAME washed-out gray/amber) depending on their status string,
+// while the filter panel/Legend already correctly used module color — the
+// actual grid never matched what the Legend promised. Status still drives
+// the small Status badge text/color in the hover popover and drawer, and
+// the overdue-icon indicator — just not the card's own background here.
+const getModuleColor = (module: 'workorder' | 'invoice' | 'contract' | 'quotation') => {
+  const c = MODULE_COLORS[module];
+  return { color: c.dot, bg: c.bg, text: c.text };
 };
 
-export const mapWorkOrdersToEvents = (workorders: any[], customers: any[] = []): BusinessEvent[] => {
+export const mapWorkOrdersToEvents = (workorders: any[], customers: any[] = [], staffNames?: Map<string, string>): BusinessEvent[] => {
   if (!workorders) return [];
   return workorders
     .filter(wo => wo.scheduledDate)
     .map(wo => {
-      const colors = getStatusColor(wo.status || 'upcoming');
+      const colors = getModuleColor('workorder');
       const customer = customers.find(c => c.customerId === wo.customerId || c._id === wo.customerId);
       const namePart = customer ? (customer.name || customer.fullName || '') : '';
       const customerName = namePart ? `${namePart} (${wo.customerId})` : wo.customerId;
 
       return {
         id: `wo-${wo._id}`,
-        title: `Technician Visit`, // Business meaning instead of generic "Work Order"
+        // Work Order's own real title field — was hardcoded to the generic
+        // "Technician Visit" for every record regardless of what the record
+        // actually says, which is why the calendar read as a demo rather
+        // than real operational data.
+        title: wo.title || 'Technician Visit',
+        recordCode: wo.workOrderId ?? '',
         module: 'workorder',
         moduleId: wo._id,
         customerId: wo.customerId,
         customerName,
         teamId: wo.teamId,
         staffIds: wo.staffId ? [wo.staffId] : [],
+        staffName: wo.staffId ? staffNames?.get(wo.staffId) : undefined,
+        siteId: wo.siteId,
+        priority: wo.priority,
         eventType: 'visit',
         status: (wo.status || 'upcoming') as CalendarEventStatus,
         start: wo.scheduledDate,
@@ -48,21 +62,34 @@ export const mapWorkOrdersToEvents = (workorders: any[], customers: any[] = []):
     });
 };
 
-export const mapInvoicesToEvents = (invoices: any[], customers: any[] = []): BusinessEvent[] => {
+/**
+ * `paidStageKeys`: the tenant's REAL paid-equivalent pipeline stage key(s)
+ * (resolved via usePipelineStages('invoice', ...)'s PipelineStage.outcome
+ * === 'paid', same mechanism getWorkorderStats uses server-side for its own
+ * overdue count), not the literal string 'PAID'. Invoice status is a free,
+ * tenant-renameable string (invoice.model.ts has no fixed enum) — the
+ * previous `inv.status !== 'PAID'` comparison could never match a real
+ * tenant's actual lowercase status key, so every unpaid-but-not-yet-due
+ * invoice as well as every genuinely paid one was misclassified as overdue
+ * the moment its due date passed. This is a Calendar-only display fix:
+ * Invoice's own status model, service and CRUD are untouched. */
+export const mapInvoicesToEvents = (invoices: any[], customers: any[] = [], paidStageKeys: string[] = ['paid']): BusinessEvent[] => {
   if (!invoices) return [];
   return invoices
     .filter(inv => inv.dueDate || inv.createdAt)
     .map(inv => {
-      const isOverdue = new Date(inv.dueDate) < new Date() && inv.status !== 'PAID';
+      const isPaid = paidStageKeys.includes(String(inv.status ?? '').toLowerCase());
+      const isOverdue = !isPaid && inv.dueDate && new Date(inv.dueDate) < new Date();
       const status = isOverdue ? 'overdue' : (inv.status || 'upcoming');
-      const colors = getStatusColor(status);
+      const colors = getModuleColor('invoice');
       const customer = customers.find(c => c.customerId === inv.customerId || c._id === inv.customerId);
       const namePart = customer ? (customer.name || customer.fullName || '') : '';
       const customerName = namePart ? `${namePart} (${inv.customerId})` : inv.customerId;
       
       return {
         id: `inv-${inv._id}`,
-        title: `Invoice Due`,
+        title: `Invoice Due`, // Invoice has no title-equivalent field to borrow a real one from
+        recordCode: inv.invoiceId ?? '',
         module: 'invoice',
         moduleId: inv._id,
         customerId: inv.customerId,
@@ -85,7 +112,7 @@ export const mapContractsToEvents = (contracts: any[], customers: any[] = []): B
   const events: BusinessEvent[] = [];
   
   contracts.forEach(con => {
-    const colors = getStatusColor(con.status || 'active');
+    const colors = getModuleColor('contract');
     const customer = customers.find(c => c.customerId === con.customerId || c._id === con.customerId);
     const namePart = customer ? (customer.name || customer.fullName || '') : '';
     const customerName = namePart ? `${namePart} (${con.customerId})` : con.customerId;
@@ -93,11 +120,16 @@ export const mapContractsToEvents = (contracts: any[], customers: any[] = []): B
     if (con.startDate) {
       events.push({
         id: `con-start-${con._id}`,
-        title: `Contract Starts`,
+        title: con.title || 'Contract Starts',
+        recordCode: con.contractId ?? '',
         module: 'contract',
         moduleId: con._id,
         customerId: con.customerId,
         customerName,
+        teamId: con.teamId,
+        staffIds: con.staffIds ?? (con.staffId ? [con.staffId] : []),
+        siteId: con.siteId,
+        priority: con.priority,
         eventType: 'renewal',
         status: (con.status || 'active') as CalendarEventStatus,
         start: con.startDate,
@@ -113,11 +145,16 @@ export const mapContractsToEvents = (contracts: any[], customers: any[] = []): B
     if (con.endDate && con.endDate !== con.startDate) {
       events.push({
         id: `con-end-${con._id}`,
-        title: `Contract Expiry`,
+        title: con.title || 'Contract Expiry',
+        recordCode: con.contractId ?? '',
         module: 'contract',
         moduleId: con._id,
         customerId: con.customerId,
         customerName,
+        teamId: con.teamId,
+        staffIds: con.staffIds ?? (con.staffId ? [con.staffId] : []),
+        siteId: con.siteId,
+        priority: con.priority,
         eventType: 'expiry',
         status: (con.status || 'active') as CalendarEventStatus,
         start: con.endDate,
@@ -139,18 +176,22 @@ export const mapQuotationsToEvents = (quotations: any[], customers: any[] = []):
   return quotations
     .filter(quo => quo.validUntil || quo.createdAt)
     .map(quo => {
-      const colors = getStatusColor(quo.status || 'upcoming');
+      const colors = getModuleColor('quotation');
       const customer = customers.find(c => c.customerId === quo.customerId || c._id === quo.customerId);
       const namePart = customer ? (customer.name || customer.fullName || '') : '';
       const customerName = namePart ? `${namePart} (${quo.customerId})` : quo.customerId;
 
       return {
         id: `quo-${quo._id}`,
-        title: `Quotation Expiry`,
+        title: quo.title || 'Quotation Expiry',
+        recordCode: quo.quotationId ?? '',
         module: 'quotation',
         moduleId: quo._id,
         customerId: quo.customerId,
         customerName,
+        teamId: quo.teamId,
+        staffIds: quo.staffId ? [quo.staffId] : [],
+        siteId: quo.siteId,
         eventType: 'expiry',
         status: (quo.status || 'upcoming') as CalendarEventStatus,
         start: quo.validUntil || quo.createdAt,

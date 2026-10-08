@@ -181,8 +181,14 @@ export function TenantControlsTab({ tenantId, tenantName }: { tenantId: string; 
     }
     setSavingLimit(true);
     try {
-      await authService.adminSetFeatureFlags(tenantId, flags as unknown as Record<string, boolean>, undefined, parsed);
+      const res = await authService.adminSetFeatureFlags(tenantId, flags as unknown as Record<string, boolean>, undefined, parsed);
       toast.success(`User limit saved for ${tenantName}`);
+      // LR-ADMIN-002: lowering the limit below current usage is allowed
+      // (it only blocks new invites, never removes anyone) but deserves a
+      // clear heads-up rather than silently taking effect.
+      if (res.data?.data?.seatWarning) {
+        toast(res.data.data.seatWarning, { icon: '⚠️', duration: 8000 });
+      }
       load();
     } catch {
       toast.error('Failed to save user limit');

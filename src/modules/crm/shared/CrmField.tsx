@@ -4,6 +4,8 @@ import type { FieldConfig } from './types/crm.types';
 import { useStaffsListQuery } from '../../native-crm/queries/staffs.queries';
 import { useTeamsListQuery } from '../../native-crm/queries/teams.queries';
 import { useCategoriesListQuery } from '../../native-crm/queries/categories.queries';
+import { useUsersListQuery } from '../../native-crm/queries/users.queries';
+import { useCompaniesListQuery } from '../queries/companies.queries';
 
 interface Props {
   field:    FieldConfig;
@@ -142,6 +144,44 @@ function CategorySelect({ value, onChange, error }: Omit<Props, 'field'>) {
   );
 }
 
+/* ── User select (dynamic — platform User, not NativeStaff — stores _id.
+   LR-CONTACT-001/LR-RULE-003: "Contact owner" should be a real CRM/sales
+   user, not free text) ──────────────────────────────────────────── */
+function UserSelect({ value, onChange, error }: Omit<Props, 'field'>) {
+  const { data } = useUsersListQuery({ limit: 500 });
+  const users = data?.items ?? [];
+  const base =
+    'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 transition-colors ' +
+    (error ? 'border-red-400 bg-red-50' : 'border-border bg-background text-text-primary');
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} className={base}>
+      <option value="">Unassigned</option>
+      {users.map((u: any) => (
+        <option key={u._id} value={u._id}>{`${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email}</option>
+      ))}
+    </select>
+  );
+}
+
+/* ── Company select (dynamic — native-crm Company, stores _id.
+   LR-CONTACT-001: "Primary company" should link to a real Company record,
+   not free text) ─────────────────────────────────────────────────── */
+function CompanySelect({ value, onChange, error }: Omit<Props, 'field'>) {
+  const { data } = useCompaniesListQuery({ limit: 500 });
+  const companies = data?.items ?? [];
+  const base =
+    'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ryze-500 transition-colors ' +
+    (error ? 'border-red-400 bg-red-50' : 'border-border bg-background text-text-primary');
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} className={base}>
+      <option value="">No company</option>
+      {companies.map((c: any) => (
+        <option key={c._id} value={c._id}>{c.name}</option>
+      ))}
+    </select>
+  );
+}
+
 /* ── CrmField ────────────────────────────────────────────────────── */
 export default function CrmField({ field, value, onChange, error }: Props) {
   const base =
@@ -152,6 +192,10 @@ export default function CrmField({ field, value, onChange, error }: Props) {
 
   if (field.type === 'staffSelect') {
     input = <StaffSelect value={value} onChange={onChange} error={error} />;
+  } else if (field.type === 'userSelect') {
+    input = <UserSelect value={value} onChange={onChange} error={error} />;
+  } else if (field.type === 'companySelect') {
+    input = <CompanySelect value={value} onChange={onChange} error={error} />;
   } else if (field.type === 'teamSelect') {
     input = <TeamSelect value={value} onChange={onChange} error={error} />;
   } else if (field.type === 'categorySelect') {

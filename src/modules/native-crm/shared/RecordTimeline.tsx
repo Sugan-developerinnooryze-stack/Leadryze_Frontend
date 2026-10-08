@@ -1,5 +1,15 @@
 import { ClockIcon } from '@heroicons/react/24/outline';
 import { useEntityTimelineQuery } from '../queries/timeline.queries';
+import { useUserNameMap } from './useUserNameMap';
+
+/** Turns a raw snake_case/camelCase value like "closed_won" into "Closed
+ * won" — a generic, safe readability pass (not the tenant's own customized
+ * pipeline-stage label, which would need a per-module network lookup this
+ * component deliberately avoids to stay a true drop-in for any module). */
+function humanize(value: string): string {
+  const spaced = value.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
+}
 
 // Generalized from LeadsPage.tsx's own LeadDetailPanel timeline tab (the
 // first, and until now only, consumer of useEntityTimelineQuery) — same
@@ -33,7 +43,7 @@ function MetadataChips({ metadata }: { metadata?: Record<string, any> }) {
       {entries.map(([k, v]) => (
         <span key={k} className="text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted">
           <span className="font-medium">{k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase())}:</span>{' '}
-          {typeof v === 'object' ? JSON.stringify(v) : String(v)}
+          {typeof v === 'object' ? JSON.stringify(v) : typeof v === 'string' ? humanize(v) : String(v)}
         </span>
       ))}
     </div>
@@ -46,6 +56,13 @@ function MetadataChips({ metadata }: { metadata?: Record<string, any> }) {
  * and the record's real `_id`. */
 export default function RecordTimeline({ entityModule, entityId }: { entityModule: string; entityId: string }) {
   const { data: timelineEvents = [], isLoading } = useEntityTimelineQuery(entityModule, entityId);
+  // LR-UI-002: timeline.model.ts already carries a separate, clean
+  // `performedBy` (User._id) field alongside the free-text `description` —
+  // this was never read before, even though `description` often bakes the
+  // same raw id into its own sentence (e.g. "Reassigned ... by <id>").
+  // Resolving the KNOWN exact value this way avoids a fragile blind regex
+  // over arbitrary description text.
+  const userNames = useUserNameMap();
 
   if (isLoading) {
     return (
@@ -81,7 +98,11 @@ export default function RecordTimeline({ entityModule, entityId }: { entityModul
                 {ev.createdAt ? new Date(ev.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
               </span>
             </div>
-            <p className="text-xs text-text-primary">{ev.description}</p>
+            <p className="text-xs text-text-primary">
+              {ev.performedBy && ev.description?.includes(ev.performedBy) && userNames.has(ev.performedBy)
+                ? ev.description.split(ev.performedBy).join(userNames.get(ev.performedBy))
+                : ev.description}
+            </p>
             <MetadataChips metadata={ev.metadata} />
           </div>
         </div>

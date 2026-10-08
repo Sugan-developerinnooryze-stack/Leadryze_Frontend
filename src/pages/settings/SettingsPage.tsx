@@ -9,6 +9,8 @@ import {
   EyeIcon, EyeSlashIcon, ArrowPathIcon, ClipboardDocumentIcon,
 } from '@heroicons/react/24/outline';
 import { SUPPORTED_LANGUAGES } from '../../modules/native-crm/shared/languages';
+import { useTenantQuery } from '../../modules/native-crm/queries/tenant.queries';
+import { ROLE_LABEL } from '../../components/layout/Header';
 
 /* ── section wrapper ──────────────────────────────────────────────────── */
 function Section({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
@@ -191,7 +193,13 @@ interface ChatMessageTrace {
   totalTokens?: number; estimatedCostUsd?: number;
   toolCalls?: Array<{ name: string; ok: boolean; ms: number }>;
 }
-interface ChatMessage { role: 'user' | 'assistant'; content: string; timestamp: string; trace?: ChatMessageTrace | null; }
+interface ChatMessage {
+  role: 'user' | 'assistant' | 'staff' | 'system';
+  content: string;
+  timestamp: string;
+  trace?: ChatMessageTrace | null;
+  metadata?: { staffName?: string };
+}
 interface ChatSessionRow {
   _id: string; sessionId: string; visitorName?: string; visitorEmail?: string;
   channel: string; escalated: boolean; messages: ChatMessage[]; createdAt: string; updatedAt: string;
@@ -301,8 +309,20 @@ function ChatHistoryPanel() {
                         <div className="flex gap-1.5">{[0,1,2].map((i) => <span key={i} className="h-1.5 w-1.5 rounded-full bg-ryze-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}</div>
                       </div>
                     ) : (detailCache[s.sessionId] ?? s.messages).map((m, i) => (
+                      m.role === 'system' ? (
+                        <div key={i} className="flex justify-center">
+                          <span className="text-[10px] text-text-muted bg-black/[0.04] dark:bg-white/[0.06] px-2 py-0.5 rounded-full">{m.content}</span>
+                        </div>
+                      ) : (
                       <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
-                        <div className={`max-w-[80%] px-3 py-2 rounded-lg text-xs ${m.role === 'user' ? 'bg-ryze-600 text-white' : 'bg-black/[0.04] dark:bg-white/[0.06] text-text-primary'}`}>
+                        {m.role === 'staff' && (
+                          <span className="text-[10px] font-medium text-emerald-600 mb-0.5">{m.metadata?.staffName || 'Staff'}</span>
+                        )}
+                        <div className={`max-w-[80%] px-3 py-2 rounded-lg text-xs ${
+                          m.role === 'user' ? 'bg-ryze-600 text-white'
+                          : m.role === 'staff' ? 'bg-emerald-600/10 border border-emerald-600/20 text-text-primary'
+                          : 'bg-black/[0.04] dark:bg-white/[0.06] text-text-primary'
+                        }`}>
                           {m.content}
                         </div>
                         {m.trace && (m.trace.responseSource || m.trace.toolCalls?.length || m.trace.totalTokens != null) && (
@@ -324,6 +344,7 @@ function ChatHistoryPanel() {
                           </div>
                         )}
                       </div>
+                      )
                     ))}
                   </div>
                 )}
@@ -364,6 +385,7 @@ function UsersPanel() {
   const [seatInfo, setSeatInfo] = useState<{ maxUsers: number | null; activeUsers: number }>({ maxUsers: null, activeUsers: 0 });
   const [showInvite, setShowInvite] = useState(false);
   const [resetModal, setResetModal]     = useState<{ id: string; name: string } | null>(null);
+  const [confirmDeactivate, setConfirmDeactivate] = useState<{ id: string; name: string } | null>(null);
   const [resetPwd, setResetPwd]         = useState('');
   const [resetConfirmPwd, setResetConfirmPwd] = useState('');
   const [resetShowPwd, setResetShowPwd]       = useState(false);
@@ -417,11 +439,14 @@ function UsersPanel() {
     } finally { setSaving(false); }
   };
 
-  const deactivate = async (id: string) => {
-    if (!window.confirm('Deactivate this user? They will not be able to log in.')) return;
+  // LR-UX-005: this used window.confirm() — a native browser pop-up,
+  // inconsistent with the in-app modal style used everywhere else on this
+  // page (Reset Password above).
+  const doDeactivate = async (id: string) => {
     try {
       await api.delete(`/api/v1/users/${id}`);
       toast.success('User deactivated');
+      setConfirmDeactivate(null);
       await load();
     } catch { toast.error('Failed to deactivate user'); }
   };
@@ -594,7 +619,7 @@ function UsersPanel() {
                 </div>
               )}
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs px-2.5 py-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] text-text-muted font-medium capitalize">{u.role.toLowerCase()}</span>
+                <span className="text-xs px-2.5 py-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] text-text-muted font-medium">{ROLE_LABEL[u.role] ?? u.role}</span>
                 {u.roleId && <span className="text-xs px-2.5 py-1 rounded-lg bg-ryze-600/15 text-ryze-700 dark:text-ryze-400 font-medium">{u.roleId.name}</span>}
               </div>
               <div className="flex items-center gap-2 pt-1 border-t border-border mt-auto">
@@ -605,7 +630,7 @@ function UsersPanel() {
                   <KeyIcon className="h-3.5 w-3.5" /> Reset PW
                 </button>
                 {u.isActive ? (
-                  <button onClick={() => deactivate(u._id)}
+                  <button onClick={() => setConfirmDeactivate({ id: u._id, name: `${u.firstName} ${u.lastName}` })}
                     className="flex-1 flex items-center justify-center gap-1.5 text-xs py-2 border border-red-200 rounded-lg text-red-500 hover:bg-red-50 transition-colors">
                     <TrashIcon className="h-3.5 w-3.5" /> Deactivate
                   </button>
@@ -679,6 +704,34 @@ function UsersPanel() {
                 {saving ? 'Resetting…' : 'Reset Password'}
               </button>
               <button onClick={() => { setResetModal(null); setResetPwd(''); setResetConfirmPwd(''); }}
+                className="flex-1 py-2 border border-border text-text-muted rounded-lg text-sm hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deactivate user confirmation modal — LR-UX-005 */}
+      {confirmDeactivate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setConfirmDeactivate(null)}>
+          <div className="bg-surface-elevated rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+                <TrashIcon className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-text-primary">Deactivate user?</h3>
+                <p className="text-xs text-text-muted">{confirmDeactivate.name} will not be able to log in.</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => doDeactivate(confirmDeactivate.id)}
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
+                Deactivate
+              </button>
+              <button onClick={() => setConfirmDeactivate(null)}
                 className="flex-1 py-2 border border-border text-text-muted rounded-lg text-sm hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
                 Cancel
               </button>
@@ -1485,6 +1538,16 @@ export default function SettingsPage() {
   const [companyName, setCompanyName] = useState('');
   const [timezone,    setTimezone]    = useState('Asia/Kolkata');
   const [savingCompany, setSavingCompany] = useState(false);
+
+  // LR-SETTINGS-001: companyName/timezone were never hydrated from the
+  // tenant at all — this page showed "auto-created" blank fields even
+  // though the tenant document genuinely has a name and a saved timezone.
+  const { data: tenantData } = useTenantQuery(user?.tenantId ?? '');
+  useEffect(() => {
+    if (!tenantData) return;
+    setCompanyName(tenantData.name ?? '');
+    if (tenantData.settings?.timezone) setTimezone(tenantData.settings.timezone);
+  }, [tenantData]);
 
   /* AI Agent state */
   const [agentName,    setAgentName]    = useState('LeadBot');

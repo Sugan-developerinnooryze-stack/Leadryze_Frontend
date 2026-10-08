@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useMemo } from 'react';
 import { CubeIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import FSDrawer from '../../../modules/native-crm/shared/FSDrawer';
@@ -6,12 +6,15 @@ import FSDeleteModal from '../../../modules/native-crm/shared/FSDeleteModal';
 import type { FSFieldDef, FSColumnDef } from '../../../modules/native-crm/shared/types';
 import { CompanyBadge } from '../../../components/native-crm/CompanyBadge';
 import { CompanyFilterBar } from '../../../components/native-crm/CompanyFilterBar';
+import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-settings.queries';
 import {
   useProductsListQuery,
   useProductCreate,
   useProductUpdate,
   useProductDelete,
 } from '../../../modules/native-crm/queries/products.queries';
+
+const CUR_SYMBOL: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
 
 const FIELDS: FSFieldDef[] = [
   { key: 'branchId', label: 'Company', type: 'branch-select' },
@@ -32,25 +35,6 @@ const STATUS_COLORS: Record<string, string> = {
   inactive: 'bg-black/[0.06] dark:bg-white/[0.08] text-text-muted',
 };
 
-const COLUMNS: FSColumnDef[] = [
-  { key: 'productId',    label: 'ID' },
-  { key: 'name',         label: 'Name' },
-  { key: 'sku',          label: 'SKU',   render: (r) => r.sku ?? '—' },
-  { key: 'category',     label: 'Category', render: (r) => r.category ?? '—' },
-  { key: 'sellingPrice', label: 'Price', render: (r) => r.sellingPrice != null ? `$${Number(r.sellingPrice).toFixed(2)}` : '—' },
-  { key: 'stock',        label: 'Stock', render: (r) => r.stock ?? 0 },
-  {
-    key: 'status',
-    label: 'Status',
-    render: (r) => (
-      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[r.status] ?? 'bg-black/[0.06] dark:bg-white/[0.08] text-text-muted'}`}>
-        {r.status}
-      </span>
-    ),
-  },
-  { key: 'branchId', label: 'Company', render: (r: any) => <CompanyBadge branchId={r.branchId} /> },
-];
-
 export default function ProductsPage() {
   const [search,    setSearch]    = useState('');
   const [status,    setStatus]    = useState('');
@@ -58,7 +42,28 @@ export default function ProductsPage() {
   const [drawer,    setDrawer]    = useState<{ open: boolean; record: any | null }>({ open: false, record: null });
   const [delTarget, setDelTarget] = useState<any | null>(null);
 
+  const { data: settings } = useFSSettingsQuery();
+
   useEffect(() => { setPage(1); }, [search, status]);
+
+  const columns: FSColumnDef[] = useMemo(() => [
+    { key: 'productId',    label: 'ID' },
+    { key: 'name',         label: 'Name' },
+    { key: 'sku',          label: 'SKU',   render: (r) => r.sku ?? '—' },
+    { key: 'category',     label: 'Category', render: (r) => r.category ?? '—' },
+    { key: 'sellingPrice', label: 'Price', render: (r) => r.sellingPrice != null ? `${CUR_SYMBOL[settings?.currency ?? 'AUD'] ?? '$'}${Number(r.sellingPrice).toFixed(2)}` : '—' },
+    { key: 'stock',        label: 'Stock', render: (r) => r.stock ?? 0 },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (r) => (
+        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[r.status] ?? 'bg-black/[0.06] dark:bg-white/[0.08] text-text-muted'}`}>
+          {r.status}
+        </span>
+      ),
+    },
+    { key: 'branchId', label: 'Company', render: (r: any) => <CompanyBadge branchId={r.branchId} /> },
+  ], [settings?.currency]);
 
   const { data: result, isLoading, error } = useProductsListQuery({ page, limit: 20, search: search || undefined, status: status || undefined });
   const items = result?.items ?? [];
@@ -116,7 +121,7 @@ export default function ProductsPage() {
       </div>
 
       <FSTable
-        columns={COLUMNS}
+        columns={columns}
         data={items}
         loading={isLoading}
         errorStatus={(error as any)?.response?.status}

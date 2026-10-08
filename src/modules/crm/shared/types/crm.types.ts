@@ -30,8 +30,11 @@ export interface FieldConfig {
    * Custom Module relationship fields use. 'teamSelect'/'categorySelect'
    * render dropdowns of NativeTeam/NativeCategory, storing their real Mongo
    * _id (NOT a human code — matches Ticket.teamId/assignRoundRobin's own
-   * expectation for teamId, and NativeCategory has no human code at all). */
-  type:         'text' | 'email' | 'phone' | 'number' | 'date' | 'datetime' | 'select' | 'textarea' | 'currency' | 'staffSelect' | 'teamSelect' | 'categorySelect';
+   * expectation for teamId, and NativeCategory has no human code at all).
+   * 'userSelect'/'companySelect' render dropdowns of the platform's real
+   * User/Company records, storing their Mongo _id — for fields like Contact
+   * owner/company that were previously plain free text (LR-CONTACT-001). */
+  type:         'text' | 'email' | 'phone' | 'number' | 'date' | 'datetime' | 'select' | 'textarea' | 'currency' | 'staffSelect' | 'teamSelect' | 'categorySelect' | 'userSelect' | 'companySelect';
   required?:    boolean;
   options?:     string[];
   placeholder?: string;
@@ -57,6 +60,10 @@ export interface FieldConfig {
 export interface ModulePageConfig {
   label:         string;
   labelSingular: string;
+  /** Optional one-line scoping note shown above the view tabs — e.g.
+   * distinguishing this module from a same-named-sounding page elsewhere.
+   * Omit for every existing caller's unchanged rendering. */
+  description?:  string;
   apiBase:       string;
   statusField?:  string;
   fields:        FieldConfig[];

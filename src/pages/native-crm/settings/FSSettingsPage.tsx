@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Cog6ToothIcon, CloudArrowUpIcon, CheckIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, CloudArrowUpIcon, CheckIcon, ChevronUpIcon, ChevronDownIcon, ExclamationTriangleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import FSDeleteModal from '../../../modules/native-crm/shared/FSDeleteModal';
 import {
   useFSSettingsQuery,
   useFSSettingsUpdate,
@@ -10,7 +11,7 @@ import {
 } from '../../../modules/native-crm/queries/fs-settings.queries';
 import { useTenantLockAuditQuery } from '../../../modules/native-crm/queries/record-lock.queries';
 import { useQueryClient } from '@tanstack/react-query';
-import { useBranchesQuery, useCreateBranch } from '../../../modules/native-crm/queries/branch.queries';
+import { useBranchesQuery, useCreateBranch, useUpdateBranch, useDeactivateBranch } from '../../../modules/native-crm/queries/branch.queries';
 import { Branch, useBranchStore } from '../../../stores/branch.store';
 import PhoneInput from '../../../modules/native-crm/shared/PhoneInput';
 import { COUNTRY_CODE_OPTIONS } from '../../../modules/native-crm/shared/countryCodes';
@@ -389,13 +390,46 @@ export default function FSSettingsPage() {
   const [savedPref, setSavedPref]      = useState<string | null>(null);
 
   const qc = useQueryClient();
-  const { currentBranch, setBranch, branches } = useBranchStore();
-  useBranchesQuery(false);
+  const { currentBranch, setBranch } = useBranchStore();
+  // true = include inactive companies too — needed so a deactivated one
+  // still shows up (as "Inactive") with a way to reactivate it, instead of
+  // silently vanishing from this switcher with no trace. Read from this
+  // query's OWN data (not the shared useBranchStore().branches) — that
+  // store is the global "active companies only" list every Company picker
+  // elsewhere in the app relies on, and must never be overwritten with
+  // inactive ones mixed in (see branch.queries.ts's own comment on this).
+  const { data: branchesData } = useBranchesQuery(true);
+  const branches = branchesData?.items ?? [];
   const createBranchMutation = useCreateBranch();
+  const updateBranchMutation = useUpdateBranch();
+  const deactivateBranchMutation = useDeactivateBranch();
+  const [reactivatingId, setReactivatingId] = useState<string | null>(null);
+
+  async function handleReactivateCompany(branch: Branch, e: React.MouseEvent) {
+    e.stopPropagation();
+    setReactivatingId(branch._id);
+    try {
+      await updateBranchMutation.mutateAsync({ id: branch._id, data: { status: 'active' } });
+    } finally {
+      setReactivatingId(null);
+    }
+  }
   const [addCompanyOpen,   setAddCompanyOpen]   = useState(false);
   const [newBranchName,    setNewBranchName]    = useState('');
   const [newBranchType,    setNewBranchType]    = useState<'branch' | 'headquarters' | 'warehouse'>('branch');
   const [addCompanySaving, setAddCompanySaving] = useState(false);
+  const [deactivateTarget, setDeactivateTarget] = useState<Branch | null>(null);
+
+  function handleDeleteCompany(branch: Branch, e: React.MouseEvent) {
+    e.stopPropagation();
+    setDeactivateTarget(branch);
+  }
+
+  async function confirmDeactivateCompany() {
+    if (!deactivateTarget) return;
+    await deactivateBranchMutation.mutateAsync(deactivateTarget._id);
+    if (currentBranch?._id === deactivateTarget._id) handleCompanySwitch(null);
+  }
 
   function handleCompanySwitch(branch: Branch | null) {
     setBranch(branch);
@@ -428,7 +462,14 @@ export default function FSSettingsPage() {
     await prefsMutation.mutateAsync({ [docType]: { sections: { [sectionKey]: value } } });
   };
 
-  const merged = { ...settings, ...form };
+  // A company with no settings of its own yet (isInherited) must render
+  // completely blank, not silently pre-filled with Default Company's values
+  // — explicit product requirement, since Company Name/GSTIN/PAN/etc. are
+  // legally distinct per company and auto-copying them would be actively
+  // wrong, not just a display nicety. `settings` itself is only ever
+  // spread in once this company has its own real saved doc; until then,
+  // every field falls through to each input's own `?? ''` empty default.
+  const merged = settings?.isInherited ? { ...form } : { ...settings, ...form };
   const set = (key: string) => (val: string) => setForm((prev) => ({ ...prev, [key]: val }));
 
   const handleSave = async () => {
@@ -482,19 +523,42 @@ export default function FSSettingsPage() {
           >
             Default Company
           </button>
-          {branches.filter((b) => b.status === 'active').map((branch) => (
-            <button
-              key={branch._id}
-              onClick={() => handleCompanySwitch(branch)}
-              className={`shrink-0 px-4 py-2 text-sm font-medium rounded-t-lg border border-b-0 -mb-px transition-colors whitespace-nowrap ${
-                currentBranch?._id === branch._id
-                  ? 'bg-surface border-border text-text-primary shadow-sm'
-                  : 'border-transparent text-text-muted hover:text-text-primary hover:bg-white/60'
-              }`}
-            >
-              {branch.branchName}
-            </button>
-          ))}
+          {branches.map((branch) => {
+            const isInactive = branch.status !== 'active';
+            return (
+              <div key={branch._id} className="group relative shrink-0">
+                <button
+                  onClick={() => handleCompanySwitch(branch)}
+                  className={`px-4 py-2 pr-7 text-sm font-medium rounded-t-lg border border-b-0 -mb-px transition-colors whitespace-nowrap ${
+                    currentBranch?._id === branch._id
+                      ? 'bg-surface border-border text-text-primary shadow-sm'
+                      : 'border-transparent text-text-muted hover:text-text-primary hover:bg-white/60'
+                  } ${isInactive ? 'opacity-50 italic' : ''}`}
+                >
+                  {branch.branchName}
+                  {isInactive && <span className="ml-1.5 text-[10px] font-semibold not-italic uppercase tracking-wide text-text-muted">Inactive</span>}
+                </button>
+                {isInactive ? (
+                  <button
+                    onClick={(e) => handleReactivateCompany(branch, e)}
+                    disabled={reactivatingId === branch._id}
+                    title={`Reactivate ${branch.branchName}`}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus:opacity-100 p-0.5 rounded text-text-muted hover:text-success-600 dark:hover:text-success-500 hover:bg-success-500/10 transition-all disabled:opacity-50"
+                  >
+                    {reactivatingId === branch._id ? '…' : '↻'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => handleDeleteCompany(branch, e)}
+                    title={`Deactivate ${branch.branchName}`}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus:opacity-100 p-0.5 rounded text-text-muted hover:text-danger-500 hover:bg-danger-500/10 transition-all"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            );
+          })}
           <button
             onClick={() => setAddCompanyOpen(true)}
             className="shrink-0 px-3 py-2 text-sm font-medium text-ryze-600 dark:text-ryze-400 hover:text-ryze-800 dark:hover:text-ryze-300 rounded-t-lg transition-colors whitespace-nowrap"
@@ -523,7 +587,16 @@ export default function FSSettingsPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-2xl mx-auto bg-surface rounded-xl border border-border p-6">
+        <div className="max-w-2xl mx-auto">
+          {settings?.isInherited && currentBranch && (
+            <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-ryze-200 dark:border-ryze-500/25 bg-ryze-50 dark:bg-ryze-500/10 px-4 py-3 text-sm text-ryze-800 dark:text-ryze-300">
+              <InformationCircleIcon className="h-5 w-5 shrink-0 mt-0.5" />
+              <p>
+                <strong>{currentBranch.branchName}</strong> is a new company with no settings of its own yet — every field below starts blank. Fill in and save whichever ones apply to {currentBranch.branchName}.
+              </p>
+            </div>
+          )}
+        <div className="bg-surface rounded-xl border border-border p-6">
 
           {/* Tab 0: Company Info */}
           {activeTab === 0 && (
@@ -575,6 +648,26 @@ export default function FSSettingsPage() {
                   Pre-selected country code for every new phone field across Customers, Leads, Staff, Sites, and more. Each field can still be changed individually.
                 </p>
               </FieldRow>
+              <FieldRow label="Tax Rate (%)">
+                <input type="number" min={0} max={100} step={0.01}
+                  value={merged.taxPercentage ?? 0}
+                  onChange={(e) => setForm((prev) => ({ ...prev, taxPercentage: parseFloat(e.target.value) || 0 }))}
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ryze-400 bg-background text-text-primary"
+                />
+                <p className="mt-1 text-xs text-text-muted">
+                  Auto-fills the GST % field whenever {currentBranch ? currentBranch.branchName : 'this'} is selected as the Company on Quotations, Work Orders, Invoices, and Contracts.
+                </p>
+              </FieldRow>
+              <FieldRow label="Discount Rate (%)">
+                <input type="number" min={0} max={100} step={0.01}
+                  value={merged.discountPercentage ?? 0}
+                  onChange={(e) => setForm((prev) => ({ ...prev, discountPercentage: parseFloat(e.target.value) || 0 }))}
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ryze-400 bg-background text-text-primary"
+                />
+                <p className="mt-1 text-xs text-text-muted">
+                  Auto-fills the Discount % field the same way (Contracts' own Discount is a flat amount, so it's excluded there).
+                </p>
+              </FieldRow>
             </div>
           )}
 
@@ -615,13 +708,6 @@ export default function FSSettingsPage() {
               <FieldRow label="Contract Prefix"><TextInput value={merged.contractPrefix} onChange={set('contractPrefix')} placeholder="CON" /></FieldRow>
               <FieldRow label="Receipt Prefix"><TextInput value={merged.receiptPrefix} onChange={set('receiptPrefix')} placeholder="RCP" /></FieldRow>
               <FieldRow label="Auto Client ID Prefix"><TextInput value={merged.autoClientIdPrefix} onChange={set('autoClientIdPrefix')} placeholder="LRZ" /></FieldRow>
-              <FieldRow label="Tax Rate (%)">
-                <input type="number" min={0} max={100} step={0.01}
-                  value={merged.taxPercentage ?? 0}
-                  onChange={(e) => setForm((prev) => ({ ...prev, taxPercentage: parseFloat(e.target.value) || 0 }))}
-                  className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ryze-400 bg-background text-text-primary"
-                />
-              </FieldRow>
             </div>
           )}
 
@@ -1086,6 +1172,7 @@ export default function FSSettingsPage() {
           })()}
 
         </div>
+        </div>
       </div>
 
       {/* Add Company mini-modal */}
@@ -1133,6 +1220,20 @@ export default function FSSettingsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {deactivateTarget && (
+        <FSDeleteModal
+          label={deactivateTarget.branchName}
+          icon={ExclamationTriangleIcon}
+          tone="warning"
+          title={`Deactivate "${deactivateTarget.branchName}"?`}
+          description='Its past records stay accessible under "All Branches" — this just removes it from this switcher and stops new records being assigned to it.'
+          confirmLabel="Deactivate"
+          confirmingLabel="Deactivating…"
+          onClose={() => setDeactivateTarget(null)}
+          onConfirm={confirmDeactivateCompany}
+        />
       )}
     </div>
   );

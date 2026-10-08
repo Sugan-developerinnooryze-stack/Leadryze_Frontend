@@ -27,10 +27,10 @@ interface Stats {
 }
 
 interface ChatMessage {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'staff' | 'system';
   content: string;
   timestamp: string;
-  metadata?: { escalated?: boolean };
+  metadata?: { escalated?: boolean; staffName?: string };
 }
 
 interface Session {
@@ -171,15 +171,23 @@ function SessionsTab() {
             {expanded === s.sessionId && (
               <div className="border-t border-border bg-background p-4 space-y-3 max-h-96 overflow-y-auto">
                 {s.messages.map((msg, i) => (
+                  msg.role === 'system' ? (
+                    <div key={i} className="flex justify-center">
+                      <span className="text-[11px] text-text-muted bg-black/[0.04] dark:bg-white/[0.06] px-2 py-0.5 rounded-full">{msg.content}</span>
+                    </div>
+                  ) : (
                   <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[80%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
                       msg.role === 'user'
                         ? 'bg-ryze-600 text-white rounded-tr-sm'
-                        : 'bg-surface border border-border text-text-primary rounded-tl-sm'
+                        : msg.role === 'staff'
+                          ? 'bg-emerald-600/10 border border-emerald-600/20 text-text-primary rounded-tl-sm'
+                          : 'bg-surface border border-border text-text-primary rounded-tl-sm'
                     }`}>
                       {msg.content}
                     </div>
                   </div>
+                  )
                 ))}
               </div>
             )}

@@ -9,6 +9,7 @@ import { PLAN_CONFIG } from '../shared/adminConfig';
 import type { Client } from '../shared/adminTypes';
 import CreateTenantModal from './CreateTenantModal';
 import CredentialsRevealModal from './CredentialsRevealModal';
+import { ConfirmDangerousAction } from '../shared/ConfirmDangerousAction';
 
 const STATUS_TABS = ['all', 'pending', 'approved', 'rejected'] as const;
 type StatusTab = (typeof STATUS_TABS)[number];
@@ -40,13 +41,34 @@ export default function TenantsListPage() {
 
   useEffect(load, []);
 
-  const toggleClient = async (id: string, e: React.MouseEvent) => {
+  // LR-UX-001: deactivating blocks every user at this tenant instantly —
+  // ConfirmDangerousAction already exists for exactly this ("tenant
+  // deactivate" is named in its own doc comment) but was never wired up
+  // here, so one click did it with no confirmation at all. Activating is
+  // not destructive, so it still applies immediately.
+  const [confirmDeactivate, setConfirmDeactivate] = useState<Client | null>(null);
+  const [deactivating, setDeactivating] = useState(false);
+
+  const toggleClient = async (id: string) => {
+    const res = await authService.toggleClient(id);
+    setClients((prev) => prev.map((c) => c._id === id ? { ...c, isActive: res.data.data.isActive } : c));
+    toast.success(res.data.message);
+  };
+
+  const requestToggle = (c: Client, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (c.isActive) { setConfirmDeactivate(c); return; }
+    toggleClient(c._id).catch(() => toast.error('Failed to update client'));
+  };
+
+  const confirmDeactivateNow = async () => {
+    if (!confirmDeactivate) return;
+    setDeactivating(true);
     try {
-      const res = await authService.toggleClient(id);
-      setClients((prev) => prev.map((c) => c._id === id ? { ...c, isActive: res.data.data.isActive } : c));
-      toast.success(res.data.message);
+      await toggleClient(confirmDeactivate._id);
+      setConfirmDeactivate(null);
     } catch { toast.error('Failed to update client'); }
+    finally { setDeactivating(false); }
   };
 
   const approveTenant = async (c: Client, e: React.MouseEvent) => {
@@ -129,10 +151,23 @@ export default function TenantsListPage() {
 
       {filtered.length === 0 ? (
         <AdminCard>
-          <AdminEmptyState icon={BuildingOffice2Icon} title={search ? 'No tenants match your search' : 'No tenants yet'} />
+          {/* LR-UX-002: this only ever checked `search` — filtering to a
+              status tab with zero matches (e.g. Pending) said "No tenants
+              yet" even while the header above correctly says "6 tenants on
+              the platform". */}
+          <AdminEmptyState icon={BuildingOffice2Icon} title={
+            search ? 'No tenants match your search'
+              : statusTab !== 'all' ? `No ${statusTab} tenants`
+              : 'No tenants yet'
+          } />
         </AdminCard>
       ) : (
         <AdminCard>
+          {/* LR-RESPONSIVE-001: AdminCard's own overflow-hidden (for its
+              rounded corners) was clipping this 9-column table at common
+              laptop widths instead of letting it scroll — this wrapper
+              gives the table its own independent horizontal scroll. */}
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-black/[0.015] dark:bg-white/[0.02] border-b border-border text-text-muted text-xs uppercase tracking-wider">
@@ -206,7 +241,7 @@ export default function TenantsListPage() {
                         </button>
                       </div>
                     ) : (
-                      <button onClick={(e) => toggleClient(c._id, e)}
+                      <button onClick={(e) => requestToggle(c, e)}
                         className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${
                           c.isActive ? 'bg-danger-500/10 text-danger-700 dark:text-danger-500 border-danger-500/20 hover:bg-danger-500/20' : 'bg-success-500/10 text-success-700 dark:text-success-500 border-success-500/20 hover:bg-success-500/20'
                         }`}>
@@ -218,6 +253,7 @@ export default function TenantsListPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </AdminCard>
       )}
 
@@ -234,6 +270,19 @@ export default function TenantsListPage() {
           onClose={() => setApproveResult(null)}
         />
       )}
+      <ConfirmDangerousAction
+        open={!!confirmDeactivate}
+        title={`Deactivate ${confirmDeactivate?.name ?? 'this tenant'}?`}
+        consequences={[
+          'Every user at this tenant will be blocked from logging in immediately.',
+          'Nothing is deleted — reactivating restores access instantly.',
+        ]}
+        confirmWord={confirmDeactivate?.name ?? ''}
+        confirmLabel="Deactivate"
+        loading={deactivating}
+        onCancel={() => setConfirmDeactivate(null)}
+        onConfirm={confirmDeactivateNow}
+      />
     </div>
   );
 }

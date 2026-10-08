@@ -30,6 +30,7 @@ export interface FeatureFlags {
   native_tickets:   boolean;
   native_calls:     boolean;
   native_meetings:  boolean;
+  native_conversations: boolean;
   // Field Service sub-items
   fs_leads:      boolean;
   fs_categories: boolean;
@@ -103,6 +104,7 @@ export const ALL_FLAGS_TRUE: FeatureFlags = {
   native_tickets:   true,
   native_calls:     true,
   native_meetings:  true,
+  native_conversations: true,
   fs_leads:      true,
   fs_categories: true,
   fs_services:   true,

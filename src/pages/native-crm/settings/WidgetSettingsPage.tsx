@@ -8,15 +8,16 @@ import {
   LockClosedIcon, XMarkIcon, PlusIcon, GlobeAltIcon, DocumentArrowUpIcon,
   PhotoIcon, TrashIcon, Cog6ToothIcon, CalendarDaysIcon, UserGroupIcon,
   CpuChipIcon, SwatchIcon, Square3Stack3DIcon, KeyIcon, InformationCircleIcon,
-  MicrophoneIcon, CircleStackIcon, ChartBarIcon,
+  MicrophoneIcon, CircleStackIcon, ChartBarIcon, UserIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../../stores/auth.store';
 import { useTeamsListQuery, useTeamUpdate } from '../../../modules/native-crm/queries/teams.queries';
 import {
   useTenantQuery, useUpdateTenantWidget, useRegenerateWidgetKey,
   useTriggerWebsiteCrawl, useCrawlStatus, useUploadWidgetLogo, useRemoveWidgetLogo,
+  useUploadWidgetBackgroundImage, useRemoveWidgetBackgroundImage,
   useUpdateTenantAIConfig, useUpdateTenantBranding, useTenantAiUsageQuery,
-  type TenantWidgetConfig, type ToolModelPreset, type VoiceProvider, type TenantVoicePreset,
+  type TenantWidgetConfig, type ToolModelPreset, type VoiceProvider, type TenantVoicePreset, type TenantWidgetTheme,
 } from '../../../modules/native-crm/queries/tenant.queries';
 import { useCatalogSources, useImportCatalog } from '../../../modules/native-crm/queries/catalog.queries';
 import CatalogImportPreview from '../../../modules/native-crm/shared/CatalogImportPreview';
@@ -26,6 +27,7 @@ import {
   type DatasetColumn,
 } from '../../../modules/native-crm/queries/datasets.queries';
 import DatasetImportPreview from '../../../modules/native-crm/shared/DatasetImportPreview';
+import ImageCropModal from '../../../components/ui/ImageCropModal';
 
 type Template = NonNullable<TenantWidgetConfig['template']>;
 
@@ -100,6 +102,7 @@ const NAV_SECTIONS: Array<{ id: string; label: string; icon: React.ComponentType
   { id: 'section-tool-model',  label: 'Tool Model',        icon: CpuChipIcon },
   { id: 'section-ai-usage',    label: 'AI Usage & Limits', icon: ChartBarIcon },
   { id: 'section-voice',       label: 'Voice',             icon: MicrophoneIcon },
+  // { id: 'section-human-handoff', label: 'Human Handoff',  icon: UserIcon },
   { id: 'section-appearance',  label: 'Appearance',        icon: SwatchIcon },
   { id: 'section-website',     label: 'Website Content',   icon: GlobeAltIcon },
   { id: 'section-catalog',     label: 'Product Catalog',   icon: Square3Stack3DIcon },
@@ -107,59 +110,128 @@ const NAV_SECTIONS: Array<{ id: string; label: string; icon: React.ComponentType
   { id: 'section-embed',       label: 'Widget Key & Embed', icon: KeyIcon },
 ];
 
+const WIDGET_FONT_STACK_DEFAULT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+const FONT_OPTIONS: { value: string; label: string }[] = [
+  { value: WIDGET_FONT_STACK_DEFAULT, label: 'System Default' },
+  { value: "'Inter', sans-serif", label: 'Inter' },
+  { value: "'Roboto', sans-serif", label: 'Roboto' },
+  { value: "'Poppins', sans-serif", label: 'Poppins' },
+  { value: "'Open Sans', sans-serif", label: 'Open Sans' },
+  { value: "'Lato', sans-serif", label: 'Lato' },
+  { value: "'Montserrat', sans-serif", label: 'Montserrat' },
+];
+
+const SIZE_OPTIONS: { value: NonNullable<TenantWidgetTheme['size']>; label: string; description: string }[] = [
+  { value: 'compact',  label: 'Compact',  description: '336 × 470 — today\'s original footprint' },
+  { value: 'standard', label: 'Standard', description: '392 × 600 — bigger, easier to read at a glance' },
+  { value: 'large',    label: 'Large',    description: '420 × 680 — the most screen real estate' },
+];
+
+// backgroundImageUrl is excluded from the Required<> — unlike every color
+// field, there's no sensible "default" image to resolve to; it's genuinely
+// optional (undefined = plain color background, exactly as before this
+// field existed).
+type ResolvedTheme = Required<Omit<TenantWidgetTheme, 'backgroundImageUrl'>> & Pick<TenantWidgetTheme, 'backgroundImageUrl'>;
+
+/** Mirrors the backend's own resolveWidgetTheme() (public-widget.service.ts)
+ * exactly — an unset field resolves from the selected template's own
+ * default palette, never to a hardcoded value independent of template, so
+ * this preview and the real embedded widget always agree. */
+function resolveTheme(theme: TenantWidgetTheme | undefined, template: Template, accentFallback: string): ResolvedTheme {
+  const isDark = template === 'dark';
+  const accentColor = theme?.accentColor || accentFallback || '#2563eb';
+  return {
+    accentColor,
+    headerColor:     theme?.headerColor     || (isDark ? '#1a1f2e' : accentColor),
+    headerTextColor: theme?.headerTextColor || '#ffffff',
+    backgroundColor: theme?.backgroundColor || (isDark ? '#f4f5f7' : '#f8f9fb'),
+    botBubbleColor:  theme?.botBubbleColor  || '#ffffff',
+    botTextColor:    theme?.botTextColor    || '#1e2430',
+    userBubbleColor: theme?.userBubbleColor || (isDark ? '#1a1f2e' : accentColor),
+    userTextColor:   theme?.userTextColor   || '#ffffff',
+    fontFamily:      theme?.fontFamily      || WIDGET_FONT_STACK_DEFAULT,
+    size:            theme?.size            || 'standard',
+  };
+}
+
+/** One labeled color swatch — native color input (real picker) + a hex text
+ * field kept in sync, so an admin can either click-and-pick or paste an
+ * exact brand hex. */
+function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (hex: string) => void }) {
+  return (
+    <div>
+      <label className="block text-[11px] font-medium text-text-muted mb-1">{label}</label>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={/^#[0-9a-f]{6}$/i.test(value) ? value : '#000000'}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 w-8 rounded-md border border-border cursor-pointer shrink-0 bg-transparent p-0"
+        />
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="#000000"
+          className="w-full min-w-0 px-2.5 py-1.5 text-xs font-mono bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400"
+        />
+      </div>
+    </div>
+  );
+}
+
 /** A tiny, purely illustrative mockup of each template's actual structure —
  * not a live render of the real widget, but distinct enough (status bar for
  * Modern, no avatar for Minimal, horizontal pills for Chips, a vertical
  * stacked action menu for Dark) that the four are tellable apart at a
  * glance, matching how the real templates now differ structurally too. */
-function TemplatePreview({ id, color }: { id: Template; color: string }) {
-  const dark = shadeColor(color, -0.18);
+function TemplatePreview({ id, theme }: { id: Template; theme: ResolvedTheme }) {
+  const { headerColor, headerTextColor, backgroundColor, botBubbleColor, userBubbleColor, accentColor } = theme;
+  const headerDark = shadeColor(headerColor, -0.18);
   return (
-    <div className="rounded-lg overflow-hidden border border-border bg-background" style={{ width: '100%', height: 72 }}>
+    <div className="rounded-lg overflow-hidden border border-border" style={{ width: '100%', height: 72, background: backgroundColor }}>
       <div
         className="flex items-center gap-1.5 px-2"
-        style={{
-          height: 22,
-          background: id === 'dark' ? '#1a1f2e' : id === 'modern' ? `linear-gradient(135deg, ${color}, ${dark})` : color,
-        }}
+        style={{ height: 22, background: id === 'modern' ? `linear-gradient(135deg, ${headerColor}, ${headerDark})` : headerColor }}
       >
         {id !== 'minimal' && (
           <span
             className="rounded-full shrink-0 flex items-center justify-center text-[6px] font-bold"
-            style={{ width: 11, height: 11, background: id === 'chips' ? '#fff' : 'rgba(255,255,255,0.35)', color }}
+            style={{ width: 11, height: 11, background: id === 'chips' ? headerTextColor : 'rgba(255,255,255,0.35)', color: headerColor }}
           >
             {id === 'chips' ? 'L' : ''}
           </span>
         )}
-        <span className="h-1 rounded-full bg-white/70" style={{ width: 30 }} />
+        <span className="h-1 rounded-full" style={{ width: 30, background: headerTextColor, opacity: 0.7 }} />
       </div>
       {id === 'modern' && (
-        <div className="flex items-center gap-1 px-2" style={{ height: 10, background: `linear-gradient(135deg, ${color}, ${dark})` }}>
+        <div className="flex items-center gap-1 px-2" style={{ height: 10, background: `linear-gradient(135deg, ${headerColor}, ${headerDark})` }}>
           <span className="rounded-full shrink-0" style={{ width: 4, height: 4, background: '#4ade80' }} />
-          <span className="h-[3px] rounded-full bg-white/60" style={{ width: 20 }} />
+          <span className="h-[3px] rounded-full" style={{ width: 20, background: headerTextColor, opacity: 0.6 }} />
         </div>
       )}
       <div className="p-1.5 flex flex-col gap-1">
         <span
-          className="h-2 bg-surface border border-border self-start"
-          style={{ width: 42, borderRadius: id === 'minimal' ? 3 : '2px 7px 7px 7px' }}
+          className="h-2 self-start"
+          style={{ width: 42, background: botBubbleColor, border: '1px solid rgba(0,0,0,0.08)', borderRadius: id === 'minimal' ? 3 : '2px 7px 7px 7px' }}
         />
         {id === 'chips' && (
           <div className="flex gap-1">
-            <span className="h-2 rounded-full border" style={{ width: 20, borderColor: color }} />
-            <span className="h-2 rounded-full border" style={{ width: 16, borderColor: color }} />
+            <span className="h-2 rounded-full border" style={{ width: 20, borderColor: accentColor }} />
+            <span className="h-2 rounded-full border" style={{ width: 16, borderColor: accentColor }} />
           </div>
         )}
         {id === 'dark' && (
           <div className="flex flex-col gap-[3px]">
-            <span className="h-[7px] rounded border border-border bg-surface" />
-            <span className="h-[7px] rounded border border-border bg-surface" />
+            <span className="h-[7px] rounded" style={{ background: botBubbleColor, border: '1px solid rgba(0,0,0,0.08)' }} />
+            <span className="h-[7px] rounded" style={{ background: botBubbleColor, border: '1px solid rgba(0,0,0,0.08)' }} />
           </div>
         )}
         {(id === 'modern' || id === 'minimal') && (
           <span
             className="h-2 self-end"
-            style={{ width: 26, background: color, borderRadius: id === 'minimal' ? 3 : '7px 2px 7px 7px' }}
+            style={{ width: 26, background: userBubbleColor, borderRadius: id === 'minimal' ? 3 : '7px 2px 7px 7px' }}
           />
         )}
       </div>
@@ -279,10 +351,14 @@ export default function WidgetSettingsPage() {
   const qc = useQueryClient();
   const uploadLogoMutation = useUploadWidgetLogo(tenantId);
   const removeLogoMutation = useRemoveWidgetLogo(tenantId);
+  const uploadBgImageMutation = useUploadWidgetBackgroundImage(tenantId);
+  const removeBgImageMutation = useRemoveWidgetBackgroundImage(tenantId);
   const { data: catalogSources } = useCatalogSources(tenantId);
   const importMutation = useImportCatalog(tenantId);
   const catalogFileInputRef = useRef<HTMLInputElement>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
+  const bgImageFileInputRef = useRef<HTMLInputElement>(null);
+  const [bgImageMessage, setBgImageMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const { data: datasets } = useDatasetsList(tenantId);
   const importDatasetMutation = useImportDataset(tenantId);
   const toggleDatasetMutation = useToggleDatasetAvailable(tenantId);
@@ -307,13 +383,14 @@ export default function WidgetSettingsPage() {
   const [teamId, setTeamId]             = useState('');
   const [websiteUrl, setWebsiteUrl]     = useState('');
   const [template, setTemplate]         = useState<Template>('modern');
+  // Sparse — only the fields this tenant has explicitly overridden. Unset
+  // fields are resolved live via resolveTheme() (template default), never
+  // baked into this state, so switching templates below instantly previews
+  // that template's own palette without needing to copy values in/out.
+  const [theme, setTheme]               = useState<TenantWidgetTheme>({});
   const [toolModelPreset, setToolModelPreset] = useState<ToolModelPreset | ''>('');
   const [toolModelMessage, setToolModelMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [autoConvertLeadOnMeetingCompleted, setAutoConvertLeadOnMeetingCompleted] = useState(false);
-  const [customTokenLimit, setCustomTokenLimit] = useState('');
-  const [warningThresholdPercent, setWarningThresholdPercent] = useState('80');
-  const [criticalThresholdPercent, setCriticalThresholdPercent] = useState('95');
-  const [aiUsageMessage, setAiUsageMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [bookingEnabled, setBookingEnabled]   = useState(false);
   const [bookingTimezone, setBookingTimezone] = useState('UTC');
   const [bookingSlotMinutes, setBookingSlotMinutes]     = useState(30);
@@ -342,6 +419,15 @@ export default function WidgetSettingsPage() {
   const [testVoiceState, setTestVoiceState] = useState<'idle' | 'loading' | 'error'>('idle');
   const testVoiceAudioRef = useRef<HTMLAudioElement | null>(null);
   const [voiceMessage, setVoiceMessage]   = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [appearanceMessage, setAppearanceMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  // "Connect with an expert" — OFF by default for every tenant (see ground
+  // rule #1 on the Human Handoff feature); this useState default is only
+  // the pre-hydration value, immediately overwritten once `tenant` loads.
+  const [humanHandoffEnabled, setHumanHandoffEnabled] = useState(false);
+  const [humanHandoffButtonText, setHumanHandoffButtonText] = useState('Connect with an expert');
+  const [humanHandoffWaitingMessage, setHumanHandoffWaitingMessage] = useState('');
+  const [humanHandoffOfflineMessage, setHumanHandoffOfflineMessage] = useState('');
+  const [humanHandoffMessage, setHumanHandoffMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [departmentsMessage, setDepartmentsMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [togglingTeamId, setTogglingTeamId] = useState<string | null>(null);
   const [message, setMessage]           = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -391,6 +477,10 @@ export default function WidgetSettingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [importStatus.data]);
   const [logoMessage, setLogoMessage]   = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  // Holds the just-picked file while the crop modal is open — null means
+  // the modal is closed. Nothing is uploaded until the admin confirms the
+  // crop (see handleLogoCropConfirm), so cancelling never touches the server.
+  const [logoCropFile, setLogoCropFile] = useState<File | null>(null);
   const [confirmingRegen, setConfirmingRegen] = useState(false);
   const [isCrawlPolling, setIsCrawlPolling] = useState(false);
 
@@ -407,6 +497,7 @@ export default function WidgetSettingsPage() {
       setTeamId(tenant.widget.defaultTeamId ?? '');
       setWebsiteUrl(tenant.widget.websiteUrl ?? '');
       setTemplate(tenant.widget.template ?? 'modern');
+      setTheme(tenant.widget.theme ?? {});
       // A crawl started elsewhere (another tab, or before this page was
       // last reloaded) can leave the tenant doc mid-crawl even though this
       // tab's own local isCrawlPolling never got set — resume live polling
@@ -443,12 +534,15 @@ export default function WidgetSettingsPage() {
       setMaxSessionMinutes(voice?.maxSessionMinutes ? String(voice.maxSessionMinutes) : '');
       setAllowTextDuringVoice(voice?.allowTextDuringVoice ?? true);
       setVoicePresetGender(voice?.voicePreset?.gender ?? 'female');
+
+      const humanHandoff = tenant.widget.humanHandoff;
+      setHumanHandoffEnabled(humanHandoff?.enabled ?? false);
+      setHumanHandoffButtonText(humanHandoff?.buttonText ?? 'Connect with an expert');
+      setHumanHandoffWaitingMessage(humanHandoff?.waitingMessage ?? '');
+      setHumanHandoffOfflineMessage(humanHandoff?.offlineMessage ?? '');
     }
     setToolModelPreset(tenant?.aiConfig?.toolModelPreset ?? '');
     setAutoConvertLeadOnMeetingCompleted(tenant?.aiConfig?.autoConvertLeadOnMeetingCompleted ?? false);
-    setCustomTokenLimit(tenant?.aiConfig?.monthlyTokenLimit != null ? String(tenant.aiConfig.monthlyTokenLimit) : '');
-    setWarningThresholdPercent(String(tenant?.aiConfig?.tokenWarningThresholdPercent ?? 80));
-    setCriticalThresholdPercent(String(tenant?.aiConfig?.tokenCriticalThresholdPercent ?? 95));
     setContactEmail(tenant?.branding?.contactEmail ?? '');
     setContactPhone(tenant?.branding?.contactPhone ?? '');
     setContactAddress(tenant?.branding?.address ?? '');
@@ -533,11 +627,40 @@ export default function WidgetSettingsPage() {
     setMessage(null);
     try {
       await updateMutation.mutateAsync({
-        enabled, allowedDomains: domains, greeting, quickQuestions, showBookingQuickReply, autoSendLeadEmails, defaultTeamId: teamId || null, template,
+        enabled, allowedDomains: domains, greeting, quickQuestions, showBookingQuickReply, autoSendLeadEmails, defaultTeamId: teamId || null, template, theme,
       });
       setMessage({ type: 'ok', text: 'Widget settings saved.' });
     } catch (err: any) {
       setMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
+    }
+  };
+
+  // Previously there was no dedicated save here at all — this section's own
+  // "Applies immediately once you click Save Settings above" text pointed at
+  // the Configuration section's save button, far above and off-screen once
+  // scrolled down to Appearance, which made color changes look like they
+  // silently did nothing. Every other section (Voice, Human Handoff,
+  // Booking) already has its own save button — this brings Appearance in
+  // line with that same pattern, scoped only to template/theme so it can't
+  // accidentally overwrite unrelated Configuration fields.
+  const handleAppearanceSave = async () => {
+    setAppearanceMessage(null);
+    try {
+      // `theme` (local color-picker state) never tracks backgroundImageUrl
+      // — that field is server-upload-only, written directly by the
+      // dedicated upload/remove mutations below, same write-protection
+      // posture as widget.logoUrl. The backend replaces the WHOLE
+      // widget.theme sub-document on save (not a per-field merge — same as
+      // every other theme field already), so without re-attaching the
+      // live value here, saving a color change would silently wipe out
+      // whatever background image was uploaded.
+      await updateMutation.mutateAsync({
+        template,
+        theme: { ...theme, backgroundImageUrl: tenant.widget?.theme?.backgroundImageUrl },
+      });
+      setAppearanceMessage({ type: 'ok', text: 'Appearance saved.' });
+    } catch (err: any) {
+      setAppearanceMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
     }
   };
 
@@ -578,27 +701,6 @@ export default function WidgetSettingsPage() {
     }
   };
 
-  const handleAiUsageSave = async () => {
-    setAiUsageMessage(null);
-    const warning  = Number(warningThresholdPercent);
-    const critical = Number(criticalThresholdPercent);
-    if (warning <= 0 || warning >= 100 || critical <= 0 || critical > 100 || warning >= critical) {
-      setAiUsageMessage({ type: 'err', text: 'Thresholds must be between 1-100%, with warning set below critical.' });
-      return;
-    }
-    try {
-      await aiConfigMutation.mutateAsync({
-        // Blank input clears the override back to the plan default (matches
-        // toolModelPreset's own "null clears back to default" convention).
-        monthlyTokenLimit: customTokenLimit.trim() ? Number(customTokenLimit) : null,
-        tokenWarningThresholdPercent: warning,
-        tokenCriticalThresholdPercent: critical,
-      });
-      setAiUsageMessage({ type: 'ok', text: 'AI usage limits saved.' });
-    } catch (err: any) {
-      setAiUsageMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
-    }
-  };
 
   const handleBookingSave = async () => {
     setBookingMessage(null);
@@ -650,6 +752,26 @@ export default function WidgetSettingsPage() {
       setVoiceMessage({ type: 'ok', text: 'Voice settings saved.' });
     } catch (err: any) {
       setVoiceMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
+    }
+  };
+
+  // Same reuse-updateMutation pattern as Voice/Booking above — humanHandoff
+  // is just one more field on the same widget object.
+  const handleHumanHandoffSave = async () => {
+    setHumanHandoffMessage(null);
+    try {
+      await updateMutation.mutateAsync({
+        humanHandoff: {
+          enabled: humanHandoffEnabled,
+          buttonText: humanHandoffButtonText.trim() || 'Connect with an expert',
+          waitingMessage: humanHandoffWaitingMessage.trim()
+            || "We're connecting you with a team member — someone will be with you shortly.",
+          offlineMessage: humanHandoffOfflineMessage.trim() || undefined,
+        },
+      });
+      setHumanHandoffMessage({ type: 'ok', text: 'Human Handoff settings saved.' });
+    } catch (err: any) {
+      setHumanHandoffMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
     }
   };
 
@@ -716,13 +838,24 @@ export default function WidgetSettingsPage() {
     }
   };
 
-  const handleLogoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Opens the crop modal instead of uploading immediately — the logo
+  // renders inside a circular avatar (see WidgetUI's #lr-avatar), and an
+  // arbitrary-aspect-ratio source image forced into that via plain
+  // object-fit:cover crops at whatever point the browser picks, which
+  // often cuts off the actual mark. Nothing reaches the server until the
+  // admin confirms a crop in ImageCropModal.
+  const handleLogoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ''; // allow re-selecting the same file later
     if (!file) return;
+    setLogoCropFile(file);
+  };
+
+  const handleLogoCropConfirm = async (croppedFile: File) => {
+    setLogoCropFile(null);
     setLogoMessage(null);
     try {
-      await uploadLogoMutation.mutateAsync(file);
+      await uploadLogoMutation.mutateAsync(croppedFile);
       setLogoMessage({ type: 'ok', text: 'Logo uploaded.' });
     } catch (err: any) {
       setLogoMessage({ type: 'err', text: err?.response?.data?.message ?? 'Upload failed — try a smaller image (max 5 MB).' });
@@ -736,6 +869,29 @@ export default function WidgetSettingsPage() {
       setLogoMessage({ type: 'ok', text: 'Logo removed.' });
     } catch {
       setLogoMessage({ type: 'err', text: 'Could not remove the logo.' });
+    }
+  };
+
+  const handleBgImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file later
+    if (!file) return;
+    setBgImageMessage(null);
+    try {
+      await uploadBgImageMutation.mutateAsync(file);
+      setBgImageMessage({ type: 'ok', text: 'Background image uploaded.' });
+    } catch (err: any) {
+      setBgImageMessage({ type: 'err', text: err?.response?.data?.message ?? 'Upload failed — try a smaller image (max 5 MB).' });
+    }
+  };
+
+  const handleRemoveBgImage = async () => {
+    setBgImageMessage(null);
+    try {
+      await removeBgImageMutation.mutateAsync();
+      setBgImageMessage({ type: 'ok', text: 'Background image removed.' });
+    } catch {
+      setBgImageMessage({ type: 'err', text: 'Could not remove the background image.' });
     }
   };
 
@@ -1420,7 +1576,7 @@ export default function WidgetSettingsPage() {
               icon={ChartBarIcon}
               iconClassName="bg-violet-50 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400"
               title="AI Usage & Limits"
-              description="How much of this widget's monthly AI budget has been used, and where the limit is set — the fallback message visitors see once it's reached."
+              description="How much of this widget's prepaid AI credit balance has been used, and where the limit is set — the fallback message visitors see once it's reached. This is a credit balance, not a monthly subscription — it doesn't refill on its own."
               right={aiUsage && (
                 <span className={`text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 ${
                   aiUsage.status === 'exceeded' ? 'bg-red-100 text-red-700'
@@ -1456,57 +1612,32 @@ export default function WidgetSettingsPage() {
                     />
                   </div>
                   <p className="mt-1.5 text-[11px] text-text-muted">
-                    {aiUsage.tokensRemaining.toLocaleString()} tokens remaining this month · plan default is {aiUsage.planDefaultTokenLimit.toLocaleString()} ({aiUsage.plan})
+                    {aiUsage.tokensRemaining.toLocaleString()} tokens remaining · plan default is {aiUsage.planDefaultTokenLimit.toLocaleString()} ({aiUsage.plan}) · credits granted {new Date(aiUsage.creditsLastResetAt).toLocaleDateString()}
                   </p>
                 </div>
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
                 <div>
-                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Monthly Token Limit</label>
-                  <input
-                    type="number" min={0} className={input} value={customTokenLimit}
-                    onChange={(e) => setCustomTokenLimit(e.target.value)}
-                    placeholder={aiUsage ? String(aiUsage.planDefaultTokenLimit) : 'Plan default'}
-                  />
-                  <p className="mt-1 text-[11px] text-text-muted">Blank = use the plan default shown above.</p>
+                  <p className="text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Token Credit Limit</p>
+                  <p className="text-sm font-medium text-text-primary">
+                    {aiUsage ? aiUsage.monthlyTokenLimit.toLocaleString() : '—'}
+                    {aiUsage && aiUsage.customTokenLimit == null && <span className="text-text-muted font-normal"> (plan default)</span>}
+                  </p>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Warning Threshold %</label>
-                  <input
-                    type="number" min={1} max={99} className={input} value={warningThresholdPercent}
-                    onChange={(e) => setWarningThresholdPercent(e.target.value)}
-                  />
-                  <p className="mt-1 text-[11px] text-text-muted">Admin-facing only — never affects what visitors see.</p>
+                  <p className="text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Warning Threshold %</p>
+                  <p className="text-sm font-medium text-text-primary">{aiUsage ? `${aiUsage.warningThresholdPercent}%` : '—'}</p>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Critical Threshold %</label>
-                  <input
-                    type="number" min={1} max={100} className={input} value={criticalThresholdPercent}
-                    onChange={(e) => setCriticalThresholdPercent(e.target.value)}
-                  />
-                  <p className="mt-1 text-[11px] text-text-muted">The fallback ("please leave your contact info") only ever starts at 100%.</p>
+                  <p className="text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Critical Threshold %</p>
+                  <p className="text-sm font-medium text-text-primary">{aiUsage ? `${aiUsage.criticalThresholdPercent}%` : '—'}</p>
                 </div>
               </div>
 
-              {aiUsageMessage && (
-                <div className={`text-sm px-4 py-2.5 rounded-lg border ${
-                  aiUsageMessage.type === 'ok'
-                    ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
-                    : 'bg-red-50 border-red-100 text-red-600'
-                }`}>
-                  {aiUsageMessage.text}
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={handleAiUsageSave}
-                disabled={aiConfigMutation.isPending}
-                className="px-5 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors"
-              >
-                {aiConfigMutation.isPending ? 'Saving…' : 'Save Changes'}
-              </button>
+              <p className="text-[11px] text-text-muted pt-1 border-t border-border">
+                These limits are set by your platform administrator, based on your plan. This balance doesn't refill automatically — once it runs out, contact them to grant more credits.
+              </p>
             </div>
           </div>
 
@@ -1692,6 +1823,78 @@ export default function WidgetSettingsPage() {
             </div>
           </div>
 
+          {/* <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
+            <SectionHeader
+              id="section-human-handoff"
+              icon={UserIcon}
+              iconClassName="bg-teal-50 dark:bg-teal-500/15 text-teal-600 dark:text-teal-400"
+              title="Human Handoff"
+              description='Lets a visitor click "Connect with an expert" to leave the AI and chat with your team in real time, via the Conversations inbox.'
+              right={
+                <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                  <span className="text-xs text-text-muted">{humanHandoffEnabled ? 'Enabled' : 'Disabled'}</span>
+                  <input
+                    type="checkbox"
+                    checked={humanHandoffEnabled}
+                    onChange={(e) => setHumanHandoffEnabled(e.target.checked)}
+                    className="h-4 w-4 rounded text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
+                  />
+                </label>
+              }
+            />
+            <div className="px-6 py-5 space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Button Text</label>
+                  <input
+                    value={humanHandoffButtonText}
+                    onChange={(e) => setHumanHandoffButtonText(e.target.value)}
+                    className={input}
+                    placeholder="Connect with an expert"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Waiting Message</label>
+                  <input
+                    value={humanHandoffWaitingMessage}
+                    onChange={(e) => setHumanHandoffWaitingMessage(e.target.value)}
+                    className={input}
+                    placeholder="We're connecting you with a team member — someone will be with you shortly."
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-text-muted">
+                While a conversation is handed off, the AI assistant pauses completely for that visitor (text and voice both) until a team member
+                hands it back — your staff see and reply to these conversations from the Conversations inbox under Native CRM. This is OFF by
+                default; turning it on only adds the button, it never changes how the AI chats for any visitor who hasn't clicked it.
+              </p>
+
+              {humanHandoffMessage && (
+                <div className={`text-sm px-4 py-2.5 rounded-lg border ${
+                  humanHandoffMessage.type === 'ok'
+                    ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                    : 'bg-red-50 border-red-100 text-red-600'
+                }`}>
+                  {humanHandoffMessage.text}
+                </div>
+              )}
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleHumanHandoffSave}
+                  disabled={updateMutation.isPending}
+                  className="px-5 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors"
+                >
+                  {updateMutation.isPending ? 'Saving…' : 'Save Human Handoff Settings'}
+                </button>
+                <a href="/crm/conversations" className="text-xs font-medium text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300">
+                  Open Conversations Inbox →
+                </a>
+              </div>
+            </div>
+          </div> */}
+
           <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
             <SectionHeader
               id="section-appearance"
@@ -1753,23 +1956,154 @@ export default function WidgetSettingsPage() {
               <div>
                 <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Template</label>
                 <div className="grid grid-cols-2 gap-3">
-                  {TEMPLATES.map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => setTemplate(t.id)}
-                      className={`text-left rounded-xl border-2 p-2.5 transition-colors ${
-                        template === t.id ? 'border-ryze-500 bg-ryze-600/10/40' : 'border-border hover:border-border'
-                      }`}
-                    >
-                      <TemplatePreview id={t.id} color={tenant.branding?.primaryColor || '#2563eb'} />
-                      <p className="mt-2 text-xs font-semibold text-text-primary">{t.name}</p>
-                      <p className="text-[11px] text-text-muted leading-snug mt-0.5">{t.description}</p>
-                    </button>
-                  ))}
+                  {TEMPLATES.map((t) => {
+                    const cardTheme = resolveTheme(theme, t.id, tenant.branding?.primaryColor || '#2563eb');
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setTemplate(t.id)}
+                        className={`text-left rounded-xl border-2 p-2.5 transition-colors ${
+                          template === t.id ? 'border-ryze-500 bg-ryze-600/10/40' : 'border-border hover:border-border'
+                        }`}
+                      >
+                        <TemplatePreview id={t.id} theme={cardTheme} />
+                        <p className="mt-2 text-xs font-semibold text-text-primary">{t.name}</p>
+                        <p className="text-[11px] text-text-muted leading-snug mt-0.5">{t.description}</p>
+                      </button>
+                    );
+                  })}
                 </div>
-                <p className="mt-2 text-[11px] text-text-muted">Applies immediately once you click Save Settings above.</p>
+                <p className="mt-2 text-[11px] text-text-muted">Controls structure (header style, avatar, bubble shapes) — colors below apply to every template the same way.</p>
               </div>
+
+              {(() => {
+                const resolved = resolveTheme(theme, template, tenant.branding?.primaryColor || '#2563eb');
+                const set = (key: keyof TenantWidgetTheme) => (value: string) => setTheme((prev) => ({ ...prev, [key]: value }));
+                return (
+                  <div className="pt-5 border-t border-border space-y-5">
+                    <div>
+                      <label className="block text-xs font-semibold text-text-muted mb-1 uppercase tracking-wide">Colors</label>
+                      <p className="text-[11px] text-text-muted mb-3">
+                        Every client's brand is different — set these to match theirs exactly. Picking a template above fills in sensible
+                        defaults; anything you change here overrides that default and stays, even if you switch templates later.
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <ColorField label="Accent (buttons, links)" value={resolved.accentColor} onChange={set('accentColor')} />
+                        <ColorField label="Header Background" value={resolved.headerColor} onChange={set('headerColor')} />
+                        <ColorField label="Header Text" value={resolved.headerTextColor} onChange={set('headerTextColor')} />
+                        <ColorField label="Chat Background" value={resolved.backgroundColor} onChange={set('backgroundColor')} />
+                        <ColorField label="Bot Bubble" value={resolved.botBubbleColor} onChange={set('botBubbleColor')} />
+                        <ColorField label="Bot Text" value={resolved.botTextColor} onChange={set('botTextColor')} />
+                        <ColorField label="Your Message Bubble" value={resolved.userBubbleColor} onChange={set('userBubbleColor')} />
+                        <ColorField label="Your Message Text" value={resolved.userTextColor} onChange={set('userTextColor')} />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setTheme({})}
+                        className="mt-2.5 text-[11px] font-medium text-ryze-600 hover:text-ryze-700 dark:text-ryze-400 dark:hover:text-ryze-300"
+                      >
+                        Reset all colors to this template's defaults
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Background Image (optional)</label>
+                      <p className="text-[11px] text-text-muted mb-2">
+                        A tiled pattern behind the chat bubbles, like WhatsApp's chat wallpaper — layered over the Chat Background color above, not a
+                        replacement for it. Leave unset for a plain color background.
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <div className="h-14 w-20 rounded-lg border border-border overflow-hidden shrink-0" style={{ backgroundColor: resolved.backgroundColor }}>
+                          {tenant.widget?.theme?.backgroundImageUrl && (
+                            <div
+                              className="h-full w-full"
+                              style={{ backgroundImage: `url(${tenant.widget.theme.backgroundImageUrl})`, backgroundRepeat: 'repeat', backgroundSize: '36px' }}
+                            />
+                          )}
+                        </div>
+                        <input
+                          ref={bgImageFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleBgImageFile}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => bgImageFileInputRef.current?.click()}
+                          disabled={uploadBgImageMutation.isPending}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border text-sm font-medium text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-50 transition-colors"
+                        >
+                          <PhotoIcon className="h-4 w-4" />
+                          {uploadBgImageMutation.isPending ? 'Uploading…' : tenant.widget?.theme?.backgroundImageUrl ? 'Replace' : 'Upload'}
+                        </button>
+                        {tenant.widget?.theme?.backgroundImageUrl && (
+                          <button
+                            type="button"
+                            onClick={handleRemoveBgImage}
+                            disabled={removeBgImageMutation.isPending}
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border text-sm font-medium text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors"
+                          >
+                            <TrashIcon className="h-4 w-4" /> Remove
+                          </button>
+                        )}
+                      </div>
+                      {bgImageMessage && (
+                        <div className={`mt-2 text-sm px-4 py-2.5 rounded-lg border ${
+                          bgImageMessage.type === 'ok'
+                            ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                            : 'bg-red-50 border-red-100 text-red-600'
+                        }`}>
+                          {bgImageMessage.text}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Font</label>
+                        <select
+                          value={resolved.fontFamily}
+                          onChange={(e) => set('fontFamily')(e.target.value)}
+                          className="w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400"
+                        >
+                          {FONT_OPTIONS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Size</label>
+                        <select
+                          value={resolved.size}
+                          onChange={(e) => set('size')(e.target.value)}
+                          className="w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400"
+                        >
+                          {SIZE_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label} — {s.description}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    {appearanceMessage && (
+                      <div className={`text-sm px-4 py-2.5 rounded-lg border ${
+                        appearanceMessage.type === 'ok'
+                          ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                          : 'bg-red-50 border-red-100 text-red-600'
+                      }`}>
+                        {appearanceMessage.text}
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleAppearanceSave}
+                      disabled={updateMutation.isPending}
+                      className="px-5 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors"
+                    >
+                      {updateMutation.isPending ? 'Saving…' : 'Save Appearance'}
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
@@ -2135,6 +2469,17 @@ export default function WidgetSettingsPage() {
           importing={importDatasetMutation.isPending}
           onCancel={() => setDatasetPreview(null)}
           onConfirm={confirmDatasetImport}
+        />
+      )}
+
+      {logoCropFile && (
+        <ImageCropModal
+          file={logoCropFile}
+          aspect={1}
+          cropShape="round"
+          title="Crop Logo"
+          onCancel={() => setLogoCropFile(null)}
+          onConfirm={handleLogoCropConfirm}
         />
       )}
     </div>

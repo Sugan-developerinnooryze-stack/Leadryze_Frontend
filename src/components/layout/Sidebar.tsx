@@ -122,6 +122,7 @@ const NATIVE_MODULE_PERM: Record<string, string> = {
   contacts: 'native_crm.contacts.view', companies: 'native_crm.companies.view',
   tasks:    'native_crm.tasks.view',    tickets:   'native_crm.tickets.view',
   calls:    'native_crm.calls.view',    meetings:  'native_crm.meetings.view',
+  conversations: 'native_crm.conversations.view',
 };
 
 const FIELD_SERVICE_MODULE_PERM: Record<string, string> = {
@@ -151,6 +152,7 @@ const NATIVE_MODULE_FLAG: Record<string, keyof FeatureFlags> = {
   contacts: 'native_contacts', companies: 'native_companies',
   tasks:    'native_tasks',    tickets:   'native_tickets',
   calls:    'native_calls',    meetings:  'native_meetings',
+  conversations: 'native_conversations',
 };
 
 const FIELD_SERVICE_MODULE_FLAG: Record<string, keyof FeatureFlags> = {

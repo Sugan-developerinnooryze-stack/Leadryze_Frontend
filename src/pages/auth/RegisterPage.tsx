@@ -2,6 +2,8 @@ import { useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import AuthLayout, { Brand } from '../../components/auth/AuthLayout';
+import SecurityTrustStrip from '../../components/auth/SecurityTrustStrip';
 
 export default function RegisterPage() {
   const { handleRegister, isLoading } = useAuth();
@@ -26,14 +28,14 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4">
+    <AuthLayout>
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-ryze-600 dark:text-ryze-400">LeadRyze AI</h1>
-          <p className="text-text-muted mt-2">Create your account — it's free</p>
-        </div>
+        <div className="rounded-[24px] bg-surface border border-border p-9 shadow-[0_25px_70px_rgba(15,55,70,0.10)]">
+          <div className="flex justify-center mb-6">
+            <Brand size="md" />
+          </div>
+          <p className="text-center text-text-muted -mt-3 mb-6">Create your account — it's free</p>
 
-        <div className="card">
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {error}
@@ -115,7 +117,8 @@ export default function RegisterPage() {
         <p className="text-center text-xs text-text-muted mt-4">
           A verification email will be sent to confirm your address.
         </p>
+        <SecurityTrustStrip />
       </div>
-    </div>
+    </AuthLayout>
   );
 }

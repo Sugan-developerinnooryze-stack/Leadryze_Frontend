@@ -18,7 +18,7 @@ import { useWorkordersListQuery } from '../queries/workorders.queries';
 import { useQuotationsListQuery } from '../queries/quotations.queries';
 import { useInvoicesListQuery   } from '../queries/invoices.queries';
 import { useUsersListQuery      } from '../queries/users.queries';
-import { useFSSettingsQuery     } from '../queries/fs-settings.queries';
+import { useFSSettingsQuery, useFsSettingsDefaultsQuery } from '../queries/fs-settings.queries';
 import api from '../../../services/api';
 import {
   splitHours, joinHours, availabilityNote, availabilityShort, toDatetimeLocal,
@@ -77,6 +77,18 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
   const { data: staffsData   } = useStaffsListQuery ({ page: 1, limit: 500, teamId:     selectedLookups['teamId']?._id });
   const { data: servicesData } = useServicesListQuery({ page: 1, limit: 500, categoryId: selectedLookups['categoryId']?._id });
 
+  // Company-wide GST %/Discount % defaults, one entry per Company plus a
+  // `branchId: null` entry for "Default Company" — merged into a
+  // branch-select field's resolved record below (handleLookupChange) so the
+  // generic autofillFrom/autofillSourceKey mechanism can read them the same
+  // way it reads a selected Customer's own Address. These live in a
+  // separate collection (FSSettings) from the Branch documents `branches`
+  // holds, which is why they need their own fetch instead of already being
+  // present on each branch option.
+  const { data: fsDefaultsList = [] } = useFsSettingsDefaultsQuery();
+  const fsDefaultsByBranch: Record<string, { taxPercentage: number; discountPercentage: number }> =
+    Object.fromEntries(fsDefaultsList.map((d) => [d.branchId ?? 'null', d]));
+
   const lookupDataMap: Record<string, any[]> = {
     customers:  customersData?.items  ?? [],
     sites:      sitesData?.items      ?? [],
@@ -101,6 +113,17 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
   // reset `form`/`customForm`/`errors` once per genuine record/module
   // identity change, never as a side effect of a lookup dataset arriving.
   const initializedForRef = useRef<string | null>(null);
+  // Separate from initializedForRef on purpose: useFsSettingsDefaultsQuery()
+  // can still be loading (fsDefaultsList === []) at the exact moment this
+  // effect first runs on mount, in which case the branchId-autofill block
+  // below silently finds nothing and leaves Discount %/GST % unfilled — and
+  // initializedForRef then blocks the main block from ever running again
+  // for this drawer instance, so the values stay stuck even once the
+  // defaults finish loading a moment later. This ref tracks ONLY that
+  // retroactive fill, independently, so it can still apply once real data
+  // arrives without re-running (and wiping) everything else the user may
+  // have already typed by then.
+  const branchDefaultsAppliedRef = useRef<string | null>(null);
 
   useEffect(() => {
     const identity = `${module ?? ''}:${record?._id ?? 'create'}`;
@@ -126,7 +149,55 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
       // Pre-fill branchId from global context when creating a new record
       if (!record && fields.some((f) => f.type === 'branch-select')) {
         initial.branchId = currentBranch?._id ?? null;
+        // autofillFrom only ever fires from handleLookupChange, i.e. on an
+        // actual onChange event — which never happens for branchId here,
+        // since it's already set above without the user touching the
+        // dropdown. Without this, Discount %/GST % silently stayed at 0 on
+        // a brand-new record whenever the pre-filled Company already had
+        // real defaults configured (confirmed bug: set Default Company's
+        // Tax Rate/Discount Rate, open a new Work Order, and they never
+        // appeared since nothing had "changed" the Company field yet).
+        const branchDefaults = fsDefaultsByBranch[initial.branchId ?? 'null'];
+        if (branchDefaults) {
+          fields.filter((f) => f.autofillFrom === 'branchId').forEach((f) => {
+            const sourceKey = f.autofillSourceKey ?? f.key;
+            initial[f.key] = (branchDefaults as any)[sourceKey] ?? '';
+          });
+        }
       }
+      // LR-UX-013: generalizes the branchId-only retroactive-fill above to
+      // any other autofillFrom target (e.g. Quotation/Invoice's `address`,
+      // sourced from `customerId`). autofillFrom only ever fired from a live
+      // onChange on the lookup <select> — never when the source field
+      // arrives already set without the user touching the dropdown, which
+      // happens whenever a drawer opens with a create-mode prefill object
+      // (buildPrefill / "New Quotation" from a Customer's own detail page)
+      // that sets customerId but has no reason to also carry the customer's
+      // address. Only fires when the target field is still genuinely empty,
+      // so it can never clobber a value the user (or the record itself)
+      // already has.
+      if (!record?._id) {
+        fields
+          .filter((f) => f.autofillFrom && f.autofillFrom !== 'branchId' && !initial[f.key])
+          .forEach((f) => {
+            const sourceField = fields.find((sf) => sf.key === f.autofillFrom);
+            const sourceValue = initial[f.autofillFrom!];
+            if (!sourceField || sourceField.type !== 'lookup' || !sourceValue) return;
+            const opts = lookupDataMap[sourceField.lookupModule!] ?? [];
+            const matched = opts.find((r) => {
+              const v = sourceField.lookupValueField === '_id' ? r._id?.toString() : r[sourceField.lookupValueField!];
+              return v === sourceValue;
+            });
+            if (matched) {
+              const sourceKey = f.autofillSourceKey ?? f.key;
+              const primary = (matched as any)[sourceKey];
+              const extra = (f.autofillComposeKeys ?? []).map((k) => (matched as any)[k]).filter(Boolean);
+              const composed = [primary, ...extra].filter(Boolean).join(', ');
+              initial[f.key] = composed || initial[f.key];
+            }
+          });
+      }
+
       setForm(initial);
 
       const cf: Record<string, any> = {};
@@ -136,6 +207,27 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
       setCustomForm(cf);
 
       setErrors({});
+    }
+
+    // Retroactive fill — runs independently of the block above, so it can
+    // still apply once useFsSettingsDefaultsQuery() finishes loading even
+    // if that happens after this drawer already initialized (see
+    // branchDefaultsAppliedRef's own comment above for why this can't just
+    // live inside the block above).
+    if (!record && fsDefaultsList.length > 0 && branchDefaultsAppliedRef.current !== identity) {
+      const autofillFields = fields.filter((f) => f.autofillFrom === 'branchId');
+      const branchDefaults = autofillFields.length > 0 ? fsDefaultsByBranch[currentBranch?._id ?? 'null'] : undefined;
+      if (branchDefaults) {
+        branchDefaultsAppliedRef.current = identity;
+        setForm((prev) => {
+          const next = { ...prev };
+          autofillFields.forEach((f) => {
+            const sourceKey = f.autofillSourceKey ?? f.key;
+            next[f.key] = (branchDefaults as any)[sourceKey] ?? prev[f.key];
+          });
+          return next;
+        });
+      }
     }
 
     // Restore selectedLookups from an EXISTING record only — a create-mode
@@ -173,7 +265,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
     record, fields, module,
     customersData?.items, sitesData?.items, teamsData?.items, staffsData?.items,
     servicesData?.items, categoriesData?.items, workordersData?.items, quotationsData?.items,
-    usersData?.items,
+    usersData?.items, fsDefaultsList,
   ]);
 
   // Staff availability check — fires when scheduledDate / nextServiceDate / startDate changes
@@ -219,12 +311,28 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
     if (errors[key]) setErrors((prev) => { const e = { ...prev }; delete e[key]; return e; });
   };
 
+  // Also drives `type: 'branch-select'` fields (the "Company" dropdown) —
+  // those match against `_id` and store `null` (not '') when unset, since
+  // branchId elsewhere in the app means "Default Company" only via a real
+  // null, but otherwise go through the exact same cascade-reset/autofill
+  // machinery as a real `type: 'lookup'` field (e.g. Discount %/GST % fields
+  // autofilled from the selected Company's own defaults, same mechanism
+  // that fills Address from the selected Customer).
   const handleLookupChange = (field: FSFieldDef, value: string) => {
-    const opts     = lookupDataMap[field.lookupModule!] ?? [];
-    const selected = opts.find(r => {
-      const v = field.lookupValueField === '_id' ? r._id?.toString() : r[field.lookupValueField!];
+    const isBranch = field.type === 'branch-select';
+    const opts     = isBranch ? branches : (lookupDataMap[field.lookupModule!] ?? []);
+    const matched  = opts.find(r => {
+      const v = isBranch || field.lookupValueField === '_id' ? r._id?.toString() : r[field.lookupValueField!];
       return v === value;
     }) ?? null;
+    // For branch-select, merge in this Company's GST %/Discount % defaults
+    // (a separate collection from Branch — see fsDefaultsByBranch above) so
+    // the autofillFrom loop below can read them off the same resolved
+    // object, same as every other lookup field. 'null' key covers "Default
+    // Company" (value === ''), which has no Branch document at all.
+    const selected = isBranch
+      ? { ...(matched ?? {}), ...(fsDefaultsByBranch[value || 'null'] ?? {}) }
+      : matched;
     setSelectedLookups(prev => ({ ...prev, [field.key]: selected }));
 
     // Reset cascaded children
@@ -233,7 +341,20 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
       setSelectedLookups(prev => ({ ...prev, [f.key]: null }));
     });
 
-    handleChange(field.key, value);
+    // Auto-fill any field that sources its value from this lookup (e.g.
+    // Address populated from the selected Customer, or Discount %/GST %
+    // populated from the selected Company) — always overwrites on a new
+    // selection, same reasoning as the cascade reset above: leaving a
+    // PREVIOUS selection's value behind would be silently wrong. The field
+    // stays a normal editable input, so the user can still type over it.
+    fields.filter(f => f.autofillFrom === field.key).forEach(f => {
+      const sourceKey = f.autofillSourceKey ?? f.key;
+      const primary = (selected as any)?.[sourceKey];
+      const extra = (f.autofillComposeKeys ?? []).map(k => (selected as any)?.[k]).filter(Boolean);
+      handleChange(f.key, [primary, ...extra].filter(Boolean).join(', '));
+    });
+
+    handleChange(field.key, isBranch ? (value || null) : value);
   };
 
   const handleCustomChange = (key: string, val: any) => {
@@ -327,7 +448,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
         <select
           className={base}
           value={value ?? ''}
-          onChange={(e) => handleChange(field.key, e.target.value || null)}
+          onChange={(e) => handleLookupChange(field, e.target.value)}
         >
           <option value="">Default Company</option>
           {active.map((b) => (

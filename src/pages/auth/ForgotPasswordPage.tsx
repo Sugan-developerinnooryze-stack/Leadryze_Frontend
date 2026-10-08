@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { authService } from '../../services/auth.service';
 import toast from 'react-hot-toast';
+import AuthLayout, { Brand } from '../../components/auth/AuthLayout';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail]     = useState('');
@@ -23,27 +24,32 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="w-full max-w-md text-center">
-          <div className="text-6xl mb-6">📬</div>
-          <h2 className="text-2xl font-bold text-text-primary mb-3">Reset link sent</h2>
-          <p className="text-text-muted mb-6">
-            If <strong>{email}</strong> is registered, you'll receive a password reset link shortly.
-          </p>
-          <Link to="/login" className="btn-primary inline-block">Back to Sign In</Link>
+      <AuthLayout>
+        <div className="w-full max-w-md">
+          <div className="rounded-[24px] bg-surface border border-border p-9 shadow-[0_25px_70px_rgba(15,55,70,0.10)] text-center">
+            <div className="flex justify-center mb-6">
+              <Brand size="md" />
+            </div>
+            <div className="text-6xl mb-6">📬</div>
+            <h2 className="text-2xl font-bold text-text-primary mb-3">Reset link sent</h2>
+            <p className="text-text-muted mb-6">
+              If <strong>{email}</strong> is registered, you'll receive a password reset link shortly.
+            </p>
+            <Link to="/login" className="btn-primary inline-block">Back to Sign In</Link>
+          </div>
         </div>
-      </div>
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <AuthLayout>
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-ryze-600 dark:text-ryze-400">LeadRyze AI</h1>
-          <p className="text-text-muted mt-2">Reset your password</p>
-        </div>
-        <div className="card">
+        <div className="rounded-[24px] bg-surface border border-border p-9 shadow-[0_25px_70px_rgba(15,55,70,0.10)]">
+          <div className="flex justify-center mb-6">
+            <Brand size="md" />
+          </div>
+          <p className="text-center text-text-muted -mt-3 mb-6">Reset your password</p>
           <form onSubmit={onSubmit} className="space-y-5">
             <div>
               <label className="label" htmlFor="email">Email address</label>
@@ -61,6 +67,6 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

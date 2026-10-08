@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { XMarkIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { useBranchStore } from '../../../stores/branch.store';
 import { useAuthStore } from '../../../stores/auth.store';
@@ -15,6 +15,7 @@ import CustomFieldRenderer from '../../../modules/native-crm/shared/CustomFieldR
 import { toDatetimeLocal, availabilityNote, type StaffAvailability } from '../../../modules/native-crm/shared/duration';
 import ContractServiceLinesEditor, { type ContractServiceLine } from './ContractServiceLinesEditor';
 import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
+import { useFsSettingsDefaultsQuery } from '../../../modules/native-crm/queries/fs-settings.queries';
 import api from '../../../services/api';
 
 interface Props {
@@ -50,6 +51,14 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
   const branches      = useBranchStore((s) => s.branches);
   const currentBranch = useBranchStore((s) => s.currentBranch);
 
+  // Company-wide GST % default, one entry per Company plus a `branchId:
+  // null` entry for "Default Company" — see FSDrawer.tsx's own copy of this
+  // same lookup for the full reasoning (this drawer is bespoke, not
+  // FSDrawer-based, so it needs its own copy of the wiring).
+  const { data: fsDefaultsList = [] } = useFsSettingsDefaultsQuery();
+  const fsDefaultsByBranch: Record<string, { taxPercentage: number; discountPercentage: number }> =
+    Object.fromEntries(fsDefaultsList.map((d) => [d.branchId ?? 'null', d]));
+
   // Tenant-configurable pipeline stages override the static STATUSES default —
   // falls back to today's hardcoded list while loading/on error/unconfigured.
   const { stages: pipelineStages } = usePipelineStages('contract');
@@ -67,10 +76,19 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
 
   useEffect(() => {
     const r = record ?? {};
+    const initialBranchId = r.branchId ?? currentBranch?._id ?? null;
+    // Only applies to a brand-new record whose Company came from the
+    // pre-filled global context (never an actual onChange event) — without
+    // this, GST % silently stayed at 0 even when that Company had a real
+    // Tax Rate configured in FS Settings, since nothing had "changed" the
+    // Company field yet to trigger the Company select's own onChange
+    // autofill (see its handler below).
+    const branchDefaults = !record ? fsDefaultsByBranch[initialBranchId ?? 'null'] : undefined;
     setForm({
-      branchId:         r.branchId ?? currentBranch?._id ?? null,
+      branchId:         initialBranchId,
       customerId:       r.customerId ?? '',
       title:            r.title ?? '',
+      address:          r.address ?? '',
       contractType:     r.contractType ?? '',
       priority:         r.priority ?? '',
       status:           r.status ?? 'draft',
@@ -85,7 +103,7 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
       woGenerationMode: r.woGenerationMode ?? 'manual',
       woLeadDays:       r.woLeadDays ?? 7,
       discount:         r.discount ?? 0,
-      gstPercentage:    r.gstPercentage ?? 0,
+      gstPercentage:    r.gstPercentage ?? branchDefaults?.taxPercentage ?? 0,
       notes:            r.notes ?? '',
       termsAndConditions: r.termsAndConditions ?? '',
       quotationId:      r.quotationId ?? '',
@@ -96,10 +114,37 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [record]);
 
+  // Retroactive fill — useFsSettingsDefaultsQuery() can still be loading at
+  // the exact moment the effect above first runs on mount, in which case
+  // branchDefaults comes back undefined and gstPercentage is left at 0.
+  // This drawer fully unmounts on close (see ContractsPage.tsx's
+  // `{drawer.open && <ContractFormDrawer .../>}`), so a plain one-shot ref
+  // is enough — no identity tracking needed, unlike FSDrawer.tsx's shared,
+  // longer-lived version of this same fix. Deliberately does NOT touch
+  // anything the user may have already typed in the loading window besides
+  // gstPercentage itself, and only if it's still at its untouched 0.
+  const gstDefaultAppliedRef = useRef(false);
+  useEffect(() => {
+    if (record || gstDefaultAppliedRef.current || fsDefaultsList.length === 0) return;
+    const branchDefaults = fsDefaultsByBranch[(currentBranch?._id ?? null) ?? 'null'];
+    if (!branchDefaults) return;
+    gstDefaultAppliedRef.current = true;
+    setForm((prev) => (prev.gstPercentage ? prev : { ...prev, gstPercentage: branchDefaults.taxPercentage ?? 0 }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fsDefaultsList]);
+
   const set = (k: string, v: any) => {
     setForm((p) => ({ ...p, [k]: v }));
     if (errors[k]) setErrors((p) => { const e = { ...p }; delete e[k]; return e; });
   };
+
+  // A Customer's single-line `address` field is commonly left blank even
+  // when city/state/postcode/country were filled in on the Customer form
+  // (they're separate fields there) — reading `address` alone silently
+  // autofilled nothing for exactly those customers. Compose from whatever
+  // is actually on file instead of only the one field.
+  const composeCustomerAddress = (c: any): string =>
+    c ? [c.address, c.city, c.state, c.postcode, c.country].filter(Boolean).join(', ') : '';
 
   /* ── lookups ────────────────────────────────────────────────────────────── */
   const { data: customersData } = useCustomersListQuery({ page: 1, limit: 500 });
@@ -221,6 +266,7 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
         branchId:         form.branchId || null,
         customerId:       form.customerId,
         title:            form.title,
+        address:          form.address || undefined,
         status:           form.status || 'draft',
         startDate:        form.startDate || undefined,
         endDate:          form.endDate || undefined,
@@ -319,7 +365,17 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={lbl}>Company</label>
-                  <select className={inp} value={form.branchId ?? ''} onChange={(e) => set('branchId', e.target.value || null)}>
+                  <select className={inp} value={form.branchId ?? ''} onChange={(e) => {
+                    set('branchId', e.target.value || null);
+                    // GST % follows the Company's own configured default
+                    // (FSSettings, not the Branch document itself — see
+                    // fsDefaultsByBranch above) — same overwrite-on-select
+                    // convention as Customer -> Address above. Discount here
+                    // is a flat currency amount (not a percentage), so it's
+                    // deliberately left alone — a company's default discount
+                    // RATE wouldn't mean the same thing in this field.
+                    set('gstPercentage', fsDefaultsByBranch[e.target.value || 'null']?.taxPercentage ?? 0);
+                  }}>
                     <option value="">Default Company</option>
                     {branches.filter((b) => b.status === 'active').map((b) => (
                       <option key={b._id} value={b._id}>{b.branchName}</option>
@@ -328,7 +384,19 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
                 </div>
                 <div>
                   <label className={lbl}>Customer <span className="text-red-500">*</span></label>
-                  <select className={inp} value={form.customerId ?? ''} onChange={(e) => { set('customerId', e.target.value); set('siteId', ''); }}>
+                  <select className={inp} value={form.customerId ?? ''} onChange={(e) => {
+                    const next = customers.find((c: any) => c.customerId === e.target.value);
+                    set('customerId', e.target.value);
+                    set('siteId', '');
+                    // Overwrite on every new selection — same "don't leave the
+                    // previous customer's address behind" reasoning as the
+                    // siteId reset right above, and matching FSDrawer's own
+                    // autofillFrom convention for every other FS module's
+                    // Customer -> Address field. Stays a normal editable
+                    // textarea afterward, so a different service address can
+                    // still be typed over it.
+                    set('address', composeCustomerAddress(next));
+                  }}>
                     <option value="">Select customer…</option>
                     {customers.map((c: any) => (
                       <option key={c._id} value={c.customerId}>{c.name} ({c.customerId})</option>
@@ -336,13 +404,16 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
                   </select>
                   {errors.customerId && <p className="mt-1 text-xs text-red-500">{errors.customerId}</p>}
                 </div>
-                {selectedCustomer && (
+                {selectedCustomer && (selectedCustomer.email || selectedCustomer.phone) && (
                   <div className="col-span-2 text-xs text-text-muted bg-background rounded-lg px-3 py-2 flex flex-wrap gap-x-5 gap-y-1">
                     {selectedCustomer.email && <span><strong>Email:</strong> {selectedCustomer.email}</span>}
                     {selectedCustomer.phone && <span><strong>Phone:</strong> {selectedCustomer.phone}</span>}
-                    {selectedCustomer.address && <span><strong>Address:</strong> {selectedCustomer.address}</span>}
                   </div>
                 )}
+                <div className="col-span-2">
+                  <label className={lbl}>Address</label>
+                  <textarea className={inp} rows={2} value={form.address ?? ''} onChange={(e) => set('address', e.target.value)} />
+                </div>
                 <div>
                   <label className={lbl}>Site</label>
                   <select className={inp} value={form.siteId ?? ''} onChange={(e) => set('siteId', e.target.value)}>
