@@ -8,7 +8,8 @@ import {
   LockClosedIcon, XMarkIcon, PlusIcon, GlobeAltIcon, DocumentArrowUpIcon,
   PhotoIcon, TrashIcon, Cog6ToothIcon, CalendarDaysIcon, UserGroupIcon,
   CpuChipIcon, SwatchIcon, Square3Stack3DIcon, KeyIcon, InformationCircleIcon,
-  MicrophoneIcon, CircleStackIcon, ChartBarIcon, UserIcon,
+  MicrophoneIcon, CircleStackIcon, ChartBarIcon, 
+  UserIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../../stores/auth.store';
 import { useTeamsListQuery, useTeamUpdate } from '../../../modules/native-crm/queries/teams.queries';
@@ -102,7 +103,7 @@ const NAV_SECTIONS: Array<{ id: string; label: string; icon: React.ComponentType
   { id: 'section-tool-model',  label: 'Tool Model',        icon: CpuChipIcon },
   { id: 'section-ai-usage',    label: 'AI Usage & Limits', icon: ChartBarIcon },
   { id: 'section-voice',       label: 'Voice',             icon: MicrophoneIcon },
-  // { id: 'section-human-handoff', label: 'Human Handoff',  icon: UserIcon },
+  { id: 'section-human-handoff', label: 'Human Handoff',  icon: UserIcon },
   { id: 'section-appearance',  label: 'Appearance',        icon: SwatchIcon },
   { id: 'section-website',     label: 'Website Content',   icon: GlobeAltIcon },
   { id: 'section-catalog',     label: 'Product Catalog',   icon: Square3Stack3DIcon },
@@ -1823,7 +1824,7 @@ export default function WidgetSettingsPage() {
             </div>
           </div>
 
-          {/* <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
+          <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
             <SectionHeader
               id="section-human-handoff"
               icon={UserIcon}
@@ -1893,7 +1894,7 @@ export default function WidgetSettingsPage() {
                 </a>
               </div>
             </div>
-          </div> */}
+          </div>
 
           <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
             <SectionHeader
