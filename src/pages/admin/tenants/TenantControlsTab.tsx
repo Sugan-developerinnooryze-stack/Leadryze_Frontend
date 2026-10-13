@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import {
   Squares2X2Icon, UserGroupIcon, LinkIcon, CpuChipIcon, BoltIcon,
-  BuildingOffice2Icon, WrenchScrewdriverIcon, Cog6ToothIcon, UsersIcon,
+  BuildingOffice2Icon, WrenchScrewdriverIcon, Cog6ToothIcon, UsersIcon, CircleStackIcon,
 } from '@heroicons/react/24/outline';
 import { authService } from '../../../services/auth.service';
 import { ALL_FLAGS_TRUE, type FeatureFlags } from '../../../stores/featureFlags.store';
@@ -31,10 +31,11 @@ export const FLAG_GROUPS: FlagGroup[] = [
       { key: 'nav_campaigns',  label: 'Campaigns',      enforced: true },
       { key: 'nav_templates',  label: 'Templates',      enforced: true },
       { key: 'nav_analytics',  label: 'Analytics',      enforced: true },
-      { key: 'nav_knowledge',  label: 'Knowledge Base', enforced: true },
+      // { key: 'nav_knowledge',  label: 'Knowledge Base', enforced: true },
       { key: 'nav_logs',       label: 'Logs',           enforced: true },
       { key: 'nav_connectors', label: 'Connectors',     enforced: true },
       { key: 'nav_settings',   label: 'Settings',       enforced: true },
+      { key: 'nav_myCrm',      label: 'Connector Data section', enforced: true },
       { key: 'nav_crmData',    label: 'CRM Data section', enforced: true },
       { key: 'nav_fieldService', label: 'Field Service section', enforced: true },
       { key: 'nav_configuration', label: 'Configuration section', enforced: true },
@@ -129,7 +130,17 @@ export const FLAG_GROUPS: FlagGroup[] = [
     ],
   },
   {
-    group: 'Automation',
+    group: 'Connector Data',
+    desc: 'Control which Connector Data sub-items this tenant can access',
+    icon: CircleStackIcon,
+    items: [
+      { key: 'connector_data_calendar',   label: 'Calendar',       enforced: true },
+      { key: 'connector_data_management', label: 'Management',     enforced: true },
+      { key: 'connector_data_automation', label: 'Connector Data', enforced: true },
+    ],
+  },
+  {
+    group: 'Automated Workflows',
     desc: 'Automated follow-up and communication workflows',
     icon: BoltIcon,
     items: [

@@ -1460,7 +1460,12 @@ export default function TemplateDesignerPage() {
   const reflowActive = region === 'body' && liveMode && !!liveDocId;
 
   useEffect(() => {
-    if (!reflowActive) { setReflowOffsets({}); setReflowHeights({}); setMeasureHtml(''); return; }
+    // Only clear the hidden-iframe source here — reflowOffsets/reflowHeights
+    // deliberately survive deactivation (see below) so reactivating Live
+    // Data shows the last known-good measured layout instantly instead of
+    // flashing back to raw, un-measured design boxes for the debounce+fetch
+    // window every single time.
+    if (!reflowActive) { setMeasureHtml(''); return; }
     const timer = setTimeout(() => {
       previewDraftHtml(MODULE_FOR_DOCTYPE[docType], liveDocId, { elements: bodyElements, page: pageCfg, header, footer })
         .then(setMeasureHtml)
@@ -1469,6 +1474,22 @@ export default function TemplateDesignerPage() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reflowActive, docType, liveDocId, JSON.stringify(bodyElements), JSON.stringify(pageCfg), JSON.stringify(header), JSON.stringify(footer)]);
+
+  // A different live document was picked while Live Data stayed on (e.g.
+  // switching Work Order A -> Work Order B). Element ids are stable across
+  // live documents (same template), so without this, A's stale measurements
+  // would keep being applied to B's just-switched-in data for the whole
+  // debounce+fetch window above — a real mismatch, not just a flash. Clear
+  // synchronously on the id change itself rather than waiting on the
+  // (also-reset) effect above, which only fires after the 300ms debounce.
+  const prevLiveDocIdRef = useRef(liveDocId);
+  useEffect(() => {
+    if (liveDocId !== prevLiveDocIdRef.current) {
+      prevLiveDocIdRef.current = liveDocId;
+      setReflowOffsets({});
+      setReflowHeights({});
+    }
+  }, [liveDocId]);
 
   const handleMeasureLoad = () => {
     const doc = measureIframeRef.current?.contentDocument;

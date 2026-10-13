@@ -423,6 +423,11 @@ function UsersPanel() {
     if (!newEmail.trim() || !newFirst.trim() || !newLast.trim()) {
       toast.error('Email, first name and last name are required'); return;
     }
+    // LR-R2-USER-001: Client-side email validation for tenant invite
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail.trim())) {
+      toast.error('A valid email address is required'); return;
+    }
     setSaving(true);
     try {
       await api.post('/api/v1/users', {
@@ -954,7 +959,7 @@ function NativeCRMPermissionsPanel() {
       if (roleList.length) setSelectedRole(roleList[0]._id);
       const grouped: Record<string, PermRow[]> = permsRes.data.data ?? {};
       const filtered: Record<string, PermRow[]> = {};
-      ['native_crm', 'fs'].forEach(m => { if (grouped[m]) filtered[m] = grouped[m]; });
+      ['native_crm', 'fs', 'connector_data'].forEach(m => { if (grouped[m]) filtered[m] = grouped[m]; });
       setAllPerms(filtered);
       setPiiConfig(settingsRes.data.data?.piiConfig ?? []);
     }).catch(() => toast.error('Failed to load Native CRM permissions'));
@@ -1012,7 +1017,7 @@ function NativeCRMPermissionsPanel() {
     });
   };
 
-  const MOD_LABELS: Record<string, string> = { native_crm: 'Native CRM', fs: 'Field Service' };
+  const MOD_LABELS: Record<string, string> = { native_crm: 'Native CRM', fs: 'Field Service', connector_data: 'Connector Data', automation: 'Automation' };
   const selectedRoleObj = roles.find(r => r._id === selectedRole);
 
   return (
@@ -1053,7 +1058,7 @@ function NativeCRMPermissionsPanel() {
                 {selectedRoleObj.isSystem && <span className="text-[10px] text-text-muted bg-black/[0.04] dark:bg-white/[0.06] px-1.5 py-0.5 rounded">system</span>}
               </div>
             )}
-            <p className="text-xs text-text-muted mt-0.5">Showing Native CRM and Field Service permissions only.</p>
+            <p className="text-xs text-text-muted mt-0.5">Showing Native CRM, Field Service, and Connector Data permissions.</p>
           </div>
           <button onClick={savePermissions} disabled={saving || !selectedRole}
             className="flex items-center gap-2 px-4 py-2.5 bg-ryze-600 text-white rounded-xl text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors shrink-0">
@@ -1234,6 +1239,17 @@ const MOD_COLOR: Record<string, string> = {
   settings:   'bg-black/[0.06] dark:bg-white/[0.08] text-text-muted border-border',
   templates:  'bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30',
   users:      'bg-teal-100 dark:bg-teal-500/15 text-teal-700 dark:text-teal-400 border-teal-200 dark:border-teal-500/30',
+  connector_data: 'bg-cyan-100 dark:bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 border-cyan-200 dark:border-cyan-500/30',
+  automation: 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/30',
+};
+
+const MOD_DISPLAY_LABELS: Record<string, string> = {
+  connector_data: 'Connector Data',
+  native_crm:     'Native CRM',
+  fs:             'Field Service',
+  automation:     'Automation',
+  bot:            'Bot & AI',
+  connector:      'Connectors',
 };
 
 function PermissionMatrixPanel() {
@@ -1430,7 +1446,9 @@ function PermissionMatrixPanel() {
                   {/* Module header */}
                   <div className="flex items-center gap-3 px-4 py-3 bg-background/60">
                     <button onClick={() => toggleCollapse(mod)} className="flex-1 flex items-center gap-3 text-left min-w-0">
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wide border ${modColor}`}>{mod}</span>
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wide border ${modColor}`}>
+                        {MOD_DISPLAY_LABELS[mod] ?? mod}
+                      </span>
                       <span className="text-xs text-text-muted shrink-0">
                         {checkedCount === 0 ? 'None granted' : checkedCount === allModuleKeys.length ? 'All granted' : `${checkedCount}/${allModuleKeys.length}`}
                       </span>
@@ -1513,8 +1531,8 @@ type SettingsTab = 'general' | 'bot-training' | 'chat-history' | 'users' | 'role
 
 const BASE_TABS: { id: SettingsTab; label: string }[] = [
   { id: 'general',      label: 'General' },
-  { id: 'bot-training', label: 'Bot Training' },
-  { id: 'chat-history', label: 'Chat History' },
+  // { id: 'bot-training', label: 'Bot Training' },
+  // { id: 'chat-history', label: 'Chat History' },
 ];
 const ADMIN_TABS: { id: SettingsTab; label: string }[] = [
   { id: 'users',       label: 'Users' },

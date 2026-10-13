@@ -6,6 +6,7 @@ import {
   DocumentArrowDownIcon, LockClosedIcon,
 } from '@heroicons/react/24/outline';
 import type { FSColumnDef } from './types';
+import { FSStatusBadge } from './FSStatusBadge';
 import api from '../../../services/api';
 import { useBranchStore } from '../../../stores/branch.store';
 
@@ -14,6 +15,9 @@ import { useBranchStore } from '../../../stores/branch.store';
 const SKIP_KEYS = new Set([
   '_id', 'tenantId', '__v', 'numId', 'createdBy',
   'updatedAt', 'createdAt', 'customFields', 'tags',
+  'branchId', 'isLocked', 'clientId', 'emailSearch', 'phoneSearch', 'emailDomain',
+  'password', 'appPasswordHash', 'appPasswordEnc', 'assignedStaffId',
+  'contactId', 'companyId',
 ]);
 
 // Keys that are auto-generated module IDs (not user-importable)
@@ -46,10 +50,17 @@ function deriveAllColumns(predefined: FSColumnDef[], data: any[]): FSColumnDef[]
 
   for (const key of Object.keys(firstRow)) {
     if (SKIP_KEYS.has(key) || existingKeys.has(key) || cfKeys.has(key)) continue;
-    const val = firstRow[key];
     // Skip arrays and objects — they can't be rendered as plain cell text
-    if (Array.isArray(val) || (val !== null && typeof val === 'object')) continue;
-    result.push({ key, label: toLabel(key) });
+    const isWorkflowOrStatus = key === 'workflowState' || key.toLowerCase().includes('status') || key.toLowerCase().includes('stage');
+    result.push({
+      key,
+      label: toLabel(key),
+      render: isWorkflowOrStatus ? (row: any) => {
+        const val = row[key];
+        if (!val) return '—';
+        return <FSStatusBadge value={String(val)} />;
+      } : undefined,
+    });
     existingKeys.add(key);
   }
 
@@ -90,6 +101,10 @@ function getCellValue(row: any, col: FSColumnDef, branchMap?: Map<string, string
   const v = row[col.key];
   if (v === undefined || v === null) return '';
   if (typeof v === 'object') return '';
+  if (col.key === 'workflowState' || col.key === 'status') {
+    const s = String(v);
+    return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  }
   return String(v);
 }
 
@@ -445,8 +460,8 @@ export default function FSTable({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
-  // All available columns (predefined + auto-derived from response data)
-  const allCols = useMemo(() => deriveAllColumns(columns, data), [columns, data]);
+  // All available columns (predefined + auto-derived from response data for top-level module tables)
+  const allCols = useMemo(() => (!moduleKey ? columns : deriveAllColumns(columns, data)), [columns, data, moduleKey]);
 
   // exportOnly cols are always appended in export but never shown in table or column picker
   const allTableCols   = useMemo(() => allCols.filter((c) => !c.exportOnly), [allCols]);
@@ -511,6 +526,7 @@ export default function FSTable({
   // before (handles sub-field columns added after the user's first visit).
   // Columns the user has seen and manually unchecked are left alone.
   useEffect(() => {
+    if (!moduleKey) return;
     const seen = seenRef.current;
     const newKeys = allTableCols.filter((c) => !seen.has(c.key)).map((c) => c.key);
     allTableCols.forEach((c) => seen.add(c.key));
@@ -523,7 +539,7 @@ export default function FSTable({
       if (storageKey) { try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch {/* */} }
       return next;
     });
-  }, [allTableCols, storageKey, seenKey]);
+  }, [allTableCols, storageKey, seenKey, moduleKey]);
 
   const saveVisible = (keys: string[]) => {
     setVisible(keys);
@@ -554,10 +570,24 @@ export default function FSTable({
   const exportToExcel = (rows: any[], cols: FSColumnDef[], filename: string) => {
     const wsData = [
       cols.map((c) => c.label),
-      ...rows.map((row) => cols.map((c) => getCellValue(row, c, branchMap))),
+      ...rows.map((row) => cols.map((c) => {
+        const raw = row[c.key];
+        if (raw === null || raw === undefined || raw === '') return '';
+        if (typeof raw === 'number') return raw;
+        if (typeof raw === 'boolean') return raw;
+        if (c.key === 'amount' || c.key === 'total' || c.key === 'price' || c.key === 'expectedRevenue') {
+          const num = Number(raw);
+          if (!isNaN(num)) return num;
+        }
+        if (c.key.endsWith('Date') || c.key.endsWith('At') || c.key === 'closeDate' || c.key === 'createdAt') {
+          const d = new Date(String(raw));
+          if (!isNaN(d.getTime())) return d;
+        }
+        return getCellValue(row, c, branchMap);
+      })),
     ];
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const ws = XLSX.utils.aoa_to_sheet(wsData, { cellDates: true });
     ws['!cols'] = cols.map(() => ({ wch: 30 }));
 
     // Make URL values clickable hyperlinks (images, PDFs, etc.)
@@ -650,6 +680,25 @@ export default function FSTable({
       </button>
     </div>
   ) : null;
+
+  /* ── 403 Forbidden / Module Disabled state ─────────────────────────────── */
+  if (errorStatus === 403) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center py-20 text-center px-4">
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-amber-100 dark:bg-amber-900/20 mb-4">
+          <LockClosedIcon className="h-8 w-8 text-amber-500" />
+        </div>
+        <p className="text-base font-semibold text-text-primary">
+          {errorMessage && errorMessage.toLowerCase().includes('not enabled')
+            ? "This module isn't available"
+            : "You don't have permission to view this"}
+        </p>
+        <p className="text-sm text-text-muted mt-1 max-w-md">
+          {errorMessage ?? "This module isn't enabled for your account or plan."}
+        </p>
+      </div>
+    );
+  }
 
   /* ── Empty state ─────────────────────────────────────────────────────── */
   if (!data.length) {

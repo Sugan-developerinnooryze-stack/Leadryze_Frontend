@@ -2,13 +2,29 @@ import { useState, useEffect, useCallback, Fragment } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   PlusIcon, PencilSquareIcon, TrashIcon, XMarkIcon,
-  MagnifyingGlassIcon, FunnelIcon,
+  MagnifyingGlassIcon, FunnelIcon, LockClosedIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../services/api';
+import { useFeatureFlagsStore, type FeatureFlags } from '../../stores/featureFlags.store';
+import { useAuthStore } from '../../stores/auth.store';
 import {
   MODULE_CONFIGS, NATIVE_MODULES, STATUS_COLORS,
   type NativeModule, type FieldDef,
 } from '../../config/native-crm.config';
+import { useRegisterOverlayOpen } from '../../hooks/useRegisterOverlayOpen';
+
+const NATIVE_MODULE_FLAG: Record<string, keyof FeatureFlags> = {
+  contacts: 'native_contacts', companies: 'native_companies',
+  tasks:    'native_tasks',    tickets:   'native_tickets',
+  calls:    'native_calls',    meetings:  'native_meetings',
+  conversations: 'native_conversations',
+};
+const NATIVE_MODULE_PERM: Record<string, string> = {
+  contacts: 'native_crm.contacts.view', companies: 'native_crm.companies.view',
+  tasks:    'native_crm.tasks.view',    tickets:   'native_crm.tickets.view',
+  calls:    'native_crm.calls.view',    meetings:  'native_crm.meetings.view',
+  conversations: 'native_crm.conversations.view',
+};
 
 /* ── Types ──────────────────────────────────────────────────────────────── */
 interface NativeRecord {
@@ -99,6 +115,7 @@ function RecordDrawer({
   onClose:  () => void;
   onSaved:  () => void;
 }) {
+  useRegisterOverlayOpen();
   const config = MODULE_CONFIGS[module];
   const isEdit = !!record;
 
@@ -276,9 +293,29 @@ export default function NativeCRMPage() {
     if (!MODULE_CONFIGS[module as NativeModule]) navigate('/native-crm/contacts', { replace: true });
   }, [module, navigate]);
 
+  const flags = useFeatureFlagsStore((s) => s.flags);
+  const user = useAuthStore((s) => s.user);
+  const permissions = useAuthStore((s) => s.permissions);
+  const isFullAccess = !user || user.role === 'SUPER_ADMIN' || user.role === 'TENANT_ADMIN' || permissions === null;
+  const canNav = (perm?: string) => {
+    if (!perm || isFullAccess) return true;
+    const perms = permissions ?? [];
+    if (perms.includes('*') || perms.includes(perm)) return true;
+    const parts = perm.split('.');
+    for (let i = parts.length - 1; i > 0; i--) {
+      if (perms.includes(parts.slice(0, i).join('.') + '.*')) return true;
+    }
+    return false;
+  };
+  const canNavFlag = (flag?: keyof FeatureFlags) => !flag || flags[flag] !== false;
+
+  const visibleNativeModules = NATIVE_MODULES.filter(({ key }) => canNav(NATIVE_MODULE_PERM[key]) && canNavFlag(NATIVE_MODULE_FLAG[key]));
+
   const [records,   setRecords]   = useState<NativeRecord[]>([]);
   const [meta,      setMeta]      = useState<PageMeta>({ total: 0, page: 1, pages: 1 });
   const [loading,   setLoading]   = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | undefined>(undefined);
+  const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [search,    setSearch]    = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page,      setPage]      = useState(1);
@@ -290,6 +327,8 @@ export default function NativeCRMPage() {
   const fetchRecords = useCallback(async () => {
     if (!config) return;
     setLoading(true);
+    setErrorStatus(undefined);
+    setErrorMessage(undefined);
     try {
       const params: Record<string, unknown> = { page, limit: 20 };
       if (search) params.search = search;
@@ -299,8 +338,10 @@ export default function NativeCRMPage() {
       );
       setRecords(res.data.data ?? []);
       setMeta({ total: res.data.total ?? 0, page: res.data.page ?? 1, pages: res.data.pages ?? 1 });
-    } catch {
+    } catch (err: any) {
       setRecords([]);
+      setErrorStatus(err?.response?.status);
+      setErrorMessage(err?.response?.data?.message);
     } finally {
       setLoading(false);
     }
@@ -375,19 +416,21 @@ export default function NativeCRMPage() {
             )}
 
             {/* Add button */}
-            <button
-              onClick={openCreate}
-              className="flex items-center gap-2 px-4 py-2 bg-ryze-600 hover:bg-ryze-700 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              <PlusIcon className="h-4 w-4" />
-              Add {config.labelSingular}
-            </button>
+            {errorStatus !== 403 && (
+              <button
+                onClick={openCreate}
+                className="flex items-center gap-2 px-4 py-2 bg-ryze-600 hover:bg-ryze-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                <PlusIcon className="h-4 w-4" />
+                Add {config.labelSingular}
+              </button>
+            )}
           </div>
         </div>
 
         {/* Module tabs */}
         <div className="flex gap-1 mt-4 overflow-x-auto">
-          {NATIVE_MODULES.map(({ key, label, icon: TabIcon, color }) => (
+          {visibleNativeModules.map(({ key, label, icon: TabIcon, color }) => (
             <button
               key={key}
               onClick={() => navigate(`/native-crm/${key}`)}
@@ -413,6 +456,22 @@ export default function NativeCRMPage() {
               {[0, 1, 2].map((i) => (
                 <span key={i} className="h-2.5 w-2.5 rounded-full bg-ryze-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
               ))}
+            </div>
+          </div>
+        ) : errorStatus === 403 ? (
+          <div className="flex flex-col items-center justify-center h-64 gap-4 text-center px-4">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-amber-100 dark:bg-amber-900/20">
+              <LockClosedIcon className="h-8 w-8 text-amber-500" />
+            </div>
+            <div>
+              <p className="text-text-primary font-semibold text-base">
+                {errorMessage && errorMessage.toLowerCase().includes('not enabled')
+                  ? "This module isn't available"
+                  : "You don't have permission to view this"}
+              </p>
+              <p className="text-text-muted text-sm mt-1 max-w-md">
+                {errorMessage ?? "This module isn't enabled for your account."}
+              </p>
             </div>
           </div>
         ) : records.length === 0 ? (

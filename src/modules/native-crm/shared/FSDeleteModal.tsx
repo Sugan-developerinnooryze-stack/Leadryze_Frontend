@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ComponentType, SVGProps } from 'react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { useRegisterOverlayOpen } from '../../../hooks/useRegisterOverlayOpen';
 
 interface FSDeleteModalProps {
   label:     string;
@@ -23,10 +24,13 @@ export default function FSDeleteModal({
   label, onClose, onConfirm,
   title, description, confirmLabel, confirmingLabel, icon: Icon = TrashIcon, tone = 'danger',
 }: FSDeleteModalProps) {
+  useRegisterOverlayOpen();
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleConfirm = async () => {
     setLoading(true);
+    setErrorMsg(null);
     try {
       await onConfirm();
       onClose();
@@ -34,7 +38,9 @@ export default function FSDeleteModal({
       // A blocked delete (e.g. linked records still exist) must be visible,
       // not swallowed — leave the modal open so the error is seen in context
       // rather than closing as if the delete had actually gone through.
-      toast.error(err?.response?.data?.message ?? 'Failed to delete');
+      const message = err?.response?.data?.message ?? err?.message ?? 'Failed to delete';
+      setErrorMsg(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -56,6 +62,12 @@ export default function FSDeleteModal({
           <h3 className="text-base font-semibold text-text-primary mb-1">{title ?? `Delete "${label}"?`}</h3>
           <p className="text-sm text-text-muted">{description ?? 'This action cannot be undone.'}</p>
         </div>
+
+        {errorMsg && (
+          <div className="mb-5 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-600 dark:text-red-400 text-center leading-relaxed">
+            {errorMsg}
+          </div>
+        )}
         <div className="flex gap-3">
           <button
             onClick={onClose}

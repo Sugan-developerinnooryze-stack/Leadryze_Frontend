@@ -6,6 +6,7 @@ import {
 import toast from 'react-hot-toast';
 import { authService } from '../../../services/auth.service';
 import { AdminCard, AdminEmptyState } from '../shared/AdminCard';
+import { formatDate, formatDateTime } from '../../../utils/dateUtils';
 
 interface SecurityEventItem {
   _id: string; event: string; tenantId?: string; userId?: string;
@@ -234,7 +235,7 @@ export default function SecurityPage() {
                                   : 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted border-border'
                               }`}>{c.syncStatus || 'never'}</span>
                             </td>
-                            <td className="py-2.5 pr-4 text-text-muted">{c.lastSyncAt ? new Date(c.lastSyncAt).toLocaleDateString() : '—'}</td>
+                            <td className="py-2.5 pr-4 text-text-muted">{formatDate(c.lastSyncAt)}</td>
                             <td className="py-2.5 text-danger-600 dark:text-danger-500 max-w-xs truncate">{c.syncError ?? '—'}</td>
                           </tr>
                         ))}
@@ -384,7 +385,7 @@ export default function SecurityPage() {
                             <p className="text-xs text-text-muted">{s.browser}</p>
                             <p className="text-xs text-text-muted">{s.os}</p>
                           </td>
-                          <td className="px-4 py-3 text-xs text-text-muted whitespace-nowrap">{new Date(s.createdAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                          <td className="px-4 py-3 text-xs text-text-muted whitespace-nowrap">{formatDateTime(s.createdAt)}</td>
                           <td className="px-4 py-3">
                             <button onClick={() => handleTerminateSession(s.id)}
                               className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-danger-500/10 border border-danger-500/20 text-danger-700 dark:text-danger-500 text-xs hover:bg-danger-500/20 transition-colors">
@@ -418,7 +419,7 @@ export default function SecurityPage() {
                     <tbody className="divide-y divide-border">
                       {auditLogs.map((log) => (
                         <tr key={log._id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.03] transition-colors">
-                          <td className="px-4 py-3 text-text-muted text-xs whitespace-nowrap">{new Date(log.timestamp).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                          <td className="px-4 py-3 text-text-muted text-xs whitespace-nowrap">{formatDateTime(log.timestamp)}</td>
                           <td className="px-4 py-3 text-xs text-text-primary">{log.actorEmail}</td>
                           <td className="px-4 py-3"><span className="text-xs px-2 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-text-muted border border-border">{log.actorRole}</span></td>
                           <td className="px-4 py-3"><span className="text-xs font-mono text-ryze-700 dark:text-ryze-400">{log.action}</span></td>
@@ -431,8 +432,13 @@ export default function SecurityPage() {
                             {log.target ?? '—'}
                             {(() => {
                               const d = log.detail as Record<string, unknown> | undefined;
-                              const name = (d?.tenantName ?? d?.userEmail ?? d?.name ?? d?.email) as string | undefined;
-                              const label = name ?? log.targetId;
+                              const before = d?.before as Record<string, unknown> | undefined;
+                              const name = (d?.userEmail ?? d?.userName ?? d?.name ?? before?.name ?? d?.email ?? d?.tenantName) as string | undefined;
+                              const entityId = (d?.customerId ?? d?.leadId ?? before?.leadId ?? before?.customerId ?? log.targetId) as string | undefined;
+                              if (name && entityId && name !== entityId) {
+                                return <span className="text-text-primary font-medium"> · {name} ({entityId})</span>;
+                              }
+                              const label = name ?? entityId;
                               return label ? <span className="text-text-primary font-medium"> · {label}</span> : null;
                             })()}
                           </td>

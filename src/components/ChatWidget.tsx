@@ -3,6 +3,7 @@ import { PaperAirplaneIcon, XMarkIcon, MinusIcon, ExclamationTriangleIcon, Micro
 import { useChat } from '../hooks/useChat';
 import { useAuthStore } from '../stores/auth.store';
 import { useFeatureFlagsStore } from '../stores/featureFlags.store';
+import { useOverlayVisibilityStore } from '../stores/overlayVisibility.store';
 
 const SUGGESTED = [
   'Show all pending tasks',
@@ -164,7 +165,16 @@ export default function ChatWidget() {
     sendMessage(q);
   };
 
-  if (!user || user.role === 'SUPER_ADMIN' || flags.bot_enabled === false) return null;
+  // Hides entirely (not just repositions) while a full-screen overlay is
+  // open elsewhere in the app — e.g. the automation builder's node
+  // config drawer. See overlayVisibility.store.ts's own comment for why
+  // this is a visibility toggle rather than another z-index tweak: the
+  // button was confirmed to still intercept clicks correctly (the drawer
+  // wins), but it kept visually painting on top at the corner where the
+  // two overlap, which reads as a bug even though nothing was actually
+  // clickable there.
+  const anyOverlayOpen = useOverlayVisibilityStore((s) => s.openCount > 0);
+  if (!user || user.role === 'SUPER_ADMIN' || flags.bot_enabled === false || anyOverlayOpen) return null;
 
   return (
     <>

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { CreditCardIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import FSDrawer from '../../../modules/native-crm/shared/FSDrawer';
@@ -13,6 +13,8 @@ import {
   useExpenseUpdate,
   useExpenseDelete,
 } from '../../../modules/native-crm/queries/expenses.queries';
+import { formatDate } from '../../../utils/dateUtils';
+import { useStaffNameMap } from '../../../modules/native-crm/shared/useStaffNameMap';
 
 const CUR_SYMBOL: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
 
@@ -42,6 +44,7 @@ export default function ExpensesPage() {
   const [delTarget, setDelTarget] = useState<any | null>(null);
 
   const { data: settings } = useFSSettingsQuery();
+  const staffNames = useStaffNameMap();
 
   useEffect(() => { setPage(1); }, [search, status]);
 
@@ -49,21 +52,27 @@ export default function ExpensesPage() {
     { key: 'expenseId',   label: 'ID' },
     { key: 'title',       label: 'Title' },
     { key: 'category',    label: 'Category', render: (r) => r.category ?? '—' },
-    { key: 'amount',      label: 'Amount',   render: (r) => r.amount != null ? `${CUR_SYMBOL[settings?.currency ?? 'AUD'] ?? '$'}${Number(r.amount).toFixed(2)}` : '—' },
-    { key: 'paidBy',      label: 'Paid By',  render: (r) => r.paidBy ?? '—' },
-    { key: 'date',        label: 'Date',     render: (r) => r.date ? new Date(r.date).toLocaleDateString() : '—' },
+    { key: 'amount',      label: 'Amount',   render: (r) => r.amount != null ? `${CUR_SYMBOL[settings?.currency ?? 'INR'] ?? '₹'}${Number(r.amount).toFixed(2)}` : '—' },
+    {
+      key: 'paidBy',
+      label: 'Paid By',
+      render: (r) => staffNames.get(r.paidBy) ?? r.paidBy ?? '—',
+      exportValue: (r) => staffNames.get(r.paidBy) ?? r.paidBy ?? '',
+    },
+    { key: 'date',        label: 'Date',     render: (r) => formatDate(r.date) },
     {
       key: 'status',
       label: 'Status',
       render: (r) => (
-        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[r.status] ?? 'bg-black/[0.06] dark:bg-white/[0.08] text-text-muted'}`}>
-          {r.status}
+        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${STATUS_COLORS[r.status] ?? 'bg-black/[0.06] dark:bg-white/[0.08] text-text-muted'}`}>
+          {r.status ? r.status.replace(/_/g, ' ') : '—'}
         </span>
       ),
+      exportValue: (r) => (r.status ? r.status.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) : ''),
     },
     { key: 'branchId', label: 'Company', render: (r: any) => <CompanyBadge branchId={r.branchId} /> },
-    { key: 'createdAt', label: 'Created Date', render: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—' },
-  ], [settings?.currency]);
+    { key: 'createdAt', label: 'Created Date', render: (r) => formatDate(r.createdAt) },
+  ], [settings?.currency, staffNames]);
 
   const { data: result, isLoading, error } = useExpensesListQuery({ page, limit: 20, search: search || undefined, status: status || undefined });
   const items = result?.items ?? [];

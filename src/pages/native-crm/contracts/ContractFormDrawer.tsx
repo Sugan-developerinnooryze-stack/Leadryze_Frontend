@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { XMarkIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
 import { useBranchStore } from '../../../stores/branch.store';
 import { useAuthStore } from '../../../stores/auth.store';
 import { RecordLockBanner } from '../../../components/native-crm/RecordLockBanner';
@@ -17,6 +18,7 @@ import ContractServiceLinesEditor, { type ContractServiceLine } from './Contract
 import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import { useFsSettingsDefaultsQuery } from '../../../modules/native-crm/queries/fs-settings.queries';
 import api from '../../../services/api';
+import { useRegisterOverlayOpen } from '../../../hooks/useRegisterOverlayOpen';
 
 interface Props {
   record:   any | null;   // null / no _id = create; with _id = edit
@@ -44,6 +46,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default function ContractFormDrawer({ record, onClose, onSaved, onCreate, onUpdate, onUnlocked }: Props) {
+  useRegisterOverlayOpen();
   const isEdit = !!record?._id;
 
   const user    = useAuthStore((s) => s.user);
@@ -301,8 +304,25 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
       if (form.priority)     payload.priority     = form.priority;
       if (activeCustomFields.length > 0) payload.customFields = customForm;
 
+      const sDate = form.startDate ? String(form.startDate).slice(0, 10) : '';
+      const eDate = form.endDate ? String(form.endDate).slice(0, 10) : '';
+      const allOutDates: string[] = [];
+      if (sDate && eDate) {
+        services.forEach((s) => {
+          if (s.scheduleRule?.frequency === 'custom_dates' && Array.isArray(s.scheduleRule.dates)) {
+            s.scheduleRule.dates.forEach((d) => {
+              if ((d < sDate || d > eDate) && !allOutDates.includes(d)) allOutDates.push(d);
+            });
+          }
+        });
+      }
+      if (allOutDates.length > 0) {
+        toast(`Notice: ${allOutDates.join(', ')} outside contract period were not scheduled`, { icon: '⚠️', duration: 6000 });
+      }
+
       if (isEdit) await onUpdate(record._id, payload);
       else        await onCreate(payload);
+      toast.success(isEdit ? 'Contract updated' : 'Contract created');
       onSaved();
       onClose();
     } catch (err: any) {
@@ -501,6 +521,8 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
                 value={services}
                 onChange={setServices}
                 availableServices={servicesData?.items ?? []}
+                startDate={form.startDate}
+                endDate={form.endDate}
               />
               {Object.entries(errors).filter(([k]) => k.startsWith('svc')).map(([k, v]) => (
                 <p key={k} className="mt-1 text-xs text-red-500">{v}</p>
@@ -514,6 +536,19 @@ export default function ContractFormDrawer({ record, onClose, onSaved, onCreate,
                   <p className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-lg px-4 py-3">{previewError}</p>
                 ) : preview ? (
                   <div className="bg-ryze-600/10/50 border border-ryze-100 dark:border-ryze-900 rounded-xl p-4 space-y-3">
+                    {preview.outOfRangeDates && preview.outOfRangeDates.length > 0 && (
+                      <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                        <span className="shrink-0 text-base leading-none">⚠️</span>
+                        <div>
+                          <p className="font-semibold">
+                            {preview.outOfRangeDates.length} custom visit date{preview.outOfRangeDates.length > 1 ? 's' : ''} outside contract period ({String(form.startDate).slice(0, 10)} to {String(form.endDate).slice(0, 10)}):
+                          </p>
+                          <p className="mt-0.5">
+                            {preview.outOfRangeDates.join(', ')} — these dates fall outside the contract duration and will not be scheduled. Only {preview.totalVisits} valid visit{preview.totalVisits === 1 ? '' : 's'} will be created.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                     <div className="grid grid-cols-4 gap-3">
                       {[
                         ['Total Visits', String(preview.totalVisits)],

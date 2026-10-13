@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../services/api';
+import toast from 'react-hot-toast';
 
 const BASE = '/api/v1/native-crm/custom-templates';
 const KEY  = ['native-crm', 'custom-templates'] as const;
@@ -88,12 +89,32 @@ export async function downloadDraftPdf(
   module: string, docId: string, filename: string,
   body: { elements: any[]; page?: any; header?: any; footer?: any },
 ) {
-  const res = await api.post(`/api/v1/native-crm/pdf/${module}/${docId}/download-draft`, body, { responseType: 'blob' });
-  const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  window.URL.revokeObjectURL(url);
+  try {
+    const res = await api.post(`/api/v1/native-crm/pdf/${module}/${docId}/download-draft`, body, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    toast.success('Draft PDF downloaded');
+  } catch (err: any) {
+    let msg = 'Failed to download draft PDF';
+    if (err?.response?.data instanceof Blob) {
+      try {
+        const text = await err.response.data.text();
+        const json = JSON.parse(text);
+        if (json?.message) msg = json.message;
+      } catch {
+        // Blob not JSON
+      }
+    } else if (err?.response?.data?.message) {
+      msg = err.response.data.message;
+    } else if (err?.message) {
+      msg = err.message;
+    }
+    toast.error(msg);
+    throw err;
+  }
 }
 
 export interface LiveRowCells { index: string; name: string; description: string; partNumber: string; count: string; amount: string; lineTotal: string; }

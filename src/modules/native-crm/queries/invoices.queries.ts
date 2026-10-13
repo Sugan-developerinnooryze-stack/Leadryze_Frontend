@@ -4,10 +4,10 @@ import api from '../../../services/api';
 const BASE = '/api/v1/native-crm/invoices';
 const KEY  = ['native-crm', 'invoices'] as const;
 
-interface ListParams { page?: number; limit?: number; search?: string; status?: string; range?: string; dateFrom?: string; dateTo?: string; filters?: string; dateField?: string; }
+interface ListParams { page?: number; limit?: number; search?: string; status?: string; customerId?: string; range?: string; dateFrom?: string; dateTo?: string; filters?: string; dateField?: string; }
 interface Meta       { total: number; page: number; totalPages: number; }
 
-export function useInvoicesListQuery(params: ListParams) {
+export function useInvoicesListQuery(params: ListParams, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: [...KEY, params],
     queryFn: () =>
@@ -15,6 +15,7 @@ export function useInvoicesListQuery(params: ListParams) {
         items: (r.data.data ?? []) as any[],
         meta:  (r.data.meta  ?? { total: 0, page: 1, totalPages: 1 }) as Meta,
       })),
+    enabled: options?.enabled,
   });
 }
 

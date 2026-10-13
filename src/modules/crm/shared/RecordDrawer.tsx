@@ -8,13 +8,15 @@ import { useCustomFieldsQuery } from '../../native-crm/queries/custom-fields.que
 import CustomFieldRenderer from '../../native-crm/shared/CustomFieldRenderer';
 import FsRelationPicker, { FsRelation } from './FsRelationPicker';
 import MeetingAssignmentPanel from './MeetingAssignmentPanel';
+import { useRegisterOverlayOpen } from '../../../hooks/useRegisterOverlayOpen';
+import { toDatetimeLocal, toIsoUtcString } from '../../native-crm/shared/duration';
 
 // Only these 4 modules can attach to a Field Service record — Contact/Company/
 // Deal are already bridged via Lead conversion and don't need this picker.
 const FS_LINKABLE_MODULES = new Set(['tasks', 'tickets', 'calls', 'meetings']);
 
 export default function RecordDrawer({
-  config, record, moduleName, onClose, onSaved, prefillRelation,
+  config, record, moduleName, onClose, onSaved, prefillRelation, canEdit = true,
 }: {
   config:     ModulePageConfig;
   record:     CrmRecord | null;
@@ -25,7 +27,9 @@ export default function RecordDrawer({
    * an ActivityFeedPanel's "quick add" — ignored when editing an existing
    * record (its own relatedModule/relatedId/relatedLabel win instead). */
   prefillRelation?: FsRelation;
+  canEdit?: boolean;
 }) {
+  useRegisterOverlayOpen();
   const isEdit = !!record;
   const showFsRelation = FS_LINKABLE_MODULES.has(moduleName);
 
@@ -36,20 +40,30 @@ export default function RecordDrawer({
     const f: Record<string, string> = {};
     for (const field of config.fields) {
       const raw = record ? record[field.key] : undefined;
-      if (raw == null || raw === '') { f[field.key] = ''; continue; }
+      if (raw == null || raw === '') {
+        // LR-R2-UX-003: pre-fill contact / customer name from prefillRelation when logging a call/activity
+        if (!record && prefillRelation?.relatedLabel) {
+          if (field.key === 'contactName' || field.key === 'customerName' || (field.key === 'contact' && field.type === 'text')) {
+            f[field.key] = prefillRelation.relatedLabel;
+            continue;
+          }
+        }
+        f[field.key] = '';
+        continue;
+      }
       // <input type="datetime-local">/type="date"> require an exact
       // "YYYY-MM-DDTHH:mm" / "YYYY-MM-DD" value — the stored value is a full
       // ISO string (e.g. "...T12:30:00.000Z"), and a browser silently
       // renders anything else as empty rather than erroring, which is why
       // the edit form previously showed blank Start/End fields even though
       // the record itself had real values.
-      if (field.type === 'datetime' && typeof raw === 'string') f[field.key] = raw.slice(0, 16);
+      if (field.type === 'datetime') f[field.key] = toDatetimeLocal(raw);
       else if (field.type === 'date' && typeof raw === 'string') f[field.key] = raw.slice(0, 10);
       else if (field.isArray && Array.isArray(raw)) f[field.key] = raw.join(', ');
       else f[field.key] = String(raw);
     }
     return f;
-  }, [config.fields, record]);
+  }, [config.fields, record, prefillRelation]);
 
   const initCustomForm = useCallback(() => {
     const cf: Record<string, unknown> = {};
@@ -112,8 +126,9 @@ export default function RecordDrawer({
       // everywhere else (no per-viewer timezone conversion).
       for (const field of config.fields) {
         const v = payload[field.key];
-        if (field.type === 'datetime' && typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) {
-          payload[field.key] = `${v}:00.000Z`;
+        // LR-R2-ACT-001: Convert local wall-clock time input to true UTC ISO instant
+        if (field.type === 'datetime' && typeof v === 'string' && v) {
+          payload[field.key] = toIsoUtcString(v);
         } else if (field.isArray && typeof v === 'string') {
           payload[field.key] = v.split(',').map((s) => s.trim()).filter(Boolean);
         } else if (
@@ -141,10 +156,15 @@ export default function RecordDrawer({
         payload.relatedId     = relation.relatedId ?? '';
         payload.relatedLabel  = relation.relatedLabel ?? '';
       }
+      const entityLabel = config.labelSingular || 'Record';
       if (isEdit) {
+        payload.updatedAt = record?.updatedAt;
+        payload.__v = record?.__v;
         await api.put(`${config.apiBase}/${record!._id}`, payload);
+        toast.success(`${entityLabel} updated`);
       } else {
         const res = await api.post(config.apiBase, payload);
+        toast.success(`${entityLabel} created`);
         // LR-CONTACT-003: non-blocking — the record is already created
         // either way (present on Contact's create response; harmless no-op
         // for every other module that doesn't send this field).
@@ -161,7 +181,13 @@ export default function RecordDrawer({
       // failed" — a Zod 400 (e.g. `errors: {direction: ["Invalid enum
       // value..."]}`) previously vanished entirely, leaving no way to tell
       // an actual bad-field error apart from a network failure.
-      const res = (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response;
+      const res = (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> }; status?: number } })?.response;
+      if (res?.status === 409) {
+        const conflictMsg = res.data?.message ?? 'This record was changed by someone else — please reload and try again.';
+        toast.error(conflictMsg);
+        setErrors({ _global: conflictMsg });
+        return;
+      }
       const fieldErrors = res?.data?.errors;
       // LR-CONTACT-002: "lastName: String must contain at least 1
       // character(s)" is Zod's raw internal wording — rephrase the common
@@ -201,6 +227,7 @@ export default function RecordDrawer({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-2 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-text-muted hover:text-text-primary transition-colors"
           >
             <XMarkIcon className="h-5 w-5" />
@@ -279,11 +306,11 @@ export default function RecordDrawer({
               </button>
               <button
                 onClick={() => submit(false)}
-                disabled={saving}
+                disabled={saving || !canEdit}
                 className="flex-1 px-4 py-2.5 bg-ryze-600 hover:bg-ryze-700 disabled:opacity-60 rounded-lg text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
               >
                 {saving && <div className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-                {saving ? 'Saving…' : 'Save Changes'}
+                {!canEdit ? 'Read-only' : (saving ? 'Saving…' : 'Save Changes')}
               </button>
             </div>
           ) : (

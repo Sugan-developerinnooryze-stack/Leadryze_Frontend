@@ -6,7 +6,15 @@ import { useUserNameMap } from './useUserNameMap';
  * won" — a generic, safe readability pass (not the tenant's own customized
  * pipeline-stage label, which would need a per-module network lookup this
  * component deliberately avoids to stay a true drop-in for any module). */
+/** Turns a raw snake_case/camelCase value like "closed_won" into "Closed
+ * won" — a generic, safe readability pass (not the tenant's own customized
+ * pipeline-stage label, which would need a per-module network lookup this
+ * component deliberately avoids to stay a true drop-in for any module). */
 function humanize(value: string): string {
+  // LR-UI-002: Do not lowercase formatted entity/record identifiers
+  if (/\b(?:cus|lead|con|deal|wo|inv|quote)-\d+\b/i.test(value) || /^[a-zA-Z0-9]+-[a-zA-Z0-9]+-\d+$/i.test(value)) {
+    return value.toUpperCase();
+  }
   const spaced = value.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
   return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
 }
@@ -36,18 +44,49 @@ const ACTION_COLORS: Record<string, string> = {
  * true drop-in for any entityModule without per-module wiring here. */
 function MetadataChips({ metadata }: { metadata?: Record<string, any> }) {
   if (!metadata || typeof metadata !== 'object') return null;
-  const entries = Object.entries(metadata).filter(([, v]) => v !== undefined && v !== null && v !== '');
+  // LR-UI-002: Exclude raw internal database IDs (like entityId, _id, or 24-char hex Mongo ObjectIds)
+  const entries = Object.entries(metadata).filter(([k, v]) => {
+    if (v === undefined || v === null || v === '') return false;
+    if (k === 'entityId' || k === '_id' || k === 'id') return false;
+    if (typeof v === 'string' && /^[0-9a-fA-F]{24}$/.test(v)) return false;
+    return true;
+  });
   if (entries.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-1 mt-1.5">
-      {entries.map(([k, v]) => (
-        <span key={k} className="text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted">
-          <span className="font-medium">{k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase())}:</span>{' '}
-          {typeof v === 'object' ? JSON.stringify(v) : typeof v === 'string' ? humanize(v) : String(v)}
-        </span>
-      ))}
+      {entries.map(([k, v]) => {
+        let valStr = String(v);
+        if (Array.isArray(v)) {
+          valStr = v.join(', ');
+        } else if (typeof v === 'object') {
+          valStr = JSON.stringify(v);
+        } else if (typeof v === 'string') {
+          if (k.toLowerCase().includes('id') || /\b(?:cus|lead|con|deal)-\d+\b/i.test(v)) {
+            valStr = v.toUpperCase();
+          } else {
+            valStr = humanize(v);
+          }
+        }
+        return (
+          <span key={k} className="text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted">
+            <span className="font-medium">{k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase())}:</span>{' '}
+            {valStr}
+          </span>
+        );
+      })}
     </div>
   );
+}
+
+function formatTimelineDescription(ev: any, userNames: Map<string, string>): string {
+  let desc = ev.description || '';
+  if (ev.performedBy && desc.includes(ev.performedBy) && userNames.has(ev.performedBy)) {
+    desc = desc.split(ev.performedBy).join(userNames.get(ev.performedBy)!);
+  }
+  // LR-UI-002: format conversion descriptions and ensure uppercase customer IDs
+  desc = desc.replace(/Lead converted → Customer:\s*([^\s]+)/i, (_: string, id: string) => `Customer ${id.toUpperCase()} created`);
+  desc = desc.replace(/\b([a-f0-9]+-(?:cus|lead)-\d+)\b/gi, (m: string) => m.toUpperCase());
+  return desc;
 }
 
 /** Drop-in Timeline tab content for any module's detail panel — pass the
@@ -56,12 +95,6 @@ function MetadataChips({ metadata }: { metadata?: Record<string, any> }) {
  * and the record's real `_id`. */
 export default function RecordTimeline({ entityModule, entityId }: { entityModule: string; entityId: string }) {
   const { data: timelineEvents = [], isLoading } = useEntityTimelineQuery(entityModule, entityId);
-  // LR-UI-002: timeline.model.ts already carries a separate, clean
-  // `performedBy` (User._id) field alongside the free-text `description` —
-  // this was never read before, even though `description` often bakes the
-  // same raw id into its own sentence (e.g. "Reassigned ... by <id>").
-  // Resolving the KNOWN exact value this way avoids a fragile blind regex
-  // over arbitrary description text.
   const userNames = useUserNameMap();
 
   if (isLoading) {
@@ -99,9 +132,7 @@ export default function RecordTimeline({ entityModule, entityId }: { entityModul
               </span>
             </div>
             <p className="text-xs text-text-primary">
-              {ev.performedBy && ev.description?.includes(ev.performedBy) && userNames.has(ev.performedBy)
-                ? ev.description.split(ev.performedBy).join(userNames.get(ev.performedBy))
-                : ev.description}
+              {formatTimelineDescription(ev, userNames)}
             </p>
             <MetadataChips metadata={ev.metadata} />
           </div>

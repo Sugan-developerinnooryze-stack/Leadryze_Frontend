@@ -9,10 +9,10 @@ import {
   ChartBarIcon,
   Cog6ToothIcon,
   LinkIcon,
-  BookOpenIcon,
+  // BookOpenIcon,
   CircleStackIcon,
   ClipboardDocumentCheckIcon,
-  CpuChipIcon,
+  // CpuChipIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   ChevronLeftIcon,
@@ -107,7 +107,7 @@ const CONFIGURATION_ITEMS = [
   { key: 'custom-modules',             label: 'Custom Modules',    icon: TableCellsIcon,             color: '#0d9488' },
   { key: 'settings',                   label: 'FS Settings',       icon: WrenchScrewdriverIcon,      color: '#64748b' },
   //{ key: 'settings/notifications',     label: 'Notifications',     icon: BellAlertIcon,              color: '#0ea5e9' },
-  //{ key: 'settings/automations',       label: 'Automations',       icon: BoltIcon,                   color: '#f59e0b' },
+  // { key: 'settings/automations',       label: 'Automations',       icon: BoltIcon,                   color: '#f59e0b' },
   //{ key: 'settings/import-export',     label: 'Import & Export',   icon: ArrowsRightLeftIcon,        color: '#16a34a' },
 ] as const;
 
@@ -196,8 +196,20 @@ const CONFIGURATION_ITEM_PERM: Record<string, string> = {
 const AUTOMATION_ITEMS = [
   { key: 'calendar',   label: 'Calendar',   icon: CalendarDaysIcon,          to: '/my-crm' },
   { key: 'management', label: 'Management', icon: ClipboardDocumentListIcon, to: '/my-crm/management' },
-  { key: 'automation', label: 'Automation', icon: BoltIcon,                  to: '/my-crm/automation' },
+  { key: 'automation', label: 'Connector Data', icon: BoltIcon,                  to: '/my-crm/automation' },
 ] as const;
+
+const AUTOMATION_ITEM_FLAG: Record<string, keyof FeatureFlags> = {
+  calendar:   'connector_data_calendar',
+  management: 'connector_data_management',
+  automation: 'connector_data_automation',
+};
+
+const AUTOMATION_ITEM_PERM: Record<string, string[]> = {
+  calendar:   ['connector_data.calendar.view', 'native_crm.calendar.view'],
+  management: ['connector_data.management.view', 'native_crm.activities.view'],
+  automation: ['connector_data.automation.view', 'automation.view'],
+};
 
 type HeroIcon = FC<SVGProps<SVGSVGElement> & { className?: string }>;
 
@@ -308,13 +320,13 @@ const OVERVIEW_NAV = [
 ];
 const ENGAGE_NAV = [
   { to: '/customers',  icon: UsersIcon,                  label: 'Customers',      flagKey: 'nav_customers',  permKey: 'customers.view' },
-  { to: '/bot-hub',    icon: CpuChipIcon,                label: 'Bot Hub',        flagKey: 'nav_botHub',     permKey: 'bot.view'       },
+  // { to: '/bot-hub',    icon: CpuChipIcon,                label: 'Bot Hub',        flagKey: 'nav_botHub',     permKey: 'bot.view'       },
   { to: '/campaigns',  icon: MegaphoneIcon,              label: 'Campaigns',      flagKey: 'nav_campaigns',  permKey: 'campaigns.view' },
   { to: '/templates',  icon: DocumentTextIcon,           label: 'Templates',      flagKey: 'nav_templates',  permKey: 'templates.view' },
 ];
 const INTELLIGENCE_NAV = [
   { to: '/analytics',  icon: ChartBarIcon,               label: 'Analytics',      flagKey: 'nav_analytics',  permKey: 'analytics.view' },
-  { to: '/knowledge',  icon: BookOpenIcon,               label: 'Knowledge Base', flagKey: 'nav_knowledge',  permKey: 'knowledge.view' },
+  // { to: '/knowledge',  icon: BookOpenIcon,               label: 'Knowledge Base', flagKey: 'nav_knowledge',  permKey: 'knowledge.view' },
 ];
 const PLATFORM_NAV = [
   { to: '/logs',       icon: ClipboardDocumentCheckIcon, label: 'Logs',           flagKey: 'nav_logs',       permKey: 'logs.view'      },
@@ -370,7 +382,12 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
 
   // SUPER_ADMIN / TENANT_ADMIN / null permissions → full access
   const isFullAccess = !user || user.role === 'SUPER_ADMIN' || user.role === 'TENANT_ADMIN' || permissions === null;
-  const canNav = (permKey: string) => !permKey || isFullAccess || _hasWildcard(permissions ?? [], permKey);
+  const canNav = (permKey?: string | string[]) => {
+    if (!permKey) return true;
+    if (isFullAccess) return true;
+    if (Array.isArray(permKey)) return permKey.some((k) => _hasWildcard(permissions ?? [], k));
+    return _hasWildcard(permissions ?? [], permKey);
+  };
   // Tenant-level module gate — deliberately NOT bypassed by isFullAccess:
   // a Super-Admin-disabled module stays hidden even from that tenant's own
   // TENANT_ADMIN. Missing map entry (no flag defined for this key yet)
@@ -512,11 +529,16 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
   }
 
   if (flags.nav_myCrm !== false) {
-    customizableCategories.push({
-      key: 'automation',
-      label: 'Automation',
-      items: AUTOMATION_ITEMS.map(({ key, label, icon, to }) => ({ id: `automation:${key}`, label, icon, to })),
-    });
+    const visible = AUTOMATION_ITEMS.filter(({ key }) =>
+      canNav(AUTOMATION_ITEM_PERM[key]) && canNavFlag(AUTOMATION_ITEM_FLAG[key])
+    );
+    if (visible.length > 0) {
+      customizableCategories.push({
+        key: 'automation',
+        label: 'Connector Data',
+        items: visible.map(({ key, label, icon, to }) => ({ id: `automation:${key}`, label, icon, to })),
+      });
+    }
   }
 
   // Per-category pinned/unpinned split — pinned feeds the main sidebar's
@@ -885,10 +907,10 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
           if (!split || split.pinnedItems.length === 0) return null;
           return (
           <div>
-            <p className={groupLabelClass}>Automation</p>
+            <p className={groupLabelClass}>Connector Data</p>
             <button onClick={() => toggleSection('myCrm')} className={sectionHeaderClass}>
               <CalendarDaysIcon className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-left">My CRM</span>
+              <span className="flex-1 text-left">Connector Data</span>
               {myCrmOpen
                 ? <ChevronDownIcon  className="h-3 w-3" />
                 : <ChevronRightIcon className="h-3 w-3" />}
@@ -1017,6 +1039,10 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
           hasCustomModulesGroup={customModules.filter((m) => m.showInSidebar).length > 0 || isFullAccess}
           pinAll={sidebarLayout.pinAll}
           resetToDefault={sidebarLayout.resetToDefault}
+          restorePreShowAll={sidebarLayout.restorePreShowAll}
+          saveAsDefault={sidebarLayout.saveAsDefault}
+          hasCustomDefault={sidebarLayout.hasCustomDefault}
+          isAllPinned={sidebarLayout.isAllPinned}
           anchorLeft={collapsed ? 56 : 240}
           onClose={() => setMorePanelOpen(false)}
         />

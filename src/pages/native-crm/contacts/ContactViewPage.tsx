@@ -11,6 +11,7 @@ import { useDealsQuery } from '../../../modules/native-crm/queries/deals.queries
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import { FSStatusBadge } from '../../../modules/native-crm/shared/types';
 import type { FSColumnDef } from '../../../modules/native-crm/shared/types';
+import { formatDate } from '../../../utils/dateUtils';
 import { useUserNameMap } from '../../../modules/native-crm/shared/useUserNameMap';
 import { useCompanyNameMap } from '../../../modules/native-crm/shared/useCompanyNameMap';
 
@@ -41,9 +42,12 @@ function InfoRow({ label, value }: { label: string; value?: React.ReactNode }) {
 }
 
 const DEAL_COLS: FSColumnDef[] = [
-  { key: 'title',  label: 'Deal' },
-  { key: 'amount', label: 'Amount', render: (r) => r.amount ? `${r.currency ?? 'INR'} ${Number(r.amount).toLocaleString()}` : '—' },
-  { key: 'stage',  label: 'Stage', render: (r) => <FSStatusBadge value={r.stage ?? 'prospect'} /> },
+  { key: 'title',       label: 'Deal' },
+  { key: 'contactName', label: 'Contact Name', render: (r) => r.contactName || '—' },
+  { key: 'companyName', label: 'Company Name', render: (r) => r.companyName || '—' },
+  { key: 'amount',      label: 'Amount',       render: (r) => r.amount ? `${r.currency ?? 'INR'} ${Number(r.amount).toLocaleString()}` : '—' },
+  { key: 'stage',       label: 'Stage',        render: (r) => <FSStatusBadge value={r.stage ?? 'prospect'} /> },
+  { key: 'closeDate',   label: 'Close Date',   render: (r) => formatDate(r.closeDate) },
 ];
 
 export default function ContactViewPage() {

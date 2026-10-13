@@ -21,21 +21,28 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="max-w-lg w-full bg-surface rounded-2xl shadow-sm border border-danger-500/20 p-8 text-center">
             <div className="text-5xl mb-4">⚠️</div>
             <h1 className="text-xl font-bold text-text-primary mb-2">Something went wrong</h1>
-            <p className="text-sm text-text-muted mb-4">
-              {this.state.error.message}
+            <p className="text-sm text-text-muted mb-6">
+              An unexpected error occurred while loading this view. You can return to the dashboard or try again.
             </p>
-            <pre className="text-left text-xs bg-black/[0.04] dark:bg-white/[0.06] rounded-lg p-4 overflow-auto max-h-40 text-danger-600 dark:text-danger-500 mb-6">
-              {this.state.error.stack}
-            </pre>
-            <button
-              className="btn-primary"
-              onClick={() => {
-                this.setState({ error: null });
-                window.location.href = '/dashboard';
-              }}
-            >
-              Reload App
-            </button>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                className="px-4 py-2 border border-border text-text-primary rounded-lg text-sm font-medium hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
+                onClick={() => {
+                  this.setState({ error: null });
+                }}
+              >
+                Try Again
+              </button>
+              <button
+                className="btn-primary"
+                onClick={() => {
+                  this.setState({ error: null });
+                  window.location.href = '/dashboard';
+                }}
+              >
+                Back to Dashboard
+              </button>
+            </div>
           </div>
         </div>
       );

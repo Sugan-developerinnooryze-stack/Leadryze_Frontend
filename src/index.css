@@ -153,3 +153,27 @@
 @media (prefers-reduced-motion: reduce) {
   .animate-column-expand { animation: none; }
 }
+
+/* ── Auth page animations ────────────────────────────────────────────────── */
+@keyframes shimmer-sweep {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.18) 50%, transparent 60%);
+  background-size: 200% 100%;
+  animation: shimmer-sweep 2.5s linear infinite;
+  animation-delay: 0.5s;
+}
+
+@keyframes float-bob {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+.animate-float-bob {
+  animation: float-bob 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer, .animate-float-bob { animation: none; }
+}

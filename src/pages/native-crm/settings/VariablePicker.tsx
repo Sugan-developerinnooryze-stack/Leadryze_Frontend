@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useFieldCatalogQuery, AutomationModule } from '../../../modules/native-crm/queries/automation-rules.queries';
 
-/** Keep in sync with buildVariables()'s base keys (automation-rule.service.ts). */
-const SYSTEM_TOKENS: { key: string; label: string }[] = [
+/** Keep in sync with buildVariables()'s base keys (automation-rule.service.ts).
+ * Exported so the node drawer's own "Available data" reference block (see
+ * AutomationFlowBuilderPage.tsx's NodeConfigPanel) can list the exact same
+ * System tokens this picker offers, rather than maintaining a second copy. */
+export const SYSTEM_TOKENS: { key: string; label: string }[] = [
   { key: 'name',    label: 'Recipient name' },
   { key: 'status',  label: 'Trigger status/stage' },
   { key: 'title',   label: 'Record title' },

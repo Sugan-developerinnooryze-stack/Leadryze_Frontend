@@ -8,6 +8,8 @@ const config: ModulePageConfig = {
   apiBase:       '/api/v1/native-crm/deals',
   statusField:   'stage',
   pipelineModule: 'deal',
+  altView:       'kanban',
+  altViewLabel:  'Kanban board',
   fields: [
     { key: 'title',       label: 'Deal Title',  type: 'text',    required: true },
     { key: 'amount',      label: 'Amount',      type: 'currency', tableCol: true },

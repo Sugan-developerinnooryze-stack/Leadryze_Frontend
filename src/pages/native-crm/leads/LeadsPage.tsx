@@ -25,7 +25,6 @@ import {
 import RecordTimeline from '../../../modules/native-crm/shared/RecordTimeline';
 import ActivityFeedPanel from '../../../modules/native-crm/shared/ActivityFeedPanel';
 import FSDeleteModal from '../../../modules/native-crm/shared/FSDeleteModal';
-import { useStaffsListQuery } from '../../../modules/native-crm/queries/staffs.queries';
 import { useUsersListQuery } from '../../../modules/native-crm/queries/users.queries';
 import { usePipelineStages, type PipelineStage } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import { RecordLockBanner } from '../../../components/native-crm/RecordLockBanner';
@@ -36,6 +35,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCustomFieldsQuery } from '../../../modules/native-crm/queries/custom-fields.queries';
 import { useCustomFormTemplatesQuery } from '../../../modules/native-crm/queries/custom-form-templates.queries';
 import CustomFieldRenderer from '../../../modules/native-crm/shared/CustomFieldRenderer';
+import { useOverlayVisibilityStore } from '../../../stores/overlayVisibility.store';
+import { usePermission } from '../../../hooks/usePermission';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -239,7 +240,7 @@ function LeadCard({
   lead: any;
   stageColor?: string;
   onClick: (lead: any) => void;
-  onEditClick: (lead: any) => void;
+  onEditClick?: (lead: any) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: lead._id,
@@ -293,7 +294,7 @@ function KanbanColumn({
   stage: PipelineStage;
   leads: any[];
   onCardClick: (lead: any) => void;
-  onEditClick: (lead: any) => void;
+  onEditClick?: (lead: any) => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
 }) {
@@ -378,40 +379,121 @@ function KanbanColumn({
 
 // ─── Lead Form ────────────────────────────────────────────────────────────────
 
-function inp(extra?: string) {
-  return `w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-ryze-400 ${extra ?? ''}`;
+const FIELD_TAB_MAP: Record<string, 'basic' | 'contact' | 'address' | 'sales' | 'custom'> = {
+  firstName: 'basic',
+  lastName: 'basic',
+  company: 'basic',
+  designation: 'basic',
+  industry: 'basic',
+  website: 'basic',
+  source: 'basic',
+  rating: 'basic',
+  priority: 'basic',
+  status: 'basic',
+  leadOwnerStaffId: 'basic',
+  leadOwner: 'basic',
+  notes: 'basic',
+  branchId: 'basic',
+
+  email: 'contact',
+  secondaryEmail: 'contact',
+  phone: 'contact',
+  mobile: 'contact',
+  whatsapp: 'contact',
+  alternatePhone: 'contact',
+  linkedin: 'contact',
+  twitter: 'contact',
+  facebook: 'contact',
+
+  address: 'address',
+  address2: 'address',
+  city: 'address',
+  state: 'address',
+  postalCode: 'address',
+  country: 'address',
+
+  expectedRevenue: 'sales',
+  budget: 'sales',
+  expectedCloseDate: 'sales',
+  score: 'sales',
+  requirement: 'sales',
+  painPoints: 'sales',
+  decisionMaker: 'sales',
+  purchaseTimeline: 'sales',
+  competitor: 'sales',
+  lostReason: 'sales',
+};
+
+function inp(extra?: string, hasError?: boolean) {
+  const borderCls = hasError
+    ? 'border-danger-500 focus:ring-danger-400 focus:border-danger-500'
+    : 'border-border focus:ring-ryze-400';
+  return `w-full rounded-lg border bg-surface px-3 py-2 text-sm text-text-primary dark:text-white focus:outline-none focus:ring-2 ${borderCls} ${extra ?? ''}`;
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div>
       <label className="block text-xs font-medium text-text-muted mb-1">{label}</label>
       {children}
+      {error && <p className="mt-1 text-xs text-danger-500 font-medium">{error}</p>}
     </div>
   );
 }
 
-function LeadForm({ form, setForm, onSubmit, saving, submitLabel }: {
+function LeadForm({ form, setForm, errors = {}, setErrors, onSubmit, saving, submitLabel }: {
   form: any; setForm: (f: any) => void;
+  errors?: Record<string, string>;
+  setErrors?: (errs: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => void;
   onSubmit: () => void; saving: boolean; submitLabel: string;
 }) {
-  const set = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
+  const set = (k: string, v: any) => {
+    setForm((p: any) => ({ ...p, [k]: v }));
+    if (setErrors) {
+      setErrors((prev: any) => {
+        if (!prev || !prev[k]) return prev;
+        const next = { ...prev };
+        delete next[k];
+        return next;
+      });
+    }
+  };
   const branches = useBranchStore((s) => s.branches.filter((b) => b.status === 'active'));
   const [section, setSection] = useState<'basic'|'contact'|'address'|'sales'|'custom'>('basic');
   const { stages } = usePipelineStages('lead', DEFAULT_LEAD_STAGES);
-  const { data: staffData } = useStaffsListQuery({ page: 1, limit: 1000 });
-  const staffOptions = staffData?.items ?? [];
-  // LR-RULE-003: Owner should be a CRM/sales user, not only Field-Service
-  // staff — leadOwnerStaffId is a plain string (no Mongoose ref), so a
-  // platform User's _id is just as valid a value as a NativeStaff staffId.
+  // LR-RULE-003: Lead Owner list is for CRM users only (Field Service staff
+  // are excluded, and deactivated users are excluded per LR-R2-USER-002).
   const { data: userData } = useUsersListQuery({ limit: 500 });
-  const userOptions = userData?.items ?? [];
+  const activeUsers = (userData?.items ?? []).filter((u: any) => u.isActive !== false && u.status !== 'inactive');
 
   const { data: customFields = [] } = useCustomFieldsQuery('leads');
   const activeCustomFields = customFields.filter((cf) => cf.isActive);
   const { data: formTemplates = [] } = useCustomFormTemplatesQuery();
-  const setCustomField = (key: string, val: any) =>
+  const setCustomField = (key: string, val: any) => {
     setForm((p: any) => ({ ...p, customFields: { ...p.customFields, [key]: val } }));
+    if (setErrors) {
+      setErrors((prev: any) => {
+        if (!prev) return prev;
+        const next = { ...prev };
+        delete next[`customFields.${key}`];
+        delete next[`cf_${key}`];
+        delete next[key];
+        return next;
+      });
+    }
+  };
+
+  // Auto-switch section to the tab containing the first error whenever errors change
+  useEffect(() => {
+    const errorKeys = Object.keys(errors);
+    if (errorKeys.length > 0) {
+      const firstErrKey = errorKeys[0];
+      const targetTab = FIELD_TAB_MAP[firstErrKey] ?? (firstErrKey.startsWith('customFields') || firstErrKey.startsWith('cf_') ? 'custom' : undefined);
+      if (targetTab) {
+        setSection(targetTab);
+      }
+    }
+  }, [errors]);
 
   // Seed any active field the current form doesn't already have a value for —
   // same convention DealsPage.tsx/ContractFormDrawer.tsx already use, keeps
@@ -428,17 +510,19 @@ function LeadForm({ form, setForm, onSubmit, saving, submitLabel }: {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customFields.length]);
 
-  // Owner is a real staff reference (leadOwnerStaffId) so automation rules
-  // can actually email the assigned owner — leadOwner is kept in sync as
-  // that staff's display name for existing exports/search that read it as
-  // plain text.
   const setOwner = (ownerId: string) => {
-    const staff = staffOptions.find((s: any) => s.staffId === ownerId);
-    const user  = !staff ? userOptions.find((u: any) => u._id === ownerId) : undefined;
-    const name = staff ? `${staff.firstName ?? ''} ${staff.lastName ?? ''}`.trim()
-      : user ? (`${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email)
-      : '';
+    const user = activeUsers.find((u: any) => u._id === ownerId);
+    const name = user ? (`${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email) : '';
     setForm((p: any) => ({ ...p, leadOwnerStaffId: ownerId, leadOwner: name }));
+    if (setErrors) {
+      setErrors((prev: any) => {
+        if (!prev) return prev;
+        const next = { ...prev };
+        delete next.leadOwnerStaffId;
+        delete next.leadOwner;
+        return next;
+      });
+    }
   };
 
   const tabs = [
@@ -451,92 +535,104 @@ function LeadForm({ form, setForm, onSubmit, saving, submitLabel }: {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Validation banner if any field has errors */}
+      {Object.keys(errors).length > 0 && (
+        <div className="bg-danger-500/10 border border-danger-500/20 text-danger-600 dark:text-danger-500 text-xs px-3.5 py-2.5 rounded-xl space-y-1">
+          <p className="font-semibold">Please resolve the following issue{Object.keys(errors).length > 1 ? 's' : ''}:</p>
+          <ul className="list-disc list-inside space-y-0.5">
+            {Object.entries(errors).map(([field, msg]) => (
+              <li key={field}>
+                <span className="font-medium capitalize">{field.replace(/([A-Z])/g, ' $1')}:</span> {msg}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Section tabs */}
       <div className="flex gap-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-lg p-1">
-        {tabs.map((t) => (
-          <button key={t.key} onClick={() => setSection(t.key)}
-            className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-colors
-              ${section === t.key ? 'bg-surface dark:bg-gray-600 text-text-primary dark:text-white shadow-sm' : 'text-text-muted hover:text-text-primary'}`}>
-            {t.label}
-          </button>
-        ))}
+        {tabs.map((t) => {
+          const tabHasError = Object.keys(errors).some((k) => {
+            const mappedTab = FIELD_TAB_MAP[k] ?? (k.startsWith('customFields') || k.startsWith('cf_') ? 'custom' : undefined);
+            return mappedTab === t.key;
+          });
+          return (
+            <button key={t.key} type="button" onClick={() => setSection(t.key)}
+              className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-colors relative flex items-center justify-center gap-1
+                ${section === t.key ? 'bg-surface dark:bg-gray-600 text-text-primary dark:text-white shadow-sm' : 'text-text-muted hover:text-text-primary'}`}>
+              {t.label}
+              {tabHasError && (
+                <span className="w-1.5 h-1.5 rounded-full bg-danger-500 inline-block" />
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {section === 'basic' && (
         <div className="grid grid-cols-2 gap-3">
           {branches.length > 0 && (
             <div className="col-span-2">
-              <Field label="Branch / Company">
-                <select className={inp()} value={form.branchId ?? ''} onChange={(e) => set('branchId', e.target.value || null)}>
+              <Field label="Branch / Company" error={errors.branchId}>
+                <select className={inp(undefined, !!errors.branchId)} value={form.branchId ?? ''} onChange={(e) => set('branchId', e.target.value || null)}>
                   <option value="">Default Company</option>
                   {branches.map((b: any) => <option key={b._id} value={b._id}>{b.branchName}</option>)}
                 </select>
               </Field>
             </div>
           )}
-          <Field label="First Name *">
-            <input className={inp()} value={form.firstName} onChange={(e) => set('firstName', e.target.value)} placeholder="First Name" />
+          <Field label="First Name *" error={errors.firstName}>
+            <input className={inp(undefined, !!errors.firstName)} value={form.firstName} onChange={(e) => set('firstName', e.target.value)} placeholder="First Name" />
           </Field>
-          <Field label="Last Name">
-            <input className={inp()} value={form.lastName} onChange={(e) => set('lastName', e.target.value)} placeholder="Last Name" />
+          <Field label="Last Name" error={errors.lastName}>
+            <input className={inp(undefined, !!errors.lastName)} value={form.lastName} onChange={(e) => set('lastName', e.target.value)} placeholder="Last Name" />
           </Field>
-          <Field label="Company">
-            <input className={inp()} value={form.company} onChange={(e) => set('company', e.target.value)} placeholder="Company" />
+          <Field label="Company" error={errors.company}>
+            <input className={inp(undefined, !!errors.company)} value={form.company} onChange={(e) => set('company', e.target.value)} placeholder="Company" />
           </Field>
-          <Field label="Designation">
-            <input className={inp()} value={form.designation} onChange={(e) => set('designation', e.target.value)} placeholder="Designation" />
+          <Field label="Designation" error={errors.designation}>
+            <input className={inp(undefined, !!errors.designation)} value={form.designation} onChange={(e) => set('designation', e.target.value)} placeholder="Designation" />
           </Field>
-          <Field label="Industry">
-            <select className={inp()} value={form.industry} onChange={(e) => set('industry', e.target.value)}>
+          <Field label="Industry" error={errors.industry}>
+            <select className={inp(undefined, !!errors.industry)} value={form.industry} onChange={(e) => set('industry', e.target.value)}>
               <option value="">Select Industry</option>
               {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
             </select>
           </Field>
-          <Field label="Website">
-            <input className={inp()} value={form.website} onChange={(e) => set('website', e.target.value)} placeholder="https://" />
+          <Field label="Website" error={errors.website}>
+            <input className={inp(undefined, !!errors.website)} value={form.website} onChange={(e) => set('website', e.target.value)} placeholder="https://" />
           </Field>
-          <Field label="Source">
-            <select className={inp()} value={form.source} onChange={(e) => set('source', e.target.value)}>
+          <Field label="Source" error={errors.source}>
+            <select className={inp(undefined, !!errors.source)} value={form.source} onChange={(e) => set('source', e.target.value)}>
               {SOURCES.map((s) => <option key={s} value={s}>{s.replace(/_/g,' ')}</option>)}
             </select>
           </Field>
-          <Field label="Rating">
-            <select className={inp()} value={form.rating} onChange={(e) => set('rating', e.target.value)}>
+          <Field label="Rating" error={errors.rating}>
+            <select className={inp(undefined, !!errors.rating)} value={form.rating} onChange={(e) => set('rating', e.target.value)}>
               {RATINGS.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </Field>
-          <Field label="Priority">
-            <select className={inp()} value={form.priority} onChange={(e) => set('priority', e.target.value)}>
+          <Field label="Priority" error={errors.priority}>
+            <select className={inp(undefined, !!errors.priority)} value={form.priority} onChange={(e) => set('priority', e.target.value)}>
               {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </Field>
-          <Field label="Status">
-            <select className={inp()} value={form.status} onChange={(e) => set('status', e.target.value)}>
+          <Field label="Status" error={errors.status}>
+            <select className={inp(undefined, !!errors.status)} value={form.status} onChange={(e) => set('status', e.target.value)}>
               {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
             </select>
           </Field>
-          <Field label="Owner">
-            <select className={inp()} value={form.leadOwnerStaffId ?? ''} onChange={(e) => setOwner(e.target.value)}>
+          <Field label="Owner" error={errors.leadOwnerStaffId || errors.leadOwner}>
+            <select className={inp(undefined, !!(errors.leadOwnerStaffId || errors.leadOwner))} value={form.leadOwnerStaffId ?? ''} onChange={(e) => setOwner(e.target.value)}>
               <option value="">Unassigned</option>
-              {userOptions.length > 0 && (
-                <optgroup label="CRM Users">
-                  {userOptions.map((u: any) => (
-                    <option key={u._id} value={u._id}>{`${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email}</option>
-                  ))}
-                </optgroup>
-              )}
-              {staffOptions.length > 0 && (
-                <optgroup label="Field Service Staff">
-                  {staffOptions.map((s: any) => (
-                    <option key={s.staffId} value={s.staffId}>{`${s.firstName ?? ''} ${s.lastName ?? ''}`.trim()}</option>
-                  ))}
-                </optgroup>
-              )}
+              {activeUsers.map((u: any) => (
+                <option key={u._id} value={u._id}>{`${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email}</option>
+              ))}
             </select>
           </Field>
           <div className="col-span-2">
-            <Field label="Notes">
-              <textarea className={inp()} rows={3} value={form.notes} onChange={(e) => set('notes', e.target.value)} placeholder="Notes about this lead..." />
+            <Field label="Notes" error={errors.notes}>
+              <textarea className={inp(undefined, !!errors.notes)} rows={3} value={form.notes} onChange={(e) => set('notes', e.target.value)} placeholder="Notes about this lead..." />
             </Field>
           </div>
         </div>
@@ -544,29 +640,29 @@ function LeadForm({ form, setForm, onSubmit, saving, submitLabel }: {
 
       {section === 'contact' && (
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Email">
-            <input className={inp()} type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="email@example.com" />
+          <Field label="Email" error={errors.email}>
+            <input className={inp(undefined, !!errors.email)} type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="email@example.com" />
           </Field>
-          <Field label="Secondary Email">
-            <input className={inp()} type="email" value={form.secondaryEmail} onChange={(e) => set('secondaryEmail', e.target.value)} placeholder="alt@example.com" />
+          <Field label="Secondary Email" error={errors.secondaryEmail}>
+            <input className={inp(undefined, !!errors.secondaryEmail)} type="email" value={form.secondaryEmail} onChange={(e) => set('secondaryEmail', e.target.value)} placeholder="alt@example.com" />
           </Field>
-          <Field label="Phone">
-            <input className={inp()} value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="+91 98765 43210" />
+          <Field label="Phone" error={errors.phone}>
+            <input className={inp(undefined, !!errors.phone)} value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="+91 98765 43210" />
           </Field>
-          <Field label="Mobile">
-            <input className={inp()} value={form.mobile} onChange={(e) => set('mobile', e.target.value)} placeholder="+91 98765 43210" />
+          <Field label="Mobile" error={errors.mobile}>
+            <input className={inp(undefined, !!errors.mobile)} value={form.mobile} onChange={(e) => set('mobile', e.target.value)} placeholder="+91 98765 43210" />
           </Field>
-          <Field label="WhatsApp">
-            <input className={inp()} value={form.whatsapp} onChange={(e) => set('whatsapp', e.target.value)} placeholder="+91 98765 43210" />
+          <Field label="WhatsApp" error={errors.whatsapp}>
+            <input className={inp(undefined, !!errors.whatsapp)} value={form.whatsapp} onChange={(e) => set('whatsapp', e.target.value)} placeholder="+91 98765 43210" />
           </Field>
-          <Field label="Alternate Phone">
-            <input className={inp()} value={form.alternatePhone} onChange={(e) => set('alternatePhone', e.target.value)} placeholder="Alternate number" />
+          <Field label="Alternate Phone" error={errors.alternatePhone}>
+            <input className={inp(undefined, !!errors.alternatePhone)} value={form.alternatePhone} onChange={(e) => set('alternatePhone', e.target.value)} placeholder="Alternate number" />
           </Field>
-          <Field label="LinkedIn">
-            <input className={inp()} value={form.linkedin} onChange={(e) => set('linkedin', e.target.value)} placeholder="linkedin.com/in/..." />
+          <Field label="LinkedIn" error={errors.linkedin}>
+            <input className={inp(undefined, !!errors.linkedin)} value={form.linkedin} onChange={(e) => set('linkedin', e.target.value)} placeholder="linkedin.com/in/..." />
           </Field>
-          <Field label="Twitter">
-            <input className={inp()} value={form.twitter} onChange={(e) => set('twitter', e.target.value)} placeholder="@handle" />
+          <Field label="Twitter" error={errors.twitter}>
+            <input className={inp(undefined, !!errors.twitter)} value={form.twitter} onChange={(e) => set('twitter', e.target.value)} placeholder="@handle" />
           </Field>
         </div>
       )}
@@ -574,66 +670,66 @@ function LeadForm({ form, setForm, onSubmit, saving, submitLabel }: {
       {section === 'address' && (
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
-            <Field label="Address Line 1">
-              <input className={inp()} value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="Street address" />
+            <Field label="Address Line 1" error={errors.address}>
+              <input className={inp(undefined, !!errors.address)} value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="Street address" />
             </Field>
           </div>
           <div className="col-span-2">
-            <Field label="Address Line 2">
-              <input className={inp()} value={form.address2} onChange={(e) => set('address2', e.target.value)} placeholder="Apt, Suite, etc." />
+            <Field label="Address Line 2" error={errors.address2}>
+              <input className={inp(undefined, !!errors.address2)} value={form.address2} onChange={(e) => set('address2', e.target.value)} placeholder="Apt, Suite, etc." />
             </Field>
           </div>
-          <Field label="City">
-            <input className={inp()} value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="City" />
+          <Field label="City" error={errors.city}>
+            <input className={inp(undefined, !!errors.city)} value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="City" />
           </Field>
-          <Field label="State">
-            <input className={inp()} value={form.state} onChange={(e) => set('state', e.target.value)} placeholder="State" />
+          <Field label="State" error={errors.state}>
+            <input className={inp(undefined, !!errors.state)} value={form.state} onChange={(e) => set('state', e.target.value)} placeholder="State" />
           </Field>
-          <Field label="Postal Code">
-            <input className={inp()} value={form.postalCode} onChange={(e) => set('postalCode', e.target.value)} placeholder="PIN code" />
+          <Field label="Postal Code" error={errors.postalCode}>
+            <input className={inp(undefined, !!errors.postalCode)} value={form.postalCode} onChange={(e) => set('postalCode', e.target.value)} placeholder="PIN code" />
           </Field>
-          <Field label="Country">
-            <input className={inp()} value={form.country} onChange={(e) => set('country', e.target.value)} placeholder="Country" />
+          <Field label="Country" error={errors.country}>
+            <input className={inp(undefined, !!errors.country)} value={form.country} onChange={(e) => set('country', e.target.value)} placeholder="Country" />
           </Field>
         </div>
       )}
 
       {section === 'sales' && (
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Expected Revenue (₹)">
-            <input className={inp()} type="number" value={form.expectedRevenue} onChange={(e) => set('expectedRevenue', e.target.value)} placeholder="0" />
+          <Field label="Expected Revenue (₹)" error={errors.expectedRevenue}>
+            <input className={inp(undefined, !!errors.expectedRevenue)} type="number" value={form.expectedRevenue} onChange={(e) => set('expectedRevenue', e.target.value)} placeholder="0" />
           </Field>
-          <Field label="Budget (₹)">
-            <input className={inp()} type="number" value={form.budget} onChange={(e) => set('budget', e.target.value)} placeholder="0" />
+          <Field label="Budget (₹)" error={errors.budget}>
+            <input className={inp(undefined, !!errors.budget)} type="number" value={form.budget} onChange={(e) => set('budget', e.target.value)} placeholder="0" />
           </Field>
-          <Field label="Expected Close Date">
-            <input className={inp()} type="date" value={form.expectedCloseDate ?? ''} onChange={(e) => set('expectedCloseDate', e.target.value)} />
+          <Field label="Expected Close Date" error={errors.expectedCloseDate}>
+            <input className={inp(undefined, !!errors.expectedCloseDate)} type="date" value={form.expectedCloseDate ?? ''} onChange={(e) => set('expectedCloseDate', e.target.value)} />
           </Field>
-          <Field label="Lead Score (0-100)">
-            <input className={inp()} type="number" min={0} max={100} value={form.score} onChange={(e) => set('score', Number(e.target.value))} />
+          <Field label="Lead Score (0-100)" error={errors.score}>
+            <input className={inp(undefined, !!errors.score)} type="number" min={0} max={100} value={form.score} onChange={(e) => set('score', Number(e.target.value))} />
           </Field>
           <div className="col-span-2">
-            <Field label="Requirement">
-              <textarea className={inp()} rows={2} value={form.requirement} onChange={(e) => set('requirement', e.target.value)} placeholder="What does the lead need?" />
+            <Field label="Requirement" error={errors.requirement}>
+              <textarea className={inp(undefined, !!errors.requirement)} rows={2} value={form.requirement} onChange={(e) => set('requirement', e.target.value)} placeholder="What does the lead need?" />
             </Field>
           </div>
           <div className="col-span-2">
-            <Field label="Pain Points">
-              <textarea className={inp()} rows={2} value={form.painPoints} onChange={(e) => set('painPoints', e.target.value)} placeholder="Current challenges..." />
+            <Field label="Pain Points" error={errors.painPoints}>
+              <textarea className={inp(undefined, !!errors.painPoints)} rows={2} value={form.painPoints} onChange={(e) => set('painPoints', e.target.value)} placeholder="Current challenges..." />
             </Field>
           </div>
-          <Field label="Decision Maker">
-            <input className={inp()} value={form.decisionMaker ?? ''} onChange={(e) => set('decisionMaker', e.target.value)} placeholder="Who makes the decision?" />
+          <Field label="Decision Maker" error={errors.decisionMaker}>
+            <input className={inp(undefined, !!errors.decisionMaker)} value={form.decisionMaker ?? ''} onChange={(e) => set('decisionMaker', e.target.value)} placeholder="Who makes the decision?" />
           </Field>
-          <Field label="Purchase Timeline">
-            <input className={inp()} value={form.purchaseTimeline ?? ''} onChange={(e) => set('purchaseTimeline', e.target.value)} placeholder="e.g. This quarter" />
+          <Field label="Purchase Timeline" error={errors.purchaseTimeline}>
+            <input className={inp(undefined, !!errors.purchaseTimeline)} value={form.purchaseTimeline ?? ''} onChange={(e) => set('purchaseTimeline', e.target.value)} placeholder="e.g. This quarter" />
           </Field>
-          <Field label="Competitor">
-            <input className={inp()} value={form.competitor ?? ''} onChange={(e) => set('competitor', e.target.value)} placeholder="Competing vendors?" />
+          <Field label="Competitor" error={errors.competitor}>
+            <input className={inp(undefined, !!errors.competitor)} value={form.competitor ?? ''} onChange={(e) => set('competitor', e.target.value)} placeholder="Competing vendors?" />
           </Field>
           {(form.status === 'lost') && (
-            <Field label="Lost Reason">
-              <input className={inp()} value={form.lostReason ?? ''} onChange={(e) => set('lostReason', e.target.value)} placeholder="Why was this lead lost?" />
+            <Field label="Lost Reason" error={errors.lostReason}>
+              <input className={inp(undefined, !!errors.lostReason)} value={form.lostReason ?? ''} onChange={(e) => set('lostReason', e.target.value)} placeholder="Why was this lead lost?" />
             </Field>
           )}
         </div>
@@ -641,20 +737,23 @@ function LeadForm({ form, setForm, onSubmit, saving, submitLabel }: {
 
       {section === 'custom' && (
         <div className="flex flex-col gap-3">
-          {activeCustomFields.map((cf) => (
-            <Field key={cf.fieldKey} label={`${cf.label}${cf.required ? ' *' : ''}`}>
-              <CustomFieldRenderer
-                field={cf}
-                value={form.customFields?.[cf.fieldKey]}
-                onChange={(val) => setCustomField(cf.fieldKey, val)}
-                templateFields={
-                  cf.fieldType === 'custom_form'
-                    ? formTemplates.find((t) => t._id === cf.formTemplateId)?.fields
-                    : undefined
-                }
-              />
-            </Field>
-          ))}
+          {activeCustomFields.map((cf) => {
+            const err = errors[`customFields.${cf.fieldKey}`] || errors[`cf_${cf.fieldKey}`] || errors[cf.fieldKey];
+            return (
+              <Field key={cf.fieldKey} label={`${cf.label}${cf.required ? ' *' : ''}`} error={err}>
+                <CustomFieldRenderer
+                  field={cf}
+                  value={form.customFields?.[cf.fieldKey]}
+                  onChange={(val) => setCustomField(cf.fieldKey, val)}
+                  templateFields={
+                    cf.fieldType === 'custom_form'
+                      ? formTemplates.find((t) => t._id === cf.formTemplateId)?.fields
+                      : undefined
+                  }
+                />
+              </Field>
+            );
+          })}
         </div>
       )}
 
@@ -835,10 +934,11 @@ function ConvertTab({ lead, stages }: { lead: any; stages: PipelineStage[] }) {
 }
 
 function LeadDetailPanel({
-  lead: listLead, onClose, onEdit,
+  lead: listLead, onClose, onEdit, canEdit = true,
 }: {
   lead: any; onClose: () => void;
   onEdit: (lead: any) => void;
+  canEdit?: boolean;
 }) {
   const [tab, setTab] = useState<'overview'|'sales'|'activity'|'timeline'|'convert'>('overview');
   const { stages } = usePipelineStages('lead', DEFAULT_LEAD_STAGES);
@@ -874,10 +974,12 @@ function LeadDetailPanel({
           <p className="text-xs text-text-muted mt-0.5">{lead.leadId}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <button onClick={() => onEdit(lead)}
-            className="text-xs px-3 py-1.5 rounded-lg border border-border text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">
-            Edit
-          </button>
+          {canEdit && (
+            <button onClick={() => onEdit(lead)}
+              className="text-xs px-3 py-1.5 rounded-lg border border-border text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">
+              Edit
+            </button>
+          )}
           <button onClick={onClose} className="text-text-muted hover:text-text-primary dark:hover:text-text-muted">
             <XMarkIcon className="h-5 w-5" />
           </button>
@@ -1029,6 +1131,9 @@ function initialLeadsView(): 'kanban' | 'list' {
 }
 
 export default function LeadsPage() {
+  const canEdit = usePermission('native_crm.leads.edit');
+  const canDelete = usePermission('native_crm.leads.delete');
+  const canCreate = usePermission('native_crm.leads.create');
   const [view,        setViewState]   = useState<'kanban'|'list'>(initialLeadsView);
   const setView = (v: 'kanban' | 'list') => {
     setViewState(v);
@@ -1044,6 +1149,7 @@ export default function LeadsPage() {
   const [selectedLead,setSelectedLead]= useState<any | null>(null);
   const [delTarget,   setDelTarget]   = useState<any | null>(null);
   const [form,        setForm]        = useState<any>({ ...EMPTY_FORM });
+  const [formErrors,  setFormErrors]  = useState<Record<string, string>>({});
   const [saving,      setSaving]      = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [columnEditorOpen, setColumnEditorOpen] = useState(false);
@@ -1213,19 +1319,26 @@ export default function LeadsPage() {
   }, [activeLead, boardColumns, stageMut]);
 
   // ── Panel actions
-  const openCreate = () => { setForm({ ...EMPTY_FORM, branchId: currentBranch?._id ?? null }); setPanelMode('create'); setSelectedLead(null); };
-  const openEdit   = (lead: any) => { setForm({ ...lead, expectedRevenue: lead.expectedRevenue ?? '', budget: lead.budget ?? '' }); setSelectedLead(lead); setPanelMode('edit'); };
+  const openCreate = () => { setForm({ ...EMPTY_FORM, branchId: currentBranch?._id ?? null }); setFormErrors({}); setPanelMode('create'); setSelectedLead(null); };
+  const openEdit   = (lead: any) => { setForm({ ...lead, expectedRevenue: lead.expectedRevenue ?? '', budget: lead.budget ?? '' }); setFormErrors({}); setSelectedLead(lead); setPanelMode('edit'); };
   const openDetail = (lead: any) => { setSelectedLead(lead); setPanelMode('detail'); };
-  const closePanel = () => { setPanelMode('none'); setSelectedLead(null); };
+  const closePanel = () => { setPanelMode('none'); setSelectedLead(null); setFormErrors({}); };
 
   const handleSubmit = async () => {
-    if (!form.firstName?.trim()) return;
+    if (!form.firstName?.trim()) {
+      setFormErrors({ firstName: 'First Name is required' });
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
         ...form,
-        expectedRevenue: form.expectedRevenue ? Number(form.expectedRevenue) : undefined,
-        budget:          form.budget          ? Number(form.budget)          : undefined,
+        expectedRevenue: form.expectedRevenue !== '' && form.expectedRevenue !== undefined && form.expectedRevenue !== null
+          ? Number(form.expectedRevenue)
+          : undefined,
+        budget:          form.budget !== '' && form.budget !== undefined && form.budget !== null
+          ? Number(form.budget)
+          : undefined,
         score:           Number(form.score ?? 0),
       };
       if (panelMode === 'create') {
@@ -1236,12 +1349,51 @@ export default function LeadsPage() {
           toast(`Possible duplicate: ${created.duplicateWarning.label} already has this email/phone`, { icon: '⚠️', duration: 6000 });
         }
       } else if (panelMode === 'edit' && selectedLead) {
+        payload.updatedAt = selectedLead.updatedAt;
+        payload.__v = selectedLead.__v;
         await updateMut.mutateAsync({ id: selectedLead._id, data: payload });
         toast.success('Lead updated');
       }
       closePanel();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Failed to save lead');
+      if (err?.response?.status === 409) {
+        toast.error(err.response.data?.message ?? 'This lead was changed by someone else — please reload and try again.');
+      } else {
+        const respData = err?.response?.data;
+        const serverMsg = respData?.message ?? 'Failed to save lead';
+        const fieldErrors: Record<string, string> = {};
+
+        if (respData?.errors && typeof respData.errors === 'object') {
+          Object.entries(respData.errors).forEach(([k, v]) => {
+            if (typeof v === 'string') {
+              fieldErrors[k] = v;
+            } else if (Array.isArray(v) && v.length > 0) {
+              fieldErrors[k] = String(v[0]);
+            }
+          });
+        }
+
+        if (Object.keys(fieldErrors).length === 0 && Array.isArray(respData?.issues)) {
+          respData.issues.forEach((issue: string) => {
+            const colonIdx = issue.indexOf(':');
+            if (colonIdx > 0) {
+              const field = issue.slice(0, colonIdx).trim();
+              const msg = issue.slice(colonIdx + 1).trim();
+              if (field && msg) fieldErrors[field] = msg;
+            }
+          });
+        }
+
+        setFormErrors(fieldErrors);
+
+        const errorEntries = Object.entries(fieldErrors);
+        if (errorEntries.length > 0) {
+          const issuesSummary = errorEntries.map(([k, msg]) => `${k}: ${msg}`).join('; ');
+          toast.error(`${serverMsg} (${issuesSummary})`, { duration: 5000 });
+        } else {
+          toast.error(serverMsg);
+        }
+      }
     } finally {
       setSaving(false);
     }
@@ -1250,6 +1402,12 @@ export default function LeadsPage() {
   const handleDelete = (lead: any) => setDelTarget(lead);
 
   const panelOpen = panelMode !== 'none';
+  useEffect(() => {
+    if (!panelOpen) return;
+    const { push, pop } = useOverlayVisibilityStore.getState();
+    push();
+    return () => pop();
+  }, [panelOpen]);
 
   return (
     <div className="flex h-full overflow-hidden bg-background dark:bg-gray-950">
@@ -1310,10 +1468,12 @@ export default function LeadsPage() {
               page={1}
               limit={Math.max(leads.length, 1)}
             />
-            <button onClick={openCreate}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-ryze-600 hover:bg-ryze-700 text-white text-sm font-semibold transition-colors">
-              <PlusIcon className="h-4 w-4" /> New Lead
-            </button>
+            {canCreate && (
+              <button onClick={openCreate}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-ryze-600 hover:bg-ryze-700 text-white text-sm font-semibold transition-colors">
+                <PlusIcon className="h-4 w-4" /> New Lead
+              </button>
+            )}
           </div>
         </div>
 
@@ -1416,7 +1576,7 @@ export default function LeadsPage() {
                     stage={stage}
                     leads={(boardColumns[stage.key] ?? []).map((id) => leadsById.get(id)).filter(Boolean)}
                     onCardClick={openDetail}
-                    onEditClick={openEdit}
+                    onEditClick={canEdit ? openEdit : undefined}
                     collapsed={collapsedStages.includes(stage.key)}
                     onToggleCollapse={() => toggleStageCollapse(stage.key)}
                   />
@@ -1430,82 +1590,89 @@ export default function LeadsPage() {
             /* List view */
             <div className="p-4">
               <div className="bg-surface rounded-xl border border-border overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-background text-xs text-text-muted uppercase tracking-wide">
-                      <th className="px-4 py-3 text-left font-semibold">Lead</th>
-                      <th className="px-4 py-3 text-left font-semibold">Contact</th>
-                      <th className="px-4 py-3 text-left font-semibold">Source</th>
-                      <th className="px-4 py-3 text-left font-semibold">Stage</th>
-                      <th className="px-4 py-3 text-left font-semibold">Rating</th>
-                      <th className="px-4 py-3 text-right font-semibold">Revenue</th>
-                      {/* LR-UX-008: this cell renders CompanyBadge, the
-                          tenant's own Branch/business-unit — "Company"
-                          read as if it showed the lead's own company
-                          (already shown, easy to miss, under "Lead"). */}
-                      <th className="px-4 py-3 text-left font-semibold">Branch</th>
-                      {extraCols.map((col) => (
-                        <th key={col.key} className="px-4 py-3 text-left font-semibold">{col.label}</th>
-                      ))}
-                      <th className="px-4 py-3 text-right font-semibold">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border dark:divide-gray-800">
-                    {leads.length === 0 && (
-                      <tr><td colSpan={8 + extraCols.length} className="py-12 text-center text-text-muted">No leads found</td></tr>
-                    )}
-                    {leads.map((lead) => {
-                      const s = stages.find((x) => x.key === lead.status);
-                      return (
-                        <tr key={lead._id} className="hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer" onClick={() => openDetail(lead)}>
-                          <td className="px-4 py-3">
-                            <div className="font-semibold text-text-primary dark:text-white">{fullName(lead)}</div>
-                            {lead.company && <div className="text-xs text-text-muted">{lead.company}</div>}
-                            <div className="text-xs text-text-muted">{lead.leadId}</div>
-                          </td>
-                          <td className="px-4 py-3">
-                            {lead.email && <div className="text-xs text-text-muted">{lead.email}</div>}
-                            {lead.phone && <div className="text-xs text-text-muted">{lead.phone}</div>}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${SOURCE_COLORS[lead.source] ?? 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'}`}>
-                              {(lead.source ?? '').replace(/_/g,' ')}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="inline-flex items-center gap-1 text-xs font-semibold">
-                              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s?.color ?? '#6b7280' }} />
-                              {s?.label ?? lead.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`inline-flex items-center gap-1 text-xs font-semibold`}>
-                              <span className={`h-2 w-2 rounded-full ${RATING_COLORS[lead.rating] ?? 'bg-black/[0.08] dark:bg-white/[0.1]'}`} />
-                              {lead.rating}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-right text-xs font-semibold text-green-600">
-                            {formatCurrency(lead.expectedRevenue)}
-                          </td>
-                          <td className="px-4 py-3">
-                            <CompanyBadge branchId={lead.branchId} />
-                          </td>
-                          {extraCols.map((col) => (
-                            <td key={col.key} className="px-4 py-3 text-xs text-text-muted">
-                              {fmtVal(getFieldValue(lead, col.key), col.type)}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-background text-xs text-text-muted uppercase tracking-wide">
+                        <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Lead</th>
+                        <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Contact</th>
+                        <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Source</th>
+                        <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Stage</th>
+                        <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Rating</th>
+                        <th className="px-4 py-3 text-right font-semibold whitespace-nowrap">Revenue</th>
+                        {/* LR-UX-008: this cell renders CompanyBadge, the
+                            tenant's own Branch/business-unit — "Company"
+                            read as if it showed the lead's own company
+                            (already shown, easy to miss, under "Lead"). */}
+                        <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Branch</th>
+                        {extraCols.map((col) => (
+                          <th key={col.key} className="px-4 py-3 text-left font-semibold whitespace-nowrap">{col.label}</th>
+                        ))}
+                        <th className="px-4 py-3 text-right font-semibold whitespace-nowrap">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border dark:divide-gray-800">
+                      {leads.length === 0 && (
+                        <tr><td colSpan={8 + extraCols.length} className="py-12 text-center text-text-muted">No leads found</td></tr>
+                      )}
+                      {leads.map((lead) => {
+                        const s = stages.find((x) => x.key === lead.status);
+                        return (
+                          <tr key={lead._id} className="hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer" onClick={() => openDetail(lead)}>
+                            <td className="px-4 py-3">
+                              <div className="font-semibold text-text-primary dark:text-white">{fullName(lead)}</div>
+                              {lead.company && <div className="text-xs text-text-muted">{lead.company}</div>}
+                              <div className="text-xs text-text-muted">{lead.leadId}</div>
                             </td>
-                          ))}
-                          <td className="px-4 py-3 text-right">
-                            <button onClick={(e) => { e.stopPropagation(); openEdit(lead); }}
-                              className="text-xs px-2 py-1 rounded border border-border hover:bg-black/[0.04] dark:hover:bg-white/[0.06] mr-1">Edit</button>
-                            <button onClick={(e) => { e.stopPropagation(); handleDelete(lead); }}
-                              className="text-xs px-2 py-1 rounded border border-red-200 text-red-600 hover:bg-red-50">Del</button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                            <td className="px-4 py-3">
+                              {lead.email && <div className="text-xs text-text-muted">{lead.email}</div>}
+                              {lead.phone && <div className="text-xs text-text-muted">{lead.phone}</div>}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${SOURCE_COLORS[lead.source] ?? 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'}`}>
+                                {(lead.source ?? '').replace(/_/g,' ')}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="inline-flex items-center gap-1 text-xs font-semibold">
+                                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s?.color ?? '#6b7280' }} />
+                                {s?.label ?? lead.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center gap-1 text-xs font-semibold`}>
+                                <span className={`h-2 w-2 rounded-full ${RATING_COLORS[lead.rating] ?? 'bg-black/[0.08] dark:bg-white/[0.1]'}`} />
+                                {lead.rating}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right text-xs font-semibold text-green-600">
+                              {formatCurrency(lead.expectedRevenue)}
+                            </td>
+                            <td className="px-4 py-3">
+                              <CompanyBadge branchId={lead.branchId} />
+                            </td>
+                            {extraCols.map((col) => (
+                              <td key={col.key} className="px-4 py-3 text-xs text-text-muted">
+                                {fmtVal(getFieldValue(lead, col.key), col.type)}
+                              </td>
+                            ))}
+                            <td className="px-4 py-3 text-right whitespace-nowrap">
+                              {canEdit && (
+                                <button onClick={(e) => { e.stopPropagation(); openEdit(lead); }}
+                                  className="text-xs px-2 py-1 rounded border border-border hover:bg-black/[0.04] dark:hover:bg-white/[0.06] mr-1">Edit</button>
+                              )}
+                              {canDelete && (
+                                <button onClick={(e) => { e.stopPropagation(); handleDelete(lead); }}
+                                  className="text-xs px-2 py-1 rounded border border-red-200 text-red-600 hover:bg-red-50">Del</button>
+                              )}
+                              {!canEdit && !canDelete && <span className="text-xs text-text-muted">—</span>}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -1514,7 +1681,7 @@ export default function LeadsPage() {
 
       {/* Slide-in panel */}
       {panelOpen && (
-        <div className="fixed right-0 top-0 bottom-0 w-[50vw] min-w-[600px] bg-surface border-l border-border shadow-2xl z-30 flex flex-col overflow-hidden">
+        <div className="fixed right-0 top-0 bottom-0 w-[50vw] min-w-[600px] bg-surface border-l border-border shadow-2xl z-50 flex flex-col overflow-hidden">
           {(panelMode === 'create' || panelMode === 'edit') && (
             <>
               <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -1529,11 +1696,13 @@ export default function LeadsPage() {
                 <LeadForm
                   form={form}
                   setForm={setForm}
+                  errors={formErrors}
+                  setErrors={setFormErrors}
                   onSubmit={handleSubmit}
-                  saving={saving}
+                  saving={saving || (panelMode === 'edit' && !canEdit)}
                   submitLabel={panelMode === 'create' ? 'Create Lead' : 'Save Changes'}
                 />
-                {panelMode === 'edit' && selectedLead && (
+                {panelMode === 'edit' && canDelete && selectedLead && (
                   <button onClick={() => handleDelete(selectedLead)}
                     className="w-full mt-3 py-2 rounded-xl border border-red-300 text-red-600 text-sm hover:bg-red-50 transition-colors">
                     Delete Lead
@@ -1548,6 +1717,7 @@ export default function LeadsPage() {
               lead={selectedLead}
               onClose={closePanel}
               onEdit={openEdit}
+              canEdit={canEdit}
             />
           )}
         </div>

@@ -1,14 +1,21 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ShareIcon, PlusIcon, TrashIcon, BoltIcon, PencilIcon, RectangleStackIcon,
+  ShareIcon, PlusIcon, TrashIcon, PencilIcon, RectangleStackIcon, DocumentDuplicateIcon,
   ExclamationTriangleIcon, CheckCircleIcon, ClockIcon, XCircleIcon, Squares2X2Icon,
-  PauseCircleIcon, MagnifyingGlassIcon,
+  PauseCircleIcon, MagnifyingGlassIcon, ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 import type { ComponentType, SVGProps } from 'react';
-import { useAutomationFlowsQuery, useDeleteAutomationFlow, useUpdateAutomationFlow, useFlowRunStatsQuery } from '../../../modules/native-crm/queries/automation-flows.queries';
+import {
+  useAutomationFlowsQuery, useDeleteAutomationFlow, useUpdateAutomationFlow, useCreateAutomationFlow,
+  useFlowRunStatsQuery, fetchFlowForDuplicate, type AutomationFlow,
+} from '../../../modules/native-crm/queries/automation-flows.queries';
 import { useAutomationSettingsQuery, useUpdateAutomationSettings } from '../../../modules/native-crm/queries/automation-settings.queries';
-import TemplateGalleryModal from './TemplateGalleryModal';
+import { useAutomationRulesQuery, useUpdateAutomationRule, useDeleteAutomationRule, type AutomationRule } from '../../../modules/native-crm/queries/automation-rules.queries';
+import CreateAutomationModal from './CreateAutomationModal';
+import { RuleForm } from './LegacyRuleModal';
+import { useEveryModule } from './AutomationRulesPage';
+import ChainPreview from './ChainPreview';
 
 function timeAgo(iso: string) {
   const s = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -18,10 +25,6 @@ function timeAgo(iso: string) {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
-/** Same gradient-card shape as DashboardPage.tsx's own StatCard — a local
- * copy rather than a shared import, since that page doesn't export one and
- * this is a small, self-contained page-header summary, not a reason to
- * factor out a new shared component. */
 function StatCard({ label, value, icon: Icon, gradient, sub }: {
   label: string; value: string | number; icon: ComponentType<SVGProps<SVGSVGElement>>; gradient: string; sub?: string;
 }) {
@@ -44,17 +47,63 @@ function StatCard({ label, value, icon: Icon, gradient, sub }: {
 
 type StatusFilter = 'all' | 'enabled' | 'disabled' | 'draft';
 
+// One row shape both an AutomationFlow and a legacy AutomationRule can be
+// rendered as, so the unified list shows one consistent card regardless of
+// which backend model a given automation actually lives in — the whole
+// point of retiring the user-facing Simple/Advanced split (see the plan).
+interface UnifiedRow {
+  kind: 'flow' | 'rule';
+  id: string;
+  name: string;
+  enabled: boolean;
+  updatedAt: string;
+  triggerSummary: string;
+  draft?: boolean;
+  version?: number;
+  nodeCount?: number;
+  /** Flow rows only — feeds the card's chain-preview strip (ChainPreview).
+   * A legacy rule has no graph of its own (one trigger + one action), so
+   * there's nothing to preview beyond the trigger summary already shown. */
+  nodes?: AutomationFlow['nodes'];
+  edges?: AutomationFlow['edges'];
+}
+
+function describeRuleTrigger(rule: AutomationRule, moduleLabel: (m: string) => string): string {
+  const mod = moduleLabel(rule.module);
+  if (rule.triggerType === 'record_created') return `${mod} · created`;
+  if (rule.triggerType === 'record_deleted') return `${mod} · deleted`;
+  if (rule.triggerType === 'record_updated') return `${mod} · ${rule.triggerField ?? 'field'} updated`;
+  if (rule.triggerType === 'scheduled') return `${mod} · scheduled`;
+  return `${mod} · ${rule.triggerStage ?? 'status'}`;
+}
+
+/** The unified Automations hub — every real automation (AutomationFlow AND
+ * legacy AutomationRule documents) in one list, one "+ Create Automation"
+ * entry point (always creates a real AutomationFlow — the audit confirmed
+ * it's a strict capability superset of the old Simple Mode), templates,
+ * and a link to the standalone Executions page. Existing AutomationRule
+ * CRUD/execution is completely unchanged — this only changes where it's
+ * surfaced and how a NEW automation gets created. */
 export default function AutomationFlowsPage() {
   const navigate = useNavigate();
-  const { data: flows = [], isLoading } = useAutomationFlowsQuery();
+  const { data: flows = [], isLoading: flowsLoading } = useAutomationFlowsQuery();
+  const { data: rules = [], isLoading: rulesLoading } = useAutomationRulesQuery();
   const { data: stats } = useFlowRunStatsQuery();
   const { data: settings } = useAutomationSettingsQuery();
   const updateSettingsMut = useUpdateAutomationSettings();
-  const deleteMut = useDeleteAutomationFlow();
-  const updateMut = useUpdateAutomationFlow();
-  const [showGallery, setShowGallery] = useState(false);
+  const deleteFlowMut = useDeleteAutomationFlow();
+  const updateFlowMut = useUpdateAutomationFlow();
+  const createFlowMut = useCreateAutomationFlow();
+  const updateRuleMut = useUpdateAutomationRule();
+  const deleteRuleMut = useDeleteAutomationRule();
+  const EVERY_MODULE = useEveryModule();
+  const moduleLabel = (m: string) => EVERY_MODULE.find((x) => x.key === m)?.label ?? m;
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [editingRule, setEditingRule] = useState<AutomationRule | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
   const statsByFlowId = useMemo(() => {
     const map = new Map<string, NonNullable<typeof stats>['perFlow'][number]>();
@@ -62,78 +111,134 @@ export default function AutomationFlowsPage() {
     return map;
   }, [stats]);
 
-  const filteredFlows = useMemo(() => {
-    return flows.filter((f) => {
-      if (search.trim() && !f.name.toLowerCase().includes(search.trim().toLowerCase())) return false;
-      if (statusFilter === 'enabled' && !f.enabled) return false;
-      if (statusFilter === 'disabled' && f.enabled) return false;
-      if (statusFilter === 'draft' && !f.draft) return false;
+  const rows: UnifiedRow[] = useMemo(() => {
+    const flowRows: UnifiedRow[] = flows.map((f) => {
+      const trigger = f.nodes.find((n) => n.type === 'trigger');
+      return {
+        kind: 'flow', id: f._id, name: f.name, enabled: f.enabled, updatedAt: f.updatedAt,
+        triggerSummary: trigger ? `${moduleLabel(trigger.module ?? '')} · ${trigger.triggerType ?? 'record_created'}` : '—',
+        draft: !!f.draft, version: f.version, nodeCount: f.nodes.length,
+        nodes: f.nodes, edges: f.edges,
+      };
+    });
+    const ruleRows: UnifiedRow[] = rules.map((r) => ({
+      kind: 'rule', id: r._id, name: r.name, enabled: r.enabled, updatedAt: r.updatedAt ?? r.createdAt,
+      triggerSummary: describeRuleTrigger(r, moduleLabel),
+    }));
+    return [...flowRows, ...ruleRows].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flows, rules]);
+
+  const filteredRows = useMemo(() => {
+    return rows.filter((row) => {
+      if (search.trim() && !row.name.toLowerCase().includes(search.trim().toLowerCase())) return false;
+      if (statusFilter === 'enabled' && !row.enabled) return false;
+      if (statusFilter === 'disabled' && row.enabled) return false;
+      if (statusFilter === 'draft' && !row.draft) return false;
       return true;
     });
-  }, [flows, search, statusFilter]);
+  }, [rows, search, statusFilter]);
 
-  const disabledCount = flows.filter((f) => !f.enabled).length;
+  const disabledCount = rows.filter((r) => !r.enabled).length;
   const isPaused = !!settings?.automationsPaused;
+  const isLoading = flowsLoading || rulesLoading;
 
   const handleTogglePause = () => {
     const next = !isPaused;
     const msg = next
-      ? 'Pause ALL automation for this tenant? New flow runs and Simple Mode rules will stop firing immediately. Already-running or paused runs are not affected.'
+      ? 'Pause ALL automation for this tenant? New flow runs and legacy rules will stop firing immediately. Already-running or paused runs are not affected.'
       : 'Resume automation for this tenant? New triggers will start firing again immediately.';
     if (confirm(msg)) updateSettingsMut.mutate(next);
+  };
+
+  const handleToggleEnabled = (row: UnifiedRow, checked: boolean) => {
+    if (row.kind === 'flow') updateFlowMut.mutate({ id: row.id, data: { enabled: checked } as any });
+    else updateRuleMut.mutate({ id: row.id, data: { enabled: checked } });
+  };
+
+  const handleDelete = (row: UnifiedRow) => {
+    if (!confirm(`Delete "${row.name}"? This cannot be undone.`)) return;
+    if (row.kind === 'flow') deleteFlowMut.mutate(row.id);
+    else deleteRuleMut.mutate(row.id);
+  };
+
+  const handleOpen = (row: UnifiedRow) => {
+    if (row.kind === 'flow') navigate(`/native-crm/settings/automation-flows/${row.id}`);
+    else setEditingRule(rules.find((r) => r._id === row.id) ?? null);
+  };
+
+  // No backend duplicate endpoint exists — built entirely from the existing
+  // create/read endpoints: fetch the full node/edge graph, then create a new
+  // flow from it. Lands as an unpublished draft either way (a fresh
+  // createFlow call has nothing published yet), so a duplicate never goes
+  // live by surprise.
+  const handleDuplicate = async (row: UnifiedRow) => {
+    if (row.kind !== 'flow') return;
+    setDuplicatingId(row.id);
+    try {
+      const full = await fetchFlowForDuplicate(row.id);
+      if (!full) return;
+      const created = await createFlowMut.mutateAsync({
+        name: `Copy of ${full.name}`,
+        nodes: full.nodes,
+        edges: full.edges,
+        canvasPositions: full.canvasPositions,
+      });
+      navigate(`/native-crm/settings/automation-flows/${created._id}`);
+    } finally {
+      setDuplicatingId(null);
+    }
   };
 
   return (
     <div className="flex flex-col h-full">
       <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-4 shrink-0">
+        <button
+          type="button"
+          onClick={() => navigate('/native-crm/configuration')}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-border/60 transition-colors shrink-0"
+          title="Back to Configuration"
+        >
+          <ArrowLeftIcon className="h-4 w-4" />
+          <span>Back</span>
+        </button>
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="h-9 w-9 rounded-lg bg-black/[0.06] dark:bg-white/[0.08] flex items-center justify-center shrink-0">
             <ShareIcon className="h-5 w-5 text-text-muted" />
           </div>
           <div>
-            <h1 className="text-base font-semibold text-text-primary">Automation Flows</h1>
-            <p className="text-xs text-text-muted">Advanced Mode — branching, delays, approvals, sub-flows, and loops chained into one visual workflow</p>
+            <h1 className="text-base font-semibold text-text-primary">Automations</h1>
+            <p className="text-xs text-text-muted">Automate your CRM processes, communication, and scheduled checks</p>
           </div>
         </div>
         <button
-          onClick={() => navigate('/native-crm/settings/automations')}
-          title="Simple Mode — one trigger, one action"
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-text-muted border border-border rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors shrink-0"
-        >
-          <BoltIcon className="h-3.5 w-3.5" /> Simple Mode
-        </button>
-        <button
-          onClick={() => setShowGallery(true)}
+          onClick={() => navigate('/native-crm/settings/automation-flows/new?tab=templates')}
           className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-text-muted border border-border rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors shrink-0"
         >
           <RectangleStackIcon className="h-3.5 w-3.5" /> Browse Templates
         </button>
         <button
-          onClick={() => navigate('/native-crm/settings/automation-flows/new')}
+          onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 px-4 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 transition-colors"
         >
-          <PlusIcon className="h-4 w-4" /> New Flow
+          <PlusIcon className="h-4 w-4" /> Create Automation
         </button>
       </div>
 
-      {showGallery && (
-        <TemplateGalleryModal
-          onClose={() => setShowGallery(false)}
-          onUseTemplate={(templateId) => navigate(`/native-crm/settings/automation-flows/new?templateId=${templateId}`)}
-        />
-      )}
+      {showCreate && <CreateAutomationModal onClose={() => setShowCreate(false)} />}
+      {editingRule && <RuleForm rule={editingRule} onClose={() => setEditingRule(null)} />}
 
       <div className="flex-1 overflow-y-auto p-6 space-y-5">
-        {/* ── Global automation status — distinct from any single flow's own
-            `enabled`, which only ever affects that one flow. This affects
-            every flow AND every Simple Mode rule for the tenant at once. ── */}
+        {/* ── Global automation status — distinct from any single automation's
+            own enabled toggle. This affects every flow AND every legacy rule
+            for the tenant at once. ── */}
         {isPaused ? (
           <div className="rounded-xl border-2 border-red-300 bg-red-50 p-4">
             <div className="flex items-start gap-3">
               <ExclamationTriangleIcon className="h-6 w-6 text-red-600 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-red-800">⚠ ALL AUTOMATIONS PAUSED</p>
-                <p className="text-xs text-red-700 mt-1">Automation execution is currently stopped for this tenant — no new flow runs or Simple Mode rules will fire. Already-running or paused runs are not affected and will finish normally.</p>
+                <p className="text-xs text-red-700 mt-1">Automation execution is currently stopped for this tenant — no new flow runs or legacy rules will fire. Already-running or paused runs are not affected and will finish normally.</p>
                 <p className="text-xs text-red-700 mt-1">Scheduled automation executions occurring while paused are skipped, not queued — they don't run automatically after you resume.</p>
                 {settings?.lastChangedBy && (
                   <p className="text-[11px] text-red-500 mt-2">Paused by {settings.lastChangedBy}{settings.lastChangedAt ? ` • ${new Date(settings.lastChangedAt).toLocaleString()}` : ''}</p>
@@ -169,7 +274,7 @@ export default function AutomationFlowsPage() {
 
         {/* ── Summary row ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard label="Total Flows" value={flows.length} icon={Squares2X2Icon} gradient="bg-gradient-to-br from-indigo-500 to-indigo-700" />
+          <StatCard label="Total Automations" value={rows.length} icon={Squares2X2Icon} gradient="bg-gradient-to-br from-indigo-500 to-indigo-700" />
           <StatCard label="Runs Today" value={stats?.summary.runsToday ?? 0} icon={ClockIcon} gradient="bg-gradient-to-br from-blue-500 to-blue-700" />
           <StatCard label="Failed Today" value={stats?.summary.failedToday ?? 0} icon={XCircleIcon} gradient="bg-gradient-to-br from-rose-500 to-rose-700" />
           <StatCard label="Disabled Flows" value={disabledCount} icon={PauseCircleIcon} gradient="bg-gradient-to-br from-gray-500 to-gray-700" />
@@ -194,7 +299,7 @@ export default function AutomationFlowsPage() {
             <MagnifyingGlassIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted" />
             <input
               value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search flows…"
+              placeholder="Search automations…"
               className="w-full pl-8 pr-2 py-1.5 text-xs border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-ryze-300 bg-background text-text-primary"
             />
           </div>
@@ -206,38 +311,37 @@ export default function AutomationFlowsPage() {
               {[0, 1, 2].map((i) => <span key={i} className="h-2 w-2 rounded-full bg-ryze-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}
             </div>
           </div>
-        ) : flows.length === 0 ? (
+        ) : rows.length === 0 ? (
           <div className="text-center py-20 text-text-muted">
             <ShareIcon className="h-10 w-10 mx-auto mb-3 opacity-40" />
-            <p className="text-sm">No automation flows yet</p>
-            <p className="text-xs mt-1">Create one to chain triggers, conditions, and actions visually</p>
+            <p className="text-sm">No automations yet</p>
+            <p className="text-xs mt-1">Create one, or start from a template, to automate a CRM process</p>
           </div>
-        ) : filteredFlows.length === 0 ? (
+        ) : filteredRows.length === 0 ? (
           <div className="text-center py-16 text-text-muted">
-            <p className="text-sm">No flows match this filter</p>
+            <p className="text-sm">No automations match this filter</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredFlows.map((flow) => {
-              const triggerNode = flow.nodes.find((n) => n.type === 'trigger');
-              const flowStats = statsByFlowId.get(flow._id);
+            {filteredRows.map((row) => {
+              const flowStats = row.kind === 'flow' ? statsByFlowId.get(row.id) : undefined;
               const successPct = flowStats && flowStats.totalRuns > 0 ? Math.round((flowStats.completedCount / flowStats.totalRuns) * 100) : null;
               return (
-                <div key={flow._id} className="bg-surface rounded-xl border border-border shadow-sm p-4 flex flex-col gap-3 hover:border-ryze-300 dark:border-ryze-700 transition-colors">
+                <div key={`${row.kind}-${row.id}`} className="bg-surface rounded-xl border border-border shadow-sm p-4 flex flex-col gap-3 hover:border-ryze-300 dark:border-ryze-700 transition-colors">
                   <div className="flex items-start justify-between gap-2">
                     <button
-                      onClick={() => navigate(`/native-crm/settings/automation-flows/${flow._id}`)}
+                      onClick={() => handleOpen(row)}
                       className="text-sm font-semibold text-text-primary hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300 text-left truncate"
                     >
-                      {flow.name}
+                      {row.name}
                     </button>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span className={`text-[10px] font-medium ${flow.enabled ? 'text-emerald-600' : 'text-text-muted'}`}>{flow.enabled ? 'Enabled' : 'Disabled'}</span>
+                      <span className={`text-[10px] font-medium ${row.enabled ? 'text-emerald-600' : 'text-text-muted'}`}>{row.enabled ? 'Enabled' : 'Disabled'}</span>
                       <label className="inline-flex items-center cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={flow.enabled}
-                          onChange={(e) => updateMut.mutate({ id: flow._id, data: { enabled: e.target.checked } as any })}
+                          checked={row.enabled}
+                          onChange={(e) => handleToggleEnabled(row, e.target.checked)}
                           className="sr-only peer"
                         />
                         <div className="w-8 h-4.5 bg-black/[0.06] dark:bg-white/[0.08] peer-checked:bg-emerald-500 rounded-full transition-colors relative">
@@ -247,15 +351,18 @@ export default function AutomationFlowsPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
-                    <span className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-text-muted">{flow.nodes.length} node(s)</span>
-                    <span className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-text-muted">v{flow.version ?? 1}</span>
-                    {flow.draft && (
-                      <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">Unpublished changes</span>
+                    {row.kind === 'flow' ? (
+                      <>
+                        <span className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-text-muted">{row.nodeCount} node(s)</span>
+                        <span className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-text-muted">v{row.version ?? 1}</span>
+                        {row.draft && <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">Unpublished changes</span>}
+                      </>
+                    ) : (
+                      <span className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-text-muted">Simple rule</span>
                     )}
-                    {triggerNode && (
-                      <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">{triggerNode.module} · {triggerNode.triggerType}</span>
-                    )}
+                    <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">{row.triggerSummary}</span>
                   </div>
+                  {row.kind === 'flow' && row.nodes && row.edges && <ChainPreview nodes={row.nodes} edges={row.edges} />}
                   <div className="text-[11px] text-text-muted">
                     {flowStats ? (
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -270,13 +377,22 @@ export default function AutomationFlowsPage() {
                   </div>
                   <div className="flex items-center gap-2 mt-auto pt-2 border-t border-border">
                     <button
-                      onClick={() => navigate(`/native-crm/settings/automation-flows/${flow._id}`)}
+                      onClick={() => handleOpen(row)}
                       className="flex items-center gap-1 text-xs text-text-muted hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300"
                     >
-                      <PencilIcon className="h-3.5 w-3.5" /> Edit
+                      <PencilIcon className="h-3.5 w-3.5" /> {row.kind === 'flow' ? 'Edit' : 'Edit rule'}
                     </button>
+                    {row.kind === 'flow' && (
+                      <button
+                        onClick={() => handleDuplicate(row)}
+                        disabled={duplicatingId === row.id}
+                        className="flex items-center gap-1 text-xs text-text-muted hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300 disabled:opacity-40"
+                      >
+                        <DocumentDuplicateIcon className="h-3.5 w-3.5" /> {duplicatingId === row.id ? 'Copying…' : 'Duplicate'}
+                      </button>
+                    )}
                     <button
-                      onClick={() => { if (confirm(`Delete "${flow.name}"? This cannot be undone.`)) deleteMut.mutate(flow._id); }}
+                      onClick={() => handleDelete(row)}
                       className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 ml-auto"
                     >
                       <TrashIcon className="h-3.5 w-3.5" /> Delete

@@ -9,6 +9,8 @@ export const config: ModulePageConfig = {
   apiBase:       '/api/v1/native-crm/tasks',
   statusField:   'taskStatus',
   pipelineModule: 'task',
+  altView:       'kanban',
+  altViewLabel:  'Kanban board',
   upcomingDateField: 'dueDate',
   fields: [
     { key: 'title',      label: 'Task Title',  type: 'text',   required: true },

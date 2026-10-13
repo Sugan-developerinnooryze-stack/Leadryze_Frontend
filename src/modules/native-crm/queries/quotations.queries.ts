@@ -4,7 +4,7 @@ import api from '../../../services/api';
 const BASE = '/api/v1/native-crm/quotations';
 const KEY  = ['native-crm', 'quotations'] as const;
 
-interface ListParams { page?: number; limit?: number; search?: string; status?: string; range?: string; dateFrom?: string; dateTo?: string; filters?: string; dateField?: string; teamId?: string; staffId?: string; }
+interface ListParams { page?: number; limit?: number; search?: string; status?: string; customerId?: string; range?: string; dateFrom?: string; dateTo?: string; filters?: string; dateField?: string; teamId?: string; staffId?: string; }
 interface Meta       { total: number; page: number; totalPages: number; }
 
 export function useQuotationsListQuery(params: ListParams) {

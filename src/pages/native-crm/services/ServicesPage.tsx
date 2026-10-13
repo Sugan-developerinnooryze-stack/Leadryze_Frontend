@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { WrenchScrewdriverIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import FSDrawer from '../../../modules/native-crm/shared/FSDrawer';
@@ -40,7 +40,7 @@ export default function ServicesPage() {
   const columns: FSColumnDef[] = useMemo(() => [
     { key: 'serviceId',  label: 'ID' },
     { key: 'name',       label: 'Name' },
-    { key: 'price',      label: 'Price',  render: (r) => r.price != null ? `${CUR_SYMBOL[settings?.currency ?? 'AUD'] ?? '$'}${Number(r.price).toFixed(2)}` : '—' },
+    { key: 'price',      label: 'Price',  render: (r) => r.price != null ? `${CUR_SYMBOL[settings?.currency ?? 'INR'] ?? '₹'}${Number(r.price).toFixed(2)}` : '—' },
     { key: 'unit',       label: 'Unit' },
     { key: 'status',     label: 'Status', render: (r) => <FSStatusBadge value={r.status ?? 'active'} /> },
     { key: 'branchId', label: 'Company', render: (r: any) => <CompanyBadge branchId={r.branchId} /> },

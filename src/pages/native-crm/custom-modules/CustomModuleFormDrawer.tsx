@@ -25,6 +25,7 @@ import { useLeadsQuery          } from '../../../modules/native-crm/queries/lead
 import { useDealsQuery          } from '../../../modules/native-crm/queries/deals.queries';
 import { useBranchesQuery       } from '../../../modules/native-crm/queries/branch.queries';
 import { usePipelineStages      } from '../../../modules/native-crm/queries/pipeline-config.queries';
+import { useRegisterOverlayOpen } from '../../../hooks/useRegisterOverlayOpen';
 
 /* ── Types ────────────────────────────────────────────────────────────────── */
 
@@ -343,6 +344,7 @@ function CustomModuleRelationSelect({
 export default function CustomModuleFormDrawer({
   title, fields, record, onClose, onCreate, onUpdate, moduleSlug, pipelineFieldKey,
 }: CustomModuleFormDrawerProps) {
+  useRegisterOverlayOpen();
   const [form,    setForm]    = useState<Record<string, unknown>>({});
   const [errors,  setErrors]  = useState<Record<string, string>>({});
   const [saving,  setSaving]  = useState(false);

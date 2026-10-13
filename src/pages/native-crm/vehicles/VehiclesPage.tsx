@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { TruckIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import FSDrawer from '../../../modules/native-crm/shared/FSDrawer';
@@ -107,13 +107,15 @@ export default function VehiclesPage() {
           <option value="retired">Retired</option>
         </select>
 
-        <button
-          onClick={() => setDrawer({ open: true, record: null })}
-          className="flex items-center gap-2 px-4 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 transition-colors shrink-0"
-        >
-          <PlusIcon className="h-4 w-4" />
-          New Vehicle
-        </button>
+        {((error as any)?.response?.status !== 403) && (
+          <button
+            onClick={() => setDrawer({ open: true, record: null })}
+            className="flex items-center gap-2 px-4 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 transition-colors shrink-0"
+          >
+            <PlusIcon className="h-4 w-4" />
+            New Vehicle
+          </button>
+        )}
       </div>
 
       <div className="px-6 pt-3 shrink-0">

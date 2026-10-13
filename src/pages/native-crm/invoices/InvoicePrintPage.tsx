@@ -11,12 +11,13 @@ import { useCustomTemplatesQuery } from '../../../modules/native-crm/queries/cus
 import { canViewPII } from '../../../modules/native-crm/shared/piiAccess';
 import { useAuthStore } from '../../../stores/auth.store';
 import api from '../../../services/api';
+import { downloadDocumentPdf } from '../../../modules/native-crm/shared/downloadPdf';
 import RichEditor from '../../../components/RichEditor';
 import { useServicesListQuery } from '../../../modules/native-crm/queries/services.queries';
 import { usePartsListQuery } from '../../../modules/native-crm/queries/parts.queries';
 import AutocompleteInput from '../../../components/ui/AutocompleteInput';
 
-function fmt(n: number | undefined | null, cur = '$') {
+function fmt(n: number | undefined | null, cur = '₹') {
   return `${cur}${n != null ? Number(n).toFixed(2) : '0.00'}`;
 }
 function fmtD(d: string | Date | undefined | null) {
@@ -30,7 +31,7 @@ const VARIANTS = [
   { value: 'minimal', label: 'Minimal' },
   { value: 'elegant', label: 'Elegant' },
 ];
-const CUR_SYMBOL: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
+const CUR_SYMBOL: Record<string, string> = { INR:'₹',AUD:'A$',USD:'$',GBP:'£',EUR:'€',CAD:'C$',NZD:'NZ$',SGD:'S$' };
 
 export default function InvoicePrintPage() {
   const { id }     = useParams<{ id: string }>();
@@ -65,7 +66,7 @@ export default function InvoicePrintPage() {
   const updateMutation            = useInvoiceUpdate();
 
   const customer = custList?.items?.find((c: any) => c.customerId === item?.customerId) ?? null;
-  const cur      = CUR_SYMBOL[settings?.currency ?? 'AUD'] ?? '$';
+  const cur      = CUR_SYMBOL[settings?.currency ?? 'INR'] ?? '₹';
   const doc      = editing ? draft : item;
   const user     = useAuthStore((s) => s.user);
   const canShareContact = canViewPII('customers', settings, user?.role);
@@ -143,14 +144,18 @@ export default function InvoicePrintPage() {
     if (!id) return;
     setDownloading(true);
     try {
-      const qs  = tplId ? `templateId=${tplId}` : `template=${variant}`;
-      const res = await api.get(`/api/v1/native-crm/pdf/invoices/${id}?${qs}`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-      const a   = document.createElement('a');
-      a.href = url; a.download = `invoice-${item?.invoiceId ?? id}.pdf`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch { } finally { setDownloading(false); }
+      await downloadDocumentPdf({
+        module: 'invoices',
+        id,
+        filename: `invoice-${item?.invoiceId ?? id}.pdf`,
+        template: variant,
+        templateId: tplId,
+      });
+    } catch {
+      // toast shown in downloadDocumentPdf
+    } finally {
+      setDownloading(false);
+    }
   };
 
   if (isLoading) return (

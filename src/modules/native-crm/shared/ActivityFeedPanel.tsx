@@ -80,6 +80,7 @@ export default function ActivityFeedPanel({
                 key={kind}
                 onClick={() => setQuickAddKind(kind)}
                 title={`Log a ${meta.label.toLowerCase()}`}
+                aria-label={`Log a ${meta.label.toLowerCase()}`}
                 className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-text-primary border border-border rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
               >
                 <Icon className="h-3.5 w-3.5" style={{ color: meta.color }} />

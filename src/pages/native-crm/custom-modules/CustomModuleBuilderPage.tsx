@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   PlusIcon, TrashIcon, Cog6ToothIcon, ChevronUpIcon,
-  CheckIcon,
+  CheckIcon, ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 import {
   useCustomModulesQuery,
@@ -713,6 +714,7 @@ function TypePalette({ onAdd }: { onAdd: (type: CustomModuleFieldType) => void }
 /* ── Main Component ───────────────────────────────────────────────────────── */
 
 export default function CustomModuleBuilderPage() {
+  const navigate = useNavigate();
   const { data: modules = [], isLoading } = useCustomModulesQuery();
   const createMutation = useCustomModuleCreate();
   const updateMutation = useCustomModuleUpdate();
@@ -852,6 +854,15 @@ export default function CustomModuleBuilderPage() {
       {/* ── Left Panel: module list ─────────────────────────────────────── */}
       <div className="w-64 shrink-0 border-r border-border bg-background flex flex-col">
         <div className="px-4 py-4 border-b border-border flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate('/native-crm/configuration')}
+            className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-border/60 transition-colors mr-1"
+            title="Back to Configuration"
+          >
+            <ArrowLeftIcon className="h-3.5 w-3.5" />
+            <span>Back</span>
+          </button>
           <Cog6ToothIcon className="h-5 w-5 text-text-muted" />
           <h2 className="text-sm font-semibold text-text-primary">Custom Modules</h2>
         </div>

@@ -20,11 +20,12 @@ import { CompanyFilterBar } from '../../../components/native-crm/CompanyFilterBa
 import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import { useCustomerNameMap } from '../../../modules/native-crm/shared/useCustomerNameMap';
 import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-settings.queries';
+import { formatDate } from '../../../utils/dateUtils';
 
 // LR-QUOTE-002: matches the symbol map every Invoice view/print page
 // already resolves from settings.currency — this list page was the one
 // place still hardcoding "$".
-const CUR_SYMBOL: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
+const CUR_SYMBOL: Record<string, string> = { INR:'₹',AUD:'A$',USD:'$',GBP:'£',EUR:'€',CAD:'C$',NZD:'NZ$',SGD:'S$' };
 
 const FIELDS: FSFieldDef[] = [
   { key: 'branchId',      label: 'Company',           type: 'branch-select' },
@@ -78,8 +79,10 @@ export default function InvoicesPage() {
       render: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '—',
       exportValue: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '' },
     { key: 'customerId', label: 'Customer ID' },
-    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `${CUR_SYMBOL[settings?.currency ?? 'AUD'] ?? '$'}${Number(r.servicesAmountWithTax).toFixed(2)}` : '—' },
-    { key: 'dueDate',    label: 'Due Date', render: (r) => r.dueDate ? new Date(r.dueDate).toLocaleDateString() : '—' },
+    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `${CUR_SYMBOL[settings?.currency ?? 'INR'] ?? '₹'}${Number(r.servicesAmountWithTax).toFixed(2)}` : '—' },
+    // LR-C3-RCPT-002: Show paid amount in invoices table so receipt updates are immediately visible
+    { key: 'paidAmount', label: 'Paid Amount', render: (r) => `${CUR_SYMBOL[settings?.currency ?? 'INR'] ?? '₹'}${Number(r.paidAmount ?? 0).toFixed(2)}` },
+    { key: 'dueDate',    label: 'Due Date', render: (r) => formatDate(r.dueDate) },
     { key: 'paid',       label: 'Paid',     render: (r) => (
       <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${r.paid ? 'bg-green-100 dark:bg-green-500/15 text-green-700 dark:text-green-400' : 'bg-black/[0.06] dark:bg-white/[0.08] text-text-muted'}`}>
         {r.paid ? 'Yes' : 'No'}
@@ -87,7 +90,7 @@ export default function InvoicesPage() {
     )},
     { key: 'status',    label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
     { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
-    { key: 'createdAt', label: 'Created Date', render: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—' },
+    { key: 'createdAt', label: 'Created Date', render: (r) => formatDate(r.createdAt) },
   ], [customerNames, settings?.currency]);
 
   useEffect(() => {

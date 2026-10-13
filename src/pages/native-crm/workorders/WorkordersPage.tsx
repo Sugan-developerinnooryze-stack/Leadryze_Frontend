@@ -23,6 +23,7 @@ import { formatDuration } from '../../../modules/native-crm/shared/duration';
 import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import { useCustomerNameMap } from '../../../modules/native-crm/shared/useCustomerNameMap';
 import { useTeamNameMap } from '../../../modules/native-crm/shared/useTeamNameMap';
+import { formatDate, formatDateTime } from '../../../utils/dateUtils';
 import { useStaffNameMap } from '../../../modules/native-crm/shared/useStaffNameMap';
 
 const STEP_LABEL: Record<string, string> = { quotation: 'Quotation', contract: 'Contract', invoice: 'Invoice' };
@@ -103,7 +104,7 @@ export default function WorkordersPage() {
       if (!r.scheduledDate) return '—';
       const d = new Date(r.scheduledDate);
       const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0;
-      return hasTime ? d.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : d.toLocaleDateString();
+      return hasTime ? formatDateTime(d) : formatDate(d);
     }},
     { key: 'staffNames', label: 'Staff', render: (r) => {
       const ids: string[] = r.staffIds?.length ? r.staffIds : (r.staffId ? [r.staffId] : []);
@@ -127,7 +128,7 @@ export default function WorkordersPage() {
     }},
     { key: 'status',   label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
     { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
-    { key: 'createdAt', label: 'Created Date', render: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—' },
+    { key: 'createdAt', label: 'Created Date', render: (r) => formatDate(r.createdAt) },
   ], [customerNames, teamNames, staffNames]);
 
   useEffect(() => {

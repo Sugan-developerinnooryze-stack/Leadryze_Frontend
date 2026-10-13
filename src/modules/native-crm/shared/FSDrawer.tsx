@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
 import type { FSFieldDef } from './types';
 import { useBranchStore } from '../../../stores/branch.store';
 import { useAuthStore } from '../../../stores/auth.store';
@@ -21,10 +22,11 @@ import { useUsersListQuery      } from '../queries/users.queries';
 import { useFSSettingsQuery, useFsSettingsDefaultsQuery } from '../queries/fs-settings.queries';
 import api from '../../../services/api';
 import {
-  splitHours, joinHours, availabilityNote, availabilityShort, toDatetimeLocal,
+  splitHours, joinHours, availabilityNote, availabilityShort, toDatetimeLocal, toIsoUtcString,
   type StaffAvailability,
 } from './duration';
 import PhoneInput from './PhoneInput';
+import { useRegisterOverlayOpen } from '../../../hooks/useRegisterOverlayOpen';
 
 interface FSDrawerProps {
   title:      string;
@@ -41,6 +43,7 @@ interface FSDrawerProps {
 const base = 'w-full rounded-lg bg-surface border border-border px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400 focus:border-transparent';
 
 export default function FSDrawer({ title, fields, record, onClose, onSaved, onCreate, onUpdate, module, onUnlocked }: FSDrawerProps) {
+  useRegisterOverlayOpen();
   const [form,            setForm]            = useState<Record<string, any>>({});
   const [customForm,      setCustomForm]      = useState<Record<string, any>>({});
   const [selectedLookups, setSelectedLookups] = useState<Record<string, any>>({});
@@ -142,6 +145,8 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
           } else {
             initial[f.key] = raw ?? '';
           }
+        } else if (f.type === 'datetime') {
+          initial[f.key] = toDatetimeLocal(record?.[f.key]);
         } else {
           initial[f.key] = record?.[f.key] ?? '';
         }
@@ -337,7 +342,7 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
 
     // Reset cascaded children
     fields.filter(f => f.cascadeParentField === field.key).forEach(f => {
-      handleChange(f.key, '');
+      handleChange(f.key, f.type === 'multilookup' || f.type === 'multiselect' ? [] : '');
       setSelectedLookups(prev => ({ ...prev, [f.key]: null }));
     });
 
@@ -349,9 +354,15 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
     // stays a normal editable input, so the user can still type over it.
     fields.filter(f => f.autofillFrom === field.key).forEach(f => {
       const sourceKey = f.autofillSourceKey ?? f.key;
-      const primary = (selected as any)?.[sourceKey];
+      let primary = (selected as any)?.[sourceKey];
+      // LR-R2-RCPT-001: Support computing outstanding balance due for invoices
+      if (sourceKey === 'balanceDue') {
+        const total = Number((selected as any)?.servicesAmountWithTax) || 0;
+        const paid = Number((selected as any)?.paidAmount) || 0;
+        primary = Math.max(0, Math.round((total - paid) * 100) / 100);
+      }
       const extra = (f.autofillComposeKeys ?? []).map(k => (selected as any)?.[k]).filter(Boolean);
-      handleChange(f.key, [primary, ...extra].filter(Boolean).join(', '));
+      handleChange(f.key, [primary, ...extra].filter(v => v !== undefined && v !== null && v !== '').join(', '));
     });
 
     handleChange(field.key, isBranch ? (value || null) : value);
@@ -364,7 +375,13 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
   const validate = () => {
     const errs: Record<string, string> = {};
     fields.forEach((f) => {
-      if (f.filterOnly || f.type === 'servicelines' || f.type === 'multilookup' || f.type === 'multiselect' || f.type === 'emaillist' || f.type === 'phonelist') return;
+      if (f.filterOnly || f.type === 'servicelines' || f.type === 'emaillist' || f.type === 'phonelist') return;
+      if (f.type === 'multilookup' || f.type === 'multiselect') {
+        if (f.required && (!Array.isArray(form[f.key]) || form[f.key].length === 0)) {
+          errs[f.key] = `${f.label} is required`;
+        }
+        return;
+      }
       if (f.required && !form[f.key]?.toString().trim()) errs[f.key] = `${f.label} is required`;
     });
     activeCustomFields.forEach((f) => {
@@ -403,6 +420,10 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
             // Drop blank rows (e.g. "+ Add Email" clicked but left empty) — zod's
             // per-element email/string checks would otherwise reject the whole array
             payload[f.key] = val.map((v: string) => v?.trim()).filter(Boolean);
+          } else if (f.type === 'datetime') {
+            payload[f.key] = toIsoUtcString(val);
+          } else if (f.type === 'multilookup' || f.type === 'multiselect') {
+            payload[f.key] = Array.isArray(val) ? val : (val ? [val] : []);
           } else {
             payload[f.key] = val;
           }
@@ -418,22 +439,70 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
       if (slField) {
         const lines    = (form[slField.key] ?? []) as any[];
         const subtotal = lines.reduce((s: number, l: any) => s + (Number(l.amount) || 0) * (Number(l.count) || 1), 0);
-        const disc     = Number(form.discount ?? 0);
-        const gst      = Number(form.gstPercentage ?? 0);
-        const after    = subtotal * (1 - disc / 100);
-        payload.servicesAmount        = parseFloat(after.toFixed(2));
-        payload.servicesAmountWithTax = parseFloat((after * (1 + gst / 100)).toFixed(2));
+        let disc       = Number(form.discount ?? 0);
+        let gst        = Number(form.gstPercentage ?? 0);
+        const hasLineTaxOrDisc = lines.some((l: any) => (Number(l.taxPercent) > 0 || Number(l.discountPercent) > 0));
+
+        if (disc === 0 && gst === 0 && hasLineTaxOrDisc) {
+          let lineAfter = 0;
+          let lineWithTax = 0;
+          for (const l of lines) {
+            const gross = (Number(l.amount) || 0) * (Number(l.count) || 1);
+            const afterD = gross * (1 - (Number(l.discountPercent) || 0) / 100);
+            const withT = afterD * (1 + (Number(l.taxPercent) || 0) / 100);
+            lineAfter += afterD;
+            lineWithTax += withT;
+          }
+          payload.servicesAmount        = parseFloat(lineAfter.toFixed(2));
+          payload.servicesAmountWithTax = parseFloat(lineWithTax.toFixed(2));
+        } else {
+          const after    = subtotal * (1 - disc / 100);
+          payload.servicesAmount        = parseFloat(after.toFixed(2));
+          payload.servicesAmountWithTax = parseFloat((after * (1 + gst / 100)).toFixed(2));
+        }
       }
 
+      const entityName = title.replace(/^(New|Edit|Create|Add)\s+/i, '').trim() || 'Record';
       if (record?._id) {
         await onUpdate(record._id, payload);
+        toast.success(`${entityName} updated`);
       } else {
         await onCreate(payload);
+        toast.success(`${entityName} created`);
       }
       onSaved();
       onClose();
     } catch (err: any) {
-      setErrors({ _server: err?.response?.data?.message ?? 'Something went wrong' });
+      const respData = err?.response?.data;
+      const serverMsg = respData?.message ?? 'Something went wrong';
+      const fieldErrors: Record<string, string> = {};
+
+      if (respData?.errors && typeof respData.errors === 'object') {
+        Object.entries(respData.errors).forEach(([k, v]) => {
+          if (typeof v === 'string') {
+            fieldErrors[k] = v;
+          } else if (Array.isArray(v) && v.length > 0) {
+            fieldErrors[k] = String(v[0]);
+          } else if (v && typeof v === 'object' && '_errors' in v && Array.isArray((v as any)._errors)) {
+            fieldErrors[k] = (v as any)._errors.join(', ');
+          }
+        });
+      }
+
+      const issuesList: string[] = Array.isArray(respData?.issues)
+        ? respData.issues
+        : Object.entries(fieldErrors).map(([k, msg]) => `${k}: ${msg}`);
+      const combinedServerMsg = issuesList.length > 0 ? `${serverMsg} (${issuesList.join('; ')})` : serverMsg;
+
+      // LR-R2-RCPT-001: If error relates to overpayment or balance, also highlight amount field
+      if (/exceeds remaining invoice balance|already fully paid/i.test(serverMsg)) {
+        fieldErrors.amount = serverMsg;
+      }
+
+      setErrors({
+        _server: combinedServerMsg,
+        ...fieldErrors,
+      });
     } finally {
       setSaving(false);
     }
@@ -638,9 +707,22 @@ export default function FSDrawer({ title, fields, record, onClose, onSaved, onCr
                 // was leaking into every "_id"-keyed lookup's label (Teams,
                 // Sites, Categories, Invoices, Quotations, WorkOrders alike).
                 const showVal = field.lookupValueField !== '_id' && val && val !== baseLbl;
+                let displayLbl = `${lbl}${showVal ? ` (${val})` : ''}`;
+                // LR-R2-RCPT-001: Flag fully paid invoices and show remaining balance for partially paid
+                if (field.lookupModule === 'invoices') {
+                  const total = Number(opt.servicesAmountWithTax) || 0;
+                  const paid = Number(opt.paidAmount) || 0;
+                  const bal = Math.max(0, Math.round((total - paid) * 100) / 100);
+                  const isPaid = opt.paid || (total > 0 && paid >= total);
+                  if (isPaid) {
+                    displayLbl = `${displayLbl} [Paid]`;
+                  } else if (paid > 0) {
+                    displayLbl = `${displayLbl} (Bal: ${bal.toFixed(2)})`;
+                  }
+                }
                 return (
                   <option key={opt._id} value={val}>
-                    {lbl}{showVal ? ` (${val})` : ''}
+                    {displayLbl}
                   </option>
                 );
               })}

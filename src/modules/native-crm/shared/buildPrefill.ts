@@ -47,8 +47,8 @@ export function buildPrefill(source: any, from: DocType, to: DocType): Record<st
     address:       source.address       ?? '',
     services:      source.services      ?? [],
     parts:         source.parts         ?? [],
-    discount:      source.discount      ?? 0,
-    gstPercentage: source.gstPercentage ?? 0,
+    discount:      source.discount ?? source.services?.find((s: any) => s.discountPercent != null)?.discountPercent ?? 0,
+    gstPercentage: source.gstPercentage ?? source.services?.find((s: any) => s.taxPercent != null)?.taxPercent ?? 0,
     notes:         source.notes         ?? '',
     title: from === 'contract' && to === 'workorder'
       ? `Service Visit — ${source.title ?? ''}`

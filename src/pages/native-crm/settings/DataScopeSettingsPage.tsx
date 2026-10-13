@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ShieldCheckIcon, LockClosedIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router-dom';
+import { ShieldCheckIcon, LockClosedIcon, CheckIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../../stores/auth.store';
 import {
   useTenantQuery, useUpdateTenantDataScopeConfig,
@@ -64,6 +65,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 }
 
 export default function DataScopeSettingsPage() {
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const isAdmin = ['SUPER_ADMIN', 'TENANT_ADMIN'].includes(user?.role ?? '');
   const tenantId = user?.tenantId ?? '';
@@ -149,6 +151,15 @@ export default function DataScopeSettingsPage() {
   return (
     <div className="flex flex-col h-full">
       <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-3 shrink-0">
+        <button
+          type="button"
+          onClick={() => navigate('/native-crm/configuration')}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-border/60 transition-colors shrink-0"
+          title="Back to Configuration"
+        >
+          <ArrowLeftIcon className="h-4 w-4" />
+          <span>Back</span>
+        </button>
         <div className="h-9 w-9 rounded-lg bg-black/[0.06] dark:bg-white/[0.08] flex items-center justify-center shrink-0">
           <ShieldCheckIcon className="h-5 w-5 text-text-muted" />
         </div>

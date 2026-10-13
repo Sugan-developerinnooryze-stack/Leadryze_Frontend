@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PlusIcon, TrashIcon, PencilIcon, AdjustmentsHorizontalIcon, CheckIcon, XMarkIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, PencilIcon, AdjustmentsHorizontalIcon, CheckIcon, XMarkIcon, DocumentTextIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import {
   useCustomFieldsQuery,
   useCustomFieldCreate,
@@ -166,6 +166,15 @@ export default function CustomFieldsAdminPage() {
         {/* Sidebar for Modules */}
         <div className="w-64 bg-surface border-r border-border overflow-y-auto shrink-0 flex flex-col">
           <div className="p-5 border-b border-border">
+            <button
+              type="button"
+              onClick={() => navigate('/native-crm/configuration')}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-border/60 transition-colors mb-3"
+              title="Back to Configuration"
+            >
+              <ArrowLeftIcon className="h-3.5 w-3.5" />
+              <span>Back</span>
+            </button>
             <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
               <AdjustmentsHorizontalIcon className="h-5 w-5 text-ryze-600 dark:text-ryze-400" />
               Custom Fields
@@ -199,9 +208,20 @@ export default function CustomFieldsAdminPage() {
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-w-0 bg-background">
           <div className="bg-surface border-b border-border px-8 py-5 flex items-center justify-between shrink-0">
-            <div>
-              <h1 className="text-xl font-bold text-text-primary">{moduleOptions.find((m) => m.key === selectedModule)?.label ?? selectedModule} Fields</h1>
-              <p className="text-sm text-text-muted mt-0.5">Manage custom fields for the {moduleOptions.find((m) => m.key === selectedModule)?.label ?? selectedModule} module</p>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => navigate('/native-crm/configuration')}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-border/60 transition-colors"
+                title="Back to Configuration"
+              >
+                <ArrowLeftIcon className="h-3.5 w-3.5" />
+                <span>Back</span>
+              </button>
+              <div>
+                <h1 className="text-xl font-bold text-text-primary">{moduleOptions.find((m) => m.key === selectedModule)?.label ?? selectedModule} Fields</h1>
+                <p className="text-sm text-text-muted mt-0.5">Manage custom fields for the {moduleOptions.find((m) => m.key === selectedModule)?.label ?? selectedModule} module</p>
+              </div>
             </div>
             {!isCustomModule && (
               <div className="flex items-center gap-2">

@@ -40,6 +40,19 @@ export function toDatetimeLocal(value: unknown): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/**
+ * LR-R2-ACT-001: Convert a local "YYYY-MM-DDTHH:mm" input value to a true UTC ISO string.
+ * This guarantees the user's selected wall-clock time is preserved exactly across timezones.
+ */
+export function toIsoUtcString(value: unknown): string | undefined {
+  if (!value) return undefined;
+  const s = String(value).trim();
+  if (!s) return undefined;
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return s;
+  return d.toISOString();
+}
+
 /** "1:00 PM" style local time. */
 export function formatClock(d: string | Date): string {
   const date = typeof d === 'string' ? new Date(d) : d;

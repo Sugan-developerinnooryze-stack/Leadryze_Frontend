@@ -56,6 +56,10 @@ export interface FeatureFlags {
   config_customFields: boolean;
   config_customModules: boolean;
   config_fsSettings:   boolean;
+  // Connector Data sub-items
+  connector_data_calendar:   boolean;
+  connector_data_management: boolean;
+  connector_data_automation: boolean;
   // Connector visibility — each type can be hidden per tenant
   connector_zoho:        boolean;
   connector_hubspot:     boolean;
@@ -128,6 +132,9 @@ export const ALL_FLAGS_TRUE: FeatureFlags = {
   config_customFields: true,
   config_customModules: true,
   config_fsSettings:   true,
+  connector_data_calendar:   true,
+  connector_data_management: true,
+  connector_data_automation: true,
   connector_zoho:        true,
   connector_hubspot:     true,
   connector_salesforce:  true,

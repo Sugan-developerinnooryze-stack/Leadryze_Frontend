@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import {
   ArrowsRightLeftIcon, ArrowUpTrayIcon, DocumentArrowDownIcon,
-  CheckCircleIcon, ExclamationTriangleIcon, UserGroupIcon,
+  CheckCircleIcon, ExclamationTriangleIcon, UserGroupIcon, ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 import {
   useImportLeadsCsv, useLeadImportTriageQuery, useResolveTriageItem, ImportSummary,
@@ -305,11 +306,21 @@ function DealImportSection() {
 type Tab = 'leads' | 'deals';
 
 export default function ImportExportPage() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('leads');
 
   return (
     <div className="flex flex-col h-full">
       <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-3 shrink-0">
+        <button
+          type="button"
+          onClick={() => navigate('/native-crm/configuration')}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-border/60 transition-colors shrink-0"
+          title="Back to Configuration"
+        >
+          <ArrowLeftIcon className="h-4 w-4" />
+          <span>Back</span>
+        </button>
         <div className="h-9 w-9 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
           <ArrowsRightLeftIcon className="h-5 w-5 text-green-600" />
         </div>

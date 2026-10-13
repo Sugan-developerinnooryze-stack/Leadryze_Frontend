@@ -6,6 +6,10 @@ import {
 } from '@heroicons/react/24/outline';
 import api from '../../../services/api';
 import type { FieldConfig, CrmRecord } from './types/crm.types';
+import { formatDate, formatDateTime } from '../../../utils/dateUtils';
+import { useStaffNameMap } from '../../native-crm/shared/useStaffNameMap';
+import { useUserNameMap } from '../../native-crm/shared/useUserNameMap';
+import { useCompanyNameMap } from '../../native-crm/shared/useCompanyNameMap';
 
 /* Extracted from CrmLayout.tsx so any module's page (including bespoke ones
  * like Leads, which don't run through CrmLayout at all) can reuse the exact
@@ -40,8 +44,8 @@ export function fmtVal(
   if (type === 'staffSelect' && staffNameMap) return staffNameMap.get(s) ?? s;
   if (type === 'userSelect' && userNameMap) return userNameMap.get(s) ?? s;
   if (type === 'companySelect' && companyNameMap) return companyNameMap.get(s) ?? s;
-  if (type === 'date' && s.includes('T')) return s.slice(0, 10);
-  if (type === 'datetime' && s.includes('T')) return s.slice(0, 16).replace('T', ' ');
+  if (type === 'date') return formatDate(s);
+  if (type === 'datetime') return formatDateTime(s);
   if (type === 'currency') return `$${Number(s).toLocaleString()}`;
   // LR-UI-005: a 'select'/'categorySelect' field's raw stored value is a
   // snake_case/camelCase code (e.g. "closed_won", "in_progress") — shown
@@ -71,7 +75,13 @@ export function getCellValue(row: CrmRecord, col: FieldConfig): string {
  * re-import) and wrote "—" for a blank cell (not a parseable empty value).
  * This is the same data, formatted for a file instead of a screen: plain
  * numbers, and a truly empty string for "no value". */
-function getExportValue(row: CrmRecord, col: FieldConfig): string {
+export function getExportValue(
+  row: CrmRecord,
+  col: FieldConfig,
+  staffNameMap?: Map<string, string>,
+  userNameMap?: Map<string, string>,
+  companyNameMap?: Map<string, string>,
+): string {
   let v: unknown;
   if (col.key.startsWith('cf__')) {
     const cfs = row.customFields as Record<string, unknown> | undefined;
@@ -82,8 +92,57 @@ function getExportValue(row: CrmRecord, col: FieldConfig): string {
   if (v === null || v === undefined || v === '') return '';
   if (col.type === 'currency') return String(Number(v));
   const s = String(v);
-  if (col.type === 'date' && s.includes('T')) return s.slice(0, 10);
-  if (col.type === 'datetime' && s.includes('T')) return s.slice(0, 16).replace('T', ' ');
+  if (col.type === 'staffSelect' && staffNameMap) return staffNameMap.get(s) ?? s;
+  if (col.type === 'userSelect' && userNameMap) return userNameMap.get(s) ?? s;
+  if (col.type === 'companySelect' && companyNameMap) return companyNameMap.get(s) ?? s;
+  if (col.type === 'date') return formatDate(s);
+  if (col.type === 'datetime') return formatDateTime(s);
+  if (col.type === 'select' || col.type === 'categorySelect') {
+    const spaced = s.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
+    return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
+  }
+  return s;
+}
+
+/** LR-REPORT-001: Returns typed values (number, Date, boolean, string) for XLSX export
+ * so Excel formats numbers and dates with native types (enabling =SUM() and chronological sorting). */
+export function getExportCellValue(
+  row: CrmRecord,
+  col: FieldConfig,
+  staffNameMap?: Map<string, string>,
+  userNameMap?: Map<string, string>,
+  companyNameMap?: Map<string, string>,
+): string | number | boolean | Date {
+  let v: unknown;
+  if (col.key.startsWith('cf__')) {
+    const cfs = row.customFields as Record<string, unknown> | undefined;
+    v = cfs?.[col.key.slice(4)];
+  } else {
+    v = row[col.key];
+  }
+  if (v === null || v === undefined || v === '') return '';
+
+  if (col.type === 'currency' || col.type === 'number') {
+    const num = Number(v);
+    return isNaN(num) ? String(v) : num;
+  }
+  if (typeof v === 'boolean') {
+    return v;
+  }
+  if (col.type === 'date' || col.type === 'datetime') {
+    const d = new Date(String(v));
+    if (!isNaN(d.getTime())) return d;
+    return String(v);
+  }
+
+  const s = String(v);
+  if (col.type === 'staffSelect' && staffNameMap) return staffNameMap.get(s) ?? s;
+  if (col.type === 'userSelect' && userNameMap) return userNameMap.get(s) ?? s;
+  if (col.type === 'companySelect' && companyNameMap) return companyNameMap.get(s) ?? s;
+  if (col.type === 'select' || col.type === 'categorySelect') {
+    const spaced = s.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
+    return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
+  }
   return s;
 }
 
@@ -124,18 +183,37 @@ function buildImportPayload(
   const customFieldsMap: Record<string, unknown> = {};
 
   for (const [label, val] of Object.entries(row)) {
-    if (!val) continue;
-    const col = allCols.find((c) => c.label === label);
+    if (val === '' || val === null || val === undefined) continue;
+    const col = allCols.find((c) => c.label.trim().toLowerCase() === label.trim().toLowerCase());
     if (!col) continue;
+
+    let parsedVal: unknown = val;
+    if (col.type === 'currency' || col.type === 'number') {
+      const num = Number(val);
+      if (!isNaN(num)) parsedVal = num;
+    }
+
     if (col.key.startsWith('cf__')) {
-      customFieldsMap[col.key.slice(4)] = val;
+      customFieldsMap[col.key.slice(4)] = parsedVal;
     } else {
-      payload[col.key] = val;
+      payload[col.key] = parsedVal;
     }
   }
 
   if (Object.keys(customFieldsMap).length > 0) payload.customFields = customFieldsMap;
   return payload;
+}
+
+interface RejectedRowInfo {
+  rowNum: number;
+  reason: string;
+}
+
+interface ImportSummaryResult {
+  total: number;
+  imported: number;
+  duplicates: number;
+  rejected: RejectedRowInfo[];
 }
 
 /* ── ImportModal ────────────────────────────────────────────────────────────── */
@@ -147,20 +225,65 @@ function ImportModal({
   onClose:    () => void;
   onDone:     () => void;
 }) {
-  const [rows,     setRows]     = useState<Record<string, string>[]>([]);
-  const [progress, setProgress] = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const [rows,        setRows]        = useState<Record<string, string>[]>([]);
+  const [progress,    setProgress]    = useState('');
+  const [headerError, setHeaderError] = useState('');
+  const [result,      setResult]      = useState<ImportSummaryResult | null>(null);
+  const [loading,     setLoading]     = useState(false);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setHeaderError('');
+    setResult(null);
+    setProgress('');
+    setRows([]);
+
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const wb   = XLSX.read(ev.target?.result, { type: 'array' });
-      const ws   = wb.Sheets[wb.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: '' });
-      setRows(data);
-      setProgress(`${data.length} rows parsed. Click Import to upload.`);
+      try {
+        const wb = XLSX.read(ev.target?.result, { type: 'array' });
+        const sheetName = wb.SheetNames[0];
+        if (!sheetName) {
+          setHeaderError('The uploaded file contains no sheets.');
+          return;
+        }
+        const ws = wb.Sheets[sheetName];
+        const headerRow = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1 })[0] || [];
+        const fileHeaders = (Array.isArray(headerRow) ? headerRow : [])
+          .map((h) => String(h ?? '').trim())
+          .filter(Boolean);
+
+        if (fileHeaders.length === 0) {
+          setHeaderError('The uploaded file is empty.');
+          return;
+        }
+
+        const templateLabels = new Set(importCols.map((c) => c.label.trim().toLowerCase()));
+        const matchedHeaders = fileHeaders.filter((h) => templateLabels.has(h.trim().toLowerCase()));
+
+        // Case A check: If no headers match template labels or First Name is missing when expected
+        const requiresFirstName = importCols.some((c) => c.key === 'firstName');
+        const matchesFirstName = fileHeaders.some(
+          (h) => h.toLowerCase() === 'first name' || (requiresFirstName && h.toLowerCase() === 'first_name')
+        );
+
+        if (matchedHeaders.length === 0 || (requiresFirstName && !matchesFirstName)) {
+          setHeaderError('Headers do not match the template. Please download and use the template file.');
+          return;
+        }
+
+        const data = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: '' });
+        if (!data.length) {
+          setHeaderError('The uploaded file contains no data rows.');
+          return;
+        }
+
+        setRows(data);
+        setProgress(`${data.length} row${data.length > 1 ? 's' : ''} ready to import.`);
+      } catch (err: any) {
+        setHeaderError('Failed to parse file: ' + (err.message || 'Invalid format'));
+      }
     };
     reader.readAsArrayBuffer(file);
   };
@@ -168,15 +291,56 @@ function ImportModal({
   const handleImport = async () => {
     if (!rows.length) return;
     setLoading(true);
+    setProgress('Importing…');
     let done = 0;
-    for (const row of rows) {
+    let duplicates = 0;
+    const rejected: RejectedRowInfo[] = [];
+
+    const importUrl = `${apiBase}${apiBase.includes('?') ? '&' : '?'}skipDuplicates=true`;
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
       const payload = buildImportPayload(row, importCols);
-      try { await api.post(apiBase, payload); done++; } catch {}
-      setProgress(`Importing… ${done}/${rows.length}`);
+      try {
+        const res = await api.post(importUrl, payload);
+        if (res.data?.data?.duplicate || res.data?.data?.skipped) {
+          duplicates++;
+        } else {
+          done++;
+        }
+      } catch (err: any) {
+        const res = err?.response?.data;
+        let reason = '';
+        if (res?.issues && Array.isArray(res.issues) && res.issues.length > 0) {
+          reason = String(res.issues[0]);
+        } else if (res?.errors && typeof res.errors === 'object') {
+          const firstKey = Object.keys(res.errors)[0];
+          const val = res.errors[firstKey];
+          const text = Array.isArray(val) ? val[0] : String(val);
+          reason = `${firstKey}: ${text}`;
+        } else {
+          reason = res?.message || err?.message || 'Validation failed';
+        }
+        // If reason has a field prefix like "expectedRevenue: Expected Revenue must be ≥ 0", strip it
+        reason = reason.replace(/^expectedRevenue:\s*/i, '');
+        rejected.push({
+          rowNum: i + 1,
+          reason,
+        });
+      }
+      setProgress(`Importing… ${done + duplicates + rejected.length}/${rows.length}`);
     }
-    setProgress(`Done! ${done} of ${rows.length} imported.`);
+
     setLoading(false);
-    setTimeout(onDone, 1200);
+    setResult({
+      total: rows.length,
+      imported: done,
+      duplicates,
+      rejected,
+    });
+    if (done > 0) {
+      onDone();
+    }
   };
 
   return (
@@ -199,23 +363,66 @@ function ImportModal({
             onChange={handleFile}
             className="w-full text-sm text-text-muted file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-black/[0.04] dark:bg-white/[0.06] file:text-text-primary hover:file:bg-black/[0.06] dark:bg-white/[0.08] cursor-pointer mb-4"
           />
-          {progress && <p className="text-xs text-text-muted mb-4">{progress}</p>}
-          <div className="flex gap-3">
+
+          {headerError && (
+            <div className="p-3 mb-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-xs font-medium">
+              {headerError}
+            </div>
+          )}
+
+          {progress && !result && <p className="text-xs text-text-muted mb-4">{progress}</p>}
+
+          {result && (
+            <div className="mb-4 p-4 rounded-xl border border-border bg-background space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-text-primary">Import Summary</span>
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-black/[0.05] dark:bg-white/[0.05] text-text-muted">
+                  {result.imported} of {result.total} imported
+                </span>
+              </div>
+              <p className="text-sm text-text-secondary">
+                {result.imported} imported
+                {result.duplicates > 0 ? `, ${result.duplicates} duplicate${result.duplicates > 1 ? 's' : ''} skipped` : ''}
+                {result.rejected.length > 0 ? `, ${result.rejected.length} rejected` : ''}
+                {result.rejected.length > 0 ? ` – row ${result.rejected[0].rowNum}: ${result.rejected[0].reason}` : ''}
+              </p>
+              {result.rejected.length > 1 && (
+                <div className="mt-2 max-h-36 overflow-y-auto space-y-1 text-xs text-red-600 dark:text-red-400">
+                  {result.rejected.slice(1).map((rej) => (
+                    <div key={rej.rowNum}>
+                      • Row {rej.rowNum}: {rej.reason}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {result ? (
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-text-primary hover:bg-background transition-colors"
+              className="w-full px-4 py-2.5 bg-ryze-600 hover:bg-ryze-700 rounded-lg text-sm font-medium text-white transition-colors"
             >
-              Cancel
+              Close
             </button>
-            <button
-              onClick={handleImport}
-              disabled={!rows.length || loading}
-              className="flex-1 px-4 py-2.5 bg-ryze-600 hover:bg-ryze-700 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
-            >
-              {loading && <div className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-              {loading ? 'Importing…' : `Import${rows.length > 0 ? ` (${rows.length})` : ''}`}
-            </button>
-          </div>
+          ) : (
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="flex-1 px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-text-primary hover:bg-background transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleImport}
+                disabled={!rows.length || loading || !!headerError}
+                className="flex-1 px-4 py-2.5 bg-ryze-600 hover:bg-ryze-700 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
+              >
+                {loading && <div className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
+                {loading ? 'Importing…' : `Import${rows.length > 0 ? ` (${rows.length})` : ''}`}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </>
@@ -239,6 +446,9 @@ export default function FileActionsDropdown({
   const [open,       setOpen]       = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const staffNameMap = useStaffNameMap();
+  const userNameMap = useUserNameMap();
+  const companyNameMap = useCompanyNameMap();
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -260,9 +470,32 @@ export default function FileActionsDropdown({
     const headers = ['S.No.', ...tableCols.map((c) => c.label)];
     const data = rows.map((r, i) => [
       (page - 1) * limit + i + 1,
-      ...tableCols.map((c) => getExportValue(r, c)),
+      ...tableCols.map((c) => getExportCellValue(r, c, staffNameMap, userNameMap, companyNameMap)),
     ]);
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...data], { cellDates: true });
+
+    // Set number and date formats on typed cells so Excel displays them cleanly
+    const range = XLSX.utils.decode_range(ws['!ref'] ?? 'A1');
+    for (let C = 1; C <= tableCols.length; C++) {
+      const col = tableCols[C - 1];
+      if (col.type === 'currency') {
+        for (let R = 1; R <= range.e.r; R++) {
+          const cell = ws[XLSX.utils.encode_cell({ r: R, c: C })];
+          if (cell && cell.t === 'n') cell.z = '#,##0.00';
+        }
+      } else if (col.type === 'date') {
+        for (let R = 1; R <= range.e.r; R++) {
+          const cell = ws[XLSX.utils.encode_cell({ r: R, c: C })];
+          if (cell && (cell.t === 'd' || cell.t === 'n')) cell.z = 'yyyy-mm-dd';
+        }
+      } else if (col.type === 'datetime') {
+        for (let R = 1; R <= range.e.r; R++) {
+          const cell = ws[XLSX.utils.encode_cell({ r: R, c: C })];
+          if (cell && (cell.t === 'd' || cell.t === 'n')) cell.z = 'yyyy-mm-dd hh:mm:ss';
+        }
+      }
+    }
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, moduleName);
     XLSX.writeFile(wb, `${moduleName}.xlsx`);
@@ -275,7 +508,7 @@ export default function FileActionsDropdown({
       ['S.No.', ...tableCols.map((c) => c.label)].join(','),
       ...rows.map((r, i) => [
         (page - 1) * limit + i + 1,
-        ...tableCols.map((c) => esc(getExportValue(r, c))),
+        ...tableCols.map((c) => esc(getExportValue(r, c, staffNameMap, userNameMap, companyNameMap))),
       ].join(',')),
     ];
     const a = document.createElement('a');

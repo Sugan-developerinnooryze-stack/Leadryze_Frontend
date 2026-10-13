@@ -12,6 +12,7 @@ import { useCustomTemplatesQuery } from '../../../modules/native-crm/queries/cus
 import { canViewPII } from '../../../modules/native-crm/shared/piiAccess';
 import { useAuthStore } from '../../../stores/auth.store';
 import api from '../../../services/api';
+import { downloadDocumentPdf } from '../../../modules/native-crm/shared/downloadPdf';
 import RichEditor from '../../../components/RichEditor';
 import { useServicesListQuery } from '../../../modules/native-crm/queries/services.queries';
 import { usePartsListQuery } from '../../../modules/native-crm/queries/parts.queries';
@@ -20,7 +21,7 @@ import { useStaffsListQuery } from '../../../modules/native-crm/queries/staffs.q
 import { useTeamsListQuery } from '../../../modules/native-crm/queries/teams.queries';
 import AutocompleteInput from '../../../components/ui/AutocompleteInput';
 
-function fmt(n: number | undefined | null, cur = '$') {
+function fmt(n: number | undefined | null, cur = '₹') {
   return `${cur}${n != null ? Number(n).toFixed(2) : '0.00'}`;
 }
 function fmtD(d: string | Date | undefined | null) {
@@ -34,7 +35,7 @@ const VARIANTS = [
   { value: 'minimal', label: 'Minimal' },
   { value: 'elegant', label: 'Elegant' },
 ];
-const CUR_SYMBOL: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
+const CUR_SYMBOL: Record<string, string> = { INR:'₹',AUD:'A$',USD:'$',GBP:'£',EUR:'€',CAD:'C$',NZD:'NZ$',SGD:'S$' };
 
 export default function WorkorderPrintPage() {
   const { id }     = useParams<{ id: string }>();
@@ -76,7 +77,7 @@ export default function WorkorderPrintPage() {
   const staff = staffList?.items?.find((s: any) => s.staffId === item?.staffId) ?? null;
   const team  = teamList?.items?.find((t: any) => t.teamId === item?.teamId) ?? null;
   const staffName = staff ? `${staff.firstName ?? ''} ${staff.lastName ?? ''}`.trim() : undefined;
-  const cur      = CUR_SYMBOL[settings?.currency ?? 'AUD'] ?? '$';
+  const cur      = CUR_SYMBOL[settings?.currency ?? 'INR'] ?? '₹';
   const doc      = editing ? draft : item;
   const user     = useAuthStore((s) => s.user);
   const canShareContact = canViewPII('customers', settings, user?.role);
@@ -148,14 +149,18 @@ export default function WorkorderPrintPage() {
     if (!id) return;
     setDownloading(true);
     try {
-      const qs  = tplId ? `templateId=${tplId}` : `template=${variant}`;
-      const res = await api.get(`/api/v1/native-crm/pdf/workorders/${id}?${qs}`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-      const a   = document.createElement('a');
-      a.href = url; a.download = `workorder-${item?.workOrderId ?? id}.pdf`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch { } finally { setDownloading(false); }
+      await downloadDocumentPdf({
+        module: 'workorders',
+        id,
+        filename: `workorder-${item?.workOrderId ?? id}.pdf`,
+        template: variant,
+        templateId: tplId,
+      });
+    } catch {
+      // toast shown in downloadDocumentPdf
+    } finally {
+      setDownloading(false);
+    }
   };
 
   if (isLoading) return (
@@ -174,9 +179,25 @@ export default function WorkorderPrintPage() {
   const discount      = doc?.discount ?? 0;
   const gst           = doc?.gstPercentage ?? 0;
   // discount is a percentage (0-100), not a flat amount.
-  const discountAmt   = (combined * discount) / 100;
-  const afterDiscount = combined - discountAmt;
-  const total         = afterDiscount * (1 + gst / 100);
+  const hasLineTaxOrDisc = (doc?.services ?? []).some((s: any) => (Number(s.taxPercent) > 0 || Number(s.discountPercent) > 0));
+  let discountAmt     = (combined * discount) / 100;
+  let afterDiscount   = combined - discountAmt;
+  let total           = afterDiscount * (1 + gst / 100);
+
+  if (discount === 0 && gst === 0 && hasLineTaxOrDisc) {
+    let lineAfter = 0;
+    let lineWithTax = 0;
+    for (const sv of (doc?.services ?? [])) {
+      const g = (sv.amount ?? 0) * (sv.count ?? 1);
+      const ad = g * (1 - (Number(sv.discountPercent) || 0) / 100);
+      const wt = ad * (1 + (Number(sv.taxPercent) || 0) / 100);
+      lineAfter += ad;
+      lineWithTax += wt;
+    }
+    afterDiscount = lineAfter + prtSubtotal;
+    total = lineWithTax + prtSubtotal;
+    discountAmt = combined - lineAfter;
+  }
 
   const priorityColor = item.priority === 'high'
     ? 'bg-red-100 text-red-700'

@@ -10,6 +10,7 @@ import { useDealsQuery } from '../../../modules/native-crm/queries/deals.queries
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import { FSStatusBadge } from '../../../modules/native-crm/shared/types';
 import type { FSColumnDef } from '../../../modules/native-crm/shared/types';
+import { formatDate } from '../../../utils/dateUtils';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: BuildingOffice2Icon },
@@ -30,13 +31,18 @@ function InfoRow({ label, value }: { label: string; value?: React.ReactNode }) {
 const CONTACT_COLS: FSColumnDef[] = [
   { key: 'name',  label: 'Name', render: (r) => `${r.firstName ?? ''} ${r.lastName ?? ''}`.trim() || '—' },
   { key: 'email', label: 'Email' },
+  { key: 'phone', label: 'Phone', render: (r) => r.phone || r.mobile || '—' },
   { key: 'jobTitle', label: 'Job Title' },
+  { key: 'createdAt', label: 'Created Date', render: (r) => formatDate(r.createdAt) },
 ];
 
 const DEAL_COLS: FSColumnDef[] = [
-  { key: 'title',  label: 'Deal' },
-  { key: 'amount', label: 'Amount', render: (r) => r.amount ? `${r.currency ?? 'INR'} ${Number(r.amount).toLocaleString()}` : '—' },
-  { key: 'stage',  label: 'Stage', render: (r) => <FSStatusBadge value={r.stage ?? 'prospect'} /> },
+  { key: 'title',       label: 'Deal' },
+  { key: 'contactName', label: 'Contact Name', render: (r) => r.contactName || '—' },
+  { key: 'companyName', label: 'Company Name', render: (r) => r.companyName || '—' },
+  { key: 'amount',      label: 'Amount',       render: (r) => r.amount ? `${r.currency ?? 'INR'} ${Number(r.amount).toLocaleString()}` : '—' },
+  { key: 'stage',       label: 'Stage',        render: (r) => <FSStatusBadge value={r.stage ?? 'prospect'} /> },
+  { key: 'closeDate',   label: 'Close Date',   render: (r) => formatDate(r.closeDate) },
 ];
 
 export default function CompanyViewPage() {
@@ -190,9 +196,6 @@ export default function CompanyViewPage() {
 
           {activeTab === 'deals' && (
             <div className="max-w-4xl">
-              <p className="text-xs text-text-muted mb-3">
-                Matched by company name — Deals don't yet carry a direct link to Companies.
-              </p>
               <div className="bg-surface rounded-xl border border-border shadow-sm flex flex-col h-[560px] overflow-hidden">
                 <FSTable
                   columns={DEAL_COLS}

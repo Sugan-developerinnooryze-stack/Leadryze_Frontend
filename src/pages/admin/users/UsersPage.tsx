@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { MagnifyingGlassIcon, KeyIcon, ArrowPathIcon, CheckCircleIcon, ClockIcon, UsersIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { useEffect, useState, useMemo } from 'react';
+import { MagnifyingGlassIcon, KeyIcon, ArrowPathIcon, CheckCircleIcon, ClockIcon, UsersIcon, XMarkIcon, PlusIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { authService } from '../../../services/auth.service';
 import { AdminCard, AdminLoadingState, AdminErrorState, AdminEmptyState } from '../shared/AdminCard';
@@ -99,6 +99,16 @@ export default function UsersPage() {
     }
   };
 
+  // LR-RULE-002: Check for duplicate login emails across all tenants
+  const duplicateEmails = useMemo(() => {
+    const counts = new Map<string, number>();
+    users.forEach((u) => {
+      const em = (u.email || '').toLowerCase().trim();
+      if (em) counts.set(em, (counts.get(em) || 0) + 1);
+    });
+    return new Set(Array.from(counts.entries()).filter(([_, c]) => c > 1).map(([em]) => em));
+  }, [users]);
+
   // LR-ADMIN-005: search didn't match a user's Login ID at all.
   const filtered = users.filter((u) => `${u.firstName} ${u.lastName} ${u.email} ${u.loginId ?? ''}`.toLowerCase().includes(search.toLowerCase()));
 
@@ -107,6 +117,22 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-4">
+      {duplicateEmails.size > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-start gap-3">
+          <div className="p-1 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
+            <ExclamationTriangleIcon className="h-5 w-5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+              Duplicate Login Emails Detected ({duplicateEmails.size} address{duplicateEmails.size !== 1 ? 'es' : ''})
+            </h4>
+            <p className="text-xs text-amber-700/80 dark:text-amber-400/80 mt-0.5">
+              Login email must be unique across all tenants (LR-RULE-002). The following emails appear on multiple accounts and should be cleaned up: {Array.from(duplicateEmails).join(', ')}.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-lg font-bold text-text-primary">Users</h1>
@@ -149,7 +175,14 @@ export default function UsersPage() {
                         {u.firstName[0]}{u.lastName[0]}
                       </div>
                       <div>
-                        <p className="font-medium text-text-primary">{u.firstName} {u.lastName}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-text-primary">{u.firstName} {u.lastName}</p>
+                          {duplicateEmails.has((u.email || '').toLowerCase().trim()) && (
+                            <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                              Duplicate Email
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-1">
                           <p className="text-xs text-text-muted font-mono">{u.email}</p>
                           <CopyIconButton value={u.email} />

@@ -18,7 +18,6 @@ import {
 import { useCustomersListQuery } from '../../../modules/native-crm/queries/customers.queries';
 import { useContactsListQuery } from '../../../modules/crm/queries/contacts.queries';
 import { useCompaniesListQuery } from '../../../modules/crm/queries/companies.queries';
-import { useStaffsListQuery } from '../../../modules/native-crm/queries/staffs.queries';
 import { useUsersListQuery } from '../../../modules/native-crm/queries/users.queries';
 import { RecordLockBanner } from '../../../components/native-crm/RecordLockBanner';
 import { usePipelineStages, type PipelineStage } from '../../../modules/native-crm/queries/pipeline-config.queries';
@@ -29,6 +28,7 @@ import RecordTimeline from '../../../modules/native-crm/shared/RecordTimeline';
 import ColumnEditor from '../../../modules/crm/shared/ColumnEditor';
 import { fmtVal } from '../../../modules/crm/shared/FileActionsDropdown';
 import type { FieldConfig } from '../../../modules/crm/shared/types/crm.types';
+import { useOverlayVisibilityStore } from '../../../stores/overlayVisibility.store';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -393,12 +393,21 @@ function CustomerPicker({ contactName, companyName, onSelect }: {
 // conversion, the only other path that ever set contactId) can reference
 // one too. Deliberately separate from CustomerPicker/contactName — doesn't
 // touch that existing field or flow at all.
-function ContactLinker({ contactId, onSelect }: { contactId?: string; onSelect: (id: string) => void }) {
+function ContactLinker({ contactId, onSelect }: { contactId?: string; onSelect: (id: string, name?: string) => void }) {
   const { data } = useContactsListQuery({ limit: 200 });
   const contacts = data?.items ?? [];
   return (
     <Field label="Link to CRM Contact (optional)">
-      <select className={inp()} value={contactId ?? ''} onChange={(e) => onSelect(e.target.value)}>
+      <select
+        className={inp()}
+        value={contactId ?? ''}
+        onChange={(e) => {
+          const selectedId = e.target.value;
+          const found = contacts.find((c: any) => c._id === selectedId);
+          const fullName = found ? `${found.firstName ?? ''} ${found.lastName ?? ''}`.trim() : '';
+          onSelect(selectedId, fullName);
+        }}
+      >
         <option value="">None</option>
         {contacts.map((c: any) => (
           <option key={c._id} value={c._id}>{`${c.firstName ?? ''} ${c.lastName ?? ''}`.trim()}</option>
@@ -410,12 +419,20 @@ function ContactLinker({ contactId, onSelect }: { contactId?: string; onSelect: 
 
 // LR-OPP-001 (Company half): same reasoning as ContactLinker above, mirrored
 // exactly — a second, independent link to a real native-CRM Company.
-function CompanyLinker({ companyId, onSelect }: { companyId?: string; onSelect: (id: string) => void }) {
+function CompanyLinker({ companyId, onSelect }: { companyId?: string; onSelect: (id: string, name?: string) => void }) {
   const { data } = useCompaniesListQuery({ limit: 200 });
   const companies = data?.items ?? [];
   return (
     <Field label="Link to CRM Company (optional)">
-      <select className={inp()} value={companyId ?? ''} onChange={(e) => onSelect(e.target.value)}>
+      <select
+        className={inp()}
+        value={companyId ?? ''}
+        onChange={(e) => {
+          const selectedId = e.target.value;
+          const found = companies.find((c: any) => c._id === selectedId);
+          onSelect(selectedId, found?.name);
+        }}
+      >
         <option value="">None</option>
         {companies.map((c: any) => (
           <option key={c._id} value={c._id}>{c.name}</option>
@@ -437,13 +454,10 @@ function DealForm({ form, setForm, onSubmit, saving, submitLabel }: {
   // LR-OPP-001: Deals had no Owner field in the UI at all (assignedStaffId
   // was only ever set programmatically, via lead conversion) — same pattern
   // LeadsPage.tsx's own Owner selector already uses.
-  const { data: staffData } = useStaffsListQuery({ page: 1, limit: 1000 });
-  const staffOptions = staffData?.items ?? [];
-  // LR-RULE-003: Owner should be a CRM/sales user, not only Field-Service
-  // staff — assignedStaffId is a plain string (no Mongoose ref), so a
-  // platform User's _id is just as valid a value as a NativeStaff staffId.
+  // LR-RULE-003: Owner should be a CRM/sales user, not Field-Service
+  // staff (and deactivated users are excluded per LR-R2-USER-002).
   const { data: userData } = useUsersListQuery({ limit: 500 });
-  const userOptions = userData?.items ?? [];
+  const activeUsers = (userData?.items ?? []).filter((u: any) => u.isActive !== false && u.status !== 'inactive');
 
   const { data: customFields = [] } = useCustomFieldsQuery('deals');
   const activeCustomFields = customFields.filter((cf) => cf.isActive);
@@ -485,18 +499,9 @@ function DealForm({ form, setForm, onSubmit, saving, submitLabel }: {
         <Field label="Owner">
           <select className={inp()} value={form.assignedStaffId ?? ''} onChange={(e) => set('assignedStaffId', e.target.value)}>
             <option value="">Unassigned</option>
-            {userOptions.length > 0 && (
-              <optgroup label="CRM Users">
-                {userOptions.map((u: any) => (
-                  <option key={u._id} value={u._id}>{`${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email}</option>
-                ))}
-              </optgroup>
-            )}
-            {staffOptions.length > 0 && <optgroup label="Field Service Staff">
-            {staffOptions.map((s: any) => (
-              <option key={s.staffId} value={s.staffId}>{`${s.firstName ?? ''} ${s.lastName ?? ''}`.trim()}</option>
+            {activeUsers.map((u: any) => (
+              <option key={u._id} value={u._id}>{`${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email}</option>
             ))}
-            </optgroup>}
           </select>
         </Field>
 
@@ -506,8 +511,22 @@ function DealForm({ form, setForm, onSubmit, saving, submitLabel }: {
           companyName={form.companyName}
           onSelect={(name, company) => setForm((p: any) => ({ ...p, contactName: name, companyName: company }))}
         />
-        <ContactLinker contactId={form.contactId} onSelect={(id) => set('contactId', id)} />
-        <CompanyLinker companyId={form.companyId} onSelect={(id) => set('companyId', id)} />
+        <ContactLinker
+          contactId={form.contactId}
+          onSelect={(id, name) => setForm((p: any) => ({
+            ...p,
+            contactId: id,
+            ...(name && !p.contactName ? { contactName: name } : {}),
+          }))}
+        />
+        <CompanyLinker
+          companyId={form.companyId}
+          onSelect={(id, name) => setForm((p: any) => ({
+            ...p,
+            companyId: id,
+            ...(name && !p.companyName ? { companyName: name } : {}),
+          }))}
+        />
 
         <div className="col-span-2">
           <Field label="Expected Close Date">
@@ -860,6 +879,12 @@ export default function DealsPage() {
   };
 
   const panelOpen = panelMode !== 'none';
+  useEffect(() => {
+    if (!panelOpen) return;
+    const { push, pop } = useOverlayVisibilityStore.getState();
+    push();
+    return () => pop();
+  }, [panelOpen]);
 
   return (
     <div className="flex h-full overflow-hidden bg-background dark:bg-gray-950">
@@ -1072,7 +1097,7 @@ export default function DealsPage() {
 
       {/* Slide-in panel */}
       {panelOpen && (
-        <div className="fixed right-0 top-0 bottom-0 w-[420px] bg-surface border-l border-border shadow-2xl z-30 flex flex-col overflow-hidden">
+        <div className="fixed right-0 top-0 bottom-0 w-[420px] bg-surface border-l border-border shadow-2xl z-50 flex flex-col overflow-hidden">
           {(panelMode === 'create' || panelMode === 'edit') && (
             <>
               <div className="flex items-center justify-between px-4 py-3 border-b border-border">

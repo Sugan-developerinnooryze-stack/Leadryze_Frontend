@@ -42,6 +42,22 @@ function formatTime(ts: string) {
   return d.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 }
 
+function formatRole(role?: string): string {
+  if (!role) return '';
+  return role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function getRecordDisplayId(log: NativeCrmLogEntry): string {
+  const doc = (log.after || log.before || {}) as Record<string, any>;
+  const businessId = doc.customerId || doc.leadId || doc.quotationId || doc.invoiceId || doc.contractId || doc.receiptId || doc.workOrderId || doc.partId || doc.serviceId || doc.ticketId || doc.dealId;
+  const name = doc.name || doc.title || (doc.firstName ? `${doc.firstName} ${doc.lastName || ''}`.trim() : null) || doc.subject;
+  if (businessId && name && businessId !== name) return `${name} (${businessId})`;
+  if (businessId) return businessId;
+  if (name) return name;
+  if (log.resourceId && !/^[0-9a-fA-F]{24}$/.test(log.resourceId)) return log.resourceId;
+  return '—';
+}
+
 /** Keys where before[k] !== after[k] */
 function changedKeys(before: Record<string,any> | null, after: Record<string,any> | null): string[] {
   const b = before ?? {};
@@ -399,7 +415,7 @@ export default function NativeLogsPage() {
                       <td className="px-4 py-3">
                         <p className="text-xs font-medium text-text-primary">{log.actorName || log.actorId}</p>
                         {log.actorRole && (
-                          <span className="text-[10px] text-text-muted capitalize">{log.actorRole.toLowerCase()}</span>
+                          <span className="text-[10px] text-text-muted">{formatRole(log.actorRole)}</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -408,8 +424,8 @@ export default function NativeLogsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-xs text-text-primary capitalize">{log.module}</td>
-                      <td className="px-4 py-3 text-xs font-mono text-text-muted max-w-[120px] truncate">
-                        {log.resourceId || '—'}
+                      <td className="px-4 py-3 text-xs text-text-muted max-w-[160px] truncate" title={getRecordDisplayId(log)}>
+                        {getRecordDisplayId(log)}
                       </td>
                       <td className="px-4 py-3 text-xs text-text-muted max-w-[220px] truncate">
                         {summary(log)}

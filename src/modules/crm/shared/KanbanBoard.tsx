@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { LinkIcon, UserIcon, ClockIcon, PencilSquareIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { LinkIcon, UserIcon, ClockIcon, PencilSquareIcon, ChevronLeftIcon, ChevronRightIcon, EnvelopeIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import {
   DndContext, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors,
   useDroppable, type DragStartEvent, type DragOverEvent, type DragEndEvent,
@@ -72,6 +72,34 @@ function KanbanCardBody({
           </span>
         )}
       </div>
+      {Boolean(record.jobTitle || record.companyName || record.company) && (
+        <p className="text-[11px] text-text-muted truncate mt-1">
+          {[record.jobTitle, record.companyName || record.company].filter(Boolean).join(' • ')}
+        </p>
+      )}
+      {Boolean(record.email || record.phone) && (
+        <div className="flex items-center gap-2 mt-1.5 text-[10px] text-text-muted truncate">
+          {Boolean(record.email) && (
+            <span className="truncate flex items-center gap-1">
+              <EnvelopeIcon className="h-2.5 w-2.5 shrink-0 text-text-muted" />
+              <span className="truncate">{String(record.email)}</span>
+            </span>
+          )}
+          {Boolean(record.phone) && (
+            <span className="truncate flex items-center gap-1 shrink-0">
+              <PhoneIcon className="h-2.5 w-2.5 shrink-0 text-text-muted" />
+              <span>{String(record.phone)}</span>
+            </span>
+          )}
+        </div>
+      )}
+      {typeof record.lifecycleStage === 'string' && Boolean(record.lifecycleStage) && (
+        <div className="mt-1.5">
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full capitalize bg-ryze-50 dark:bg-ryze-950/40 text-ryze-700 dark:text-ryze-400 border border-ryze-200 dark:border-ryze-800">
+            {record.lifecycleStage.replace(/_/g, ' ')}
+          </span>
+        </div>
+      )}
       {typeof record.relatedLabel === 'string' && record.relatedLabel && (
         <p className="inline-flex items-center gap-1 text-[10px] text-ryze-500 truncate mt-1">
           <LinkIcon className="h-2.5 w-2.5 shrink-0" /> {record.relatedLabel}
@@ -266,8 +294,13 @@ export default function KanbanBoard({
   const [boardColumns, setBoardColumns] = useState<Record<string, string[]>>({});
   useMemo(() => {
     const next: Record<string, string[]> = {};
-    statusOptions.forEach((status) => {
-      next[status] = records.filter((r) => String(r[statusField] ?? '') === status).map((r) => r._id);
+    statusOptions.forEach((status, idx) => {
+      next[status] = records.filter((r) => {
+        const val = String(r[statusField] ?? '');
+        if (val === status) return true;
+        if (idx === 0 && (!val || !statusOptions.includes(val))) return true;
+        return false;
+      }).map((r) => r._id);
     });
     setBoardColumns(next);
     // Recompute whenever the underlying records (or the status list) change

@@ -1,4 +1,5 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
 import { useAuthStore, type SidebarLayout } from '../stores/auth.store';
 import { authService } from '../services/auth.service';
 
@@ -19,6 +20,9 @@ const DEFAULT_PINNED_IDS = new Set([
   'fs:workorders',
 ]);
 
+const CUSTOM_DEFAULT_STORAGE_KEY = (userId?: string) => `sidebar_custom_default_${userId ?? 'user'}`;
+const PRE_SHOW_ALL_STORAGE_KEY   = (userId?: string) => `sidebar_pre_show_all_${userId ?? 'user'}`;
+
 /** Sidebar drag/pin/hide customization — a pure UI-ordering preference
  * layered on top of Sidebar.tsx's existing canNav()/canNavFlag() gating.
  * Callers must always filter their item list through those first; this hook
@@ -38,6 +42,14 @@ export function useSidebarLayout() {
   const layout: SidebarLayout = user?.sidebarLayout ?? {};
   const items  = layout.items  ?? {};
   const groups = layout.groups ?? {};
+
+  const [hasCustomDefault, setHasCustomDefault] = useState<boolean>(() => {
+    try {
+      return Boolean(localStorage.getItem(CUSTOM_DEFAULT_STORAGE_KEY(user?._id)));
+    } catch {
+      return false;
+    }
+  });
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef       = useRef<AbortController | null>(null);
@@ -104,21 +116,114 @@ export function useSidebarLayout() {
     persist({ ...layout, groups: nextGroups });
   }, [groups, isGroupVisible, layout, persist]);
 
-  const resetToDefault = useCallback(() => {
-    persist({ items: {}, groups: {} });
-  }, [persist]);
+  /** Saves the user's current pinned selection & order as their own default layout */
+  const saveAsDefault = useCallback(() => {
+    try {
+      const key = CUSTOM_DEFAULT_STORAGE_KEY(user?._id);
+      localStorage.setItem(key, JSON.stringify(layout));
+      setHasCustomDefault(true);
+      toast.success('Current sidebar layout saved as default');
+    } catch {
+      toast.error('Failed to save default layout');
+    }
+  }, [layout, user?._id]);
 
-  /** "Show All" — literally pins every given (already-permitted) id, plus
-   * both dynamic groups. Only ever adds pins; never touches order, so
-   * existing custom ordering survives. Distinct from resetToDefault, which
-   * instead reverts to the small curated starter set. */
+  /** "Show All" — pins every given (already-permitted) id, plus
+   * both dynamic groups. Saves a snapshot of current layout first so user can revert! */
   const pinAll = useCallback((ids: string[]) => {
+    try {
+      localStorage.setItem(PRE_SHOW_ALL_STORAGE_KEY(user?._id), JSON.stringify(layout));
+    } catch {}
+
     const nextItems = { ...items };
     ids.forEach((id) => {
       nextItems[id] = { ...nextItems[id], pinned: true };
     });
     persist({ items: nextItems, groups: { crmData: true, customModules: true } });
-  }, [items, persist]);
+  }, [items, layout, persist, user?._id]);
 
-  return { isPinned, split, togglePin, reorder, isGroupVisible, toggleGroup, resetToDefault, pinAll };
+  /** Checks if all given items are currently pinned */
+  const isAllPinned = useCallback((allIds: string[]): boolean => {
+    if (!allIds || allIds.length === 0) return false;
+    return allIds.every((id) => isPinned(id)) && groups.crmData === true && groups.customModules === true;
+  }, [isPinned, groups]);
+
+  /** Restores the layout snapshot from before "Show All" was clicked */
+  const restorePreShowAll = useCallback(() => {
+    try {
+      const key = PRE_SHOW_ALL_STORAGE_KEY(user?._id);
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        localStorage.removeItem(key);
+        persist(parsed);
+        toast.success('Restored previous sidebar layout');
+        return;
+      }
+    } catch {}
+    // If no pre-show-all snapshot exists, fall back to resetToDefault
+    resetToDefault();
+  }, [user?._id, persist]);
+
+  /** Smart reset:
+   * 1. If currently in Show All mode, restores pre-show-all snapshot (preserves pinned items like Campaigns!)
+   * 2. If client has set their own default layout via "Set as Default", restores that!
+   * 3. Otherwise reverts to factory system defaults. */
+  const resetToDefault = useCallback(() => {
+    // 1. Snapshot from before Show All
+    try {
+      const preKey = PRE_SHOW_ALL_STORAGE_KEY(user?._id);
+      const preSaved = localStorage.getItem(preKey);
+      if (preSaved) {
+        const parsed = JSON.parse(preSaved);
+        localStorage.removeItem(preKey);
+        persist(parsed);
+        toast.success('Restored your sidebar layout');
+        return;
+      }
+    } catch {}
+
+    // 2. Client's own saved default
+    try {
+      const defKey = CUSTOM_DEFAULT_STORAGE_KEY(user?._id);
+      const defSaved = localStorage.getItem(defKey);
+      if (defSaved) {
+        const parsed = JSON.parse(defSaved);
+        persist(parsed);
+        toast.success('Reset to your custom default setup');
+        return;
+      }
+    } catch {}
+
+    // 3. Fallback to system default
+    persist({ items: {}, groups: {} });
+    toast.success('Reset to system default');
+  }, [user?._id, persist]);
+
+  /** Hard reset to factory default, clearing custom default */
+  const resetToSystemDefault = useCallback(() => {
+    try {
+      localStorage.removeItem(PRE_SHOW_ALL_STORAGE_KEY(user?._id));
+      localStorage.removeItem(CUSTOM_DEFAULT_STORAGE_KEY(user?._id));
+      setHasCustomDefault(false);
+    } catch {}
+    persist({ items: {}, groups: {} });
+    toast.success('Reset to system default');
+  }, [user?._id, persist]);
+
+  return {
+    isPinned,
+    split,
+    togglePin,
+    reorder,
+    isGroupVisible,
+    toggleGroup,
+    resetToDefault,
+    resetToSystemDefault,
+    pinAll,
+    restorePreShowAll,
+    saveAsDefault,
+    hasCustomDefault,
+    isAllPinned,
+  };
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { BellAlertIcon, CheckIcon, EnvelopeIcon, ChatBubbleLeftRightIcon, ClockIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router-dom';
+import { BellAlertIcon, CheckIcon, EnvelopeIcon, ChatBubbleLeftRightIcon, ClockIcon, PaperAirplaneIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import {
   useNotificationSettingsQuery, useNotificationSettingsUpdate, NotificationSettings,
 } from '../../../modules/native-crm/queries/notification-settings.queries';
@@ -39,6 +40,7 @@ function ToggleRow({
 }
 
 export default function NotificationSettingsPage() {
+  const navigate = useNavigate();
   const { data: settings, isLoading } = useNotificationSettingsQuery();
   const updateMutation = useNotificationSettingsUpdate();
   const [form, setForm] = useState<Partial<NotificationSettings>>({});
@@ -66,6 +68,15 @@ export default function NotificationSettingsPage() {
   return (
     <div className="flex flex-col h-full">
       <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-4 shrink-0">
+        <button
+          type="button"
+          onClick={() => navigate('/native-crm/configuration')}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-border/60 transition-colors shrink-0"
+          title="Back to Configuration"
+        >
+          <ArrowLeftIcon className="h-4 w-4" />
+          <span>Back</span>
+        </button>
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="h-9 w-9 rounded-lg bg-black/[0.06] dark:bg-white/[0.08] flex items-center justify-center shrink-0">
             <BellAlertIcon className="h-5 w-5 text-text-muted" />

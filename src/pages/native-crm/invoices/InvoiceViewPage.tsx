@@ -12,14 +12,15 @@ import FSShareModal from '../../../modules/native-crm/shared/FSShareModal';
 import { canViewPII } from '../../../modules/native-crm/shared/piiAccess';
 import { useAuthStore } from '../../../stores/auth.store';
 import api from '../../../services/api';
+import { downloadDocumentPdf } from '../../../modules/native-crm/shared/downloadPdf';
+import { formatDate } from '../../../utils/dateUtils';
 
-const CUR: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
-function fmt(n: number | undefined | null, cur = '$') {
+const CUR: Record<string, string> = { INR:'₹',AUD:'A$',USD:'$',GBP:'£',EUR:'€',CAD:'C$',NZD:'NZ$',SGD:'S$' };
+function fmt(n: number | undefined | null, cur = '₹') {
   return `${cur}${n != null ? Number(n).toFixed(2) : '0.00'}`;
 }
 function fmtD(d: string | Date | undefined | null) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatDate(d);
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -70,7 +71,7 @@ export default function InvoiceViewPage() {
   const canShareContact = canViewPII('customers', settings, user?.role);
 
   const customer = custList?.items?.find((c: any) => c.customerId === item?.customerId) ?? null;
-  const cur = CUR[settings?.currency ?? 'AUD'] ?? '$';
+  const cur = CUR[settings?.currency ?? 'INR'] ?? '₹';
 
   const svcSubtotal = (item?.services ?? []).reduce((s: number, sv: any) => s + (sv.amount ?? 0) * (sv.count ?? 1), 0);
   const prtSubtotal = (item?.parts ?? []).reduce((s: number, pt: any) => s + (pt.amount ?? 0) * (pt.count ?? 1), 0);
@@ -78,9 +79,25 @@ export default function InvoiceViewPage() {
   const discount = item?.discount ?? 0;
   const gst = item?.gstPercentage ?? 0;
   // discount is a percentage (0-100), not a flat amount.
-  const discountAmt = (combined * discount) / 100;
-  const afterDiscount = combined - discountAmt;
-  const total = afterDiscount * (1 + gst / 100);
+  const hasLineTaxOrDisc = (item?.services ?? []).some((s: any) => (Number(s.taxPercent) > 0 || Number(s.discountPercent) > 0));
+  let discountAmt = (combined * discount) / 100;
+  let afterDiscount = combined - discountAmt;
+  let total = item?.servicesAmountWithTax != null ? Number(item.servicesAmountWithTax) : afterDiscount * (1 + gst / 100);
+
+  if (discount === 0 && gst === 0 && hasLineTaxOrDisc) {
+    let lineAfter = 0;
+    let lineWithTax = 0;
+    for (const sv of (item?.services ?? [])) {
+      const g = (sv.amount ?? 0) * (sv.count ?? 1);
+      const ad = g * (1 - (Number(sv.discountPercent) || 0) / 100);
+      const wt = ad * (1 + (Number(sv.taxPercent) || 0) / 100);
+      lineAfter += ad;
+      lineWithTax += wt;
+    }
+    afterDiscount = lineAfter + prtSubtotal;
+    total = item?.servicesAmountWithTax != null ? Number(item.servicesAmountWithTax) : lineWithTax + prtSubtotal;
+    discountAmt = combined - lineAfter;
+  }
 
   const handleShare = async () => {
     if (!item) return;
@@ -100,13 +117,17 @@ export default function InvoiceViewPage() {
     if (!id) return;
     setDownloading(true);
     try {
-      const res = await api.get(`/api/v1/native-crm/pdf/invoices/${id}?template=classic`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-      const a = document.createElement('a');
-      a.href = url; a.download = `invoice-${item?.invoiceId ?? id}.pdf`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch { } finally { setDownloading(false); }
+      await downloadDocumentPdf({
+        module: 'invoices',
+        id,
+        filename: `invoice-${item?.invoiceId ?? id}.pdf`,
+        template: 'classic',
+      });
+    } catch {
+      // toast shown in downloadDocumentPdf
+    } finally {
+      setDownloading(false);
+    }
   };
 
   if (isLoading) return (
@@ -337,6 +358,13 @@ export default function InvoiceViewPage() {
               {gst > 0 && <div className="flex justify-between text-text-muted"><span>GST ({gst}%)</span><span>{fmt(total - afterDiscount, cur)}</span></div>}
               <div className={`flex justify-between font-bold text-base border-t-2 pt-2 ${isPaid ? 'border-green-300 text-green-700' : 'border-border text-text-primary'}`}>
                 <span>Total</span><span>{fmt(total, cur)}</span>
+              </div>
+              {/* LR-C3-RCPT-002: Display real-time Paid Amount and Balance Due */}
+              <div className="flex justify-between text-text-muted text-sm pt-1">
+                <span>Paid Amount</span><span>{fmt(Number(item.paidAmount ?? 0), cur)}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-sm text-text-primary">
+                <span>Balance Due</span><span>{fmt(Math.max(0, Math.round((total - Number(item.paidAmount ?? 0)) * 100) / 100), cur)}</span>
               </div>
             </div>
           </div>

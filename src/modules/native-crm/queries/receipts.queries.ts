@@ -4,7 +4,7 @@ import api from '../../../services/api';
 const BASE = '/api/v1/native-crm/receipts';
 const KEY  = ['native-crm', 'receipts'] as const;
 
-interface ListParams { page?: number; limit?: number; search?: string; status?: string; }
+interface ListParams { page?: number; limit?: number; search?: string; status?: string; customerId?: string; }
 interface Meta       { total: number; page: number; totalPages: number; }
 
 export function useReceiptsListQuery(params: ListParams) {
@@ -30,7 +30,10 @@ export function useReceiptCreate() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => api.post(BASE, data),
-    onSuccess:  () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEY });
+      qc.invalidateQueries({ queryKey: ['native-crm', 'invoices'] });
+    },
   });
 }
 
@@ -38,7 +41,10 @@ export function useReceiptUpdate() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => api.put(`${BASE}/${id}`, data),
-    onSuccess:  () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEY });
+      qc.invalidateQueries({ queryKey: ['native-crm', 'invoices'] });
+    },
   });
 }
 
@@ -46,6 +52,10 @@ export function useReceiptDelete() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.delete(`${BASE}/${id}`),
-    onSuccess:  () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEY });
+      qc.invalidateQueries({ queryKey: ['native-crm', 'invoices'] });
+    },
   });
 }
+

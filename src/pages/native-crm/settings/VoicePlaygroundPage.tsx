@@ -115,8 +115,14 @@ export default function VoicePlaygroundPage() {
   return (
     <div className="flex flex-col h-full">
       <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-3 shrink-0">
-        <button onClick={() => navigate('/native-crm/settings/widget')} className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors">
+        <button
+          type="button"
+          onClick={() => navigate('/native-crm/configuration')}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-border/60 transition-colors shrink-0"
+          title="Back to Configuration"
+        >
           <ArrowLeftIcon className="h-4 w-4" />
+          <span>Back</span>
         </button>
         <div className="h-9 w-9 rounded-lg bg-cyan-50 flex items-center justify-center shrink-0">
           <MicrophoneIcon className="h-[18px] w-[18px] text-cyan-600" />

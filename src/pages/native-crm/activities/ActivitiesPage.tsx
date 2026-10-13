@@ -1,4 +1,5 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { formatDate } from '../../../utils/dateUtils';
 import { BoltIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import FSDrawer from '../../../modules/native-crm/shared/FSDrawer';
@@ -53,7 +54,7 @@ const COLUMNS: FSColumnDef[] = [
   { key: 'subject',      label: 'Subject' },
   { key: 'relatedModule', label: 'Related To', render: (r) => r.relatedModule ? `${r.relatedModule} / ${r.relatedId ?? ''}` : '—' },
   { key: 'assignedTo',   label: 'Assigned To', render: (r) => r.assignedTo ?? '—' },
-  { key: 'scheduledAt',  label: 'Scheduled',   render: (r) => r.scheduledAt ? new Date(r.scheduledAt).toLocaleDateString() : '—' },
+  { key: 'scheduledAt',  label: 'Scheduled',   render: (r) => formatDate(r.scheduledAt) },
   {
     key: 'status',
     label: 'Status',

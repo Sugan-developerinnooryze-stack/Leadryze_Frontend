@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { Cog6ToothIcon, CloudArrowUpIcon, CheckIcon, ChevronUpIcon, ChevronDownIcon, ExclamationTriangleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { Link, useNavigate } from 'react-router-dom';
+import { Cog6ToothIcon, CloudArrowUpIcon, CheckIcon, ChevronUpIcon, ChevronDownIcon, ExclamationTriangleIcon, InformationCircleIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import FSDeleteModal from '../../../modules/native-crm/shared/FSDeleteModal';
 import {
   useFSSettingsQuery,
@@ -364,6 +364,7 @@ function LockAuditLog() {
 }
 
 export default function FSSettingsPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
   const [saved,     setSaved]     = useState(false);
   const { data: settings, isLoading } = useFSSettingsQuery();
@@ -490,6 +491,15 @@ export default function FSSettingsPage() {
   return (
     <div className="flex flex-col h-full">
       <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-4 shrink-0">
+        <button
+          type="button"
+          onClick={() => navigate('/native-crm/configuration')}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-border/60 transition-colors shrink-0"
+          title="Back to Configuration"
+        >
+          <ArrowLeftIcon className="h-4 w-4" />
+          <span>Back</span>
+        </button>
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="h-9 w-9 rounded-lg bg-black/[0.06] dark:bg-white/[0.08] flex items-center justify-center shrink-0">
             <Cog6ToothIcon className="h-5 w-5 text-text-muted" />
@@ -689,7 +699,7 @@ export default function FSSettingsPage() {
                 </select>
               </FieldRow>
               <FieldRow label="Currency">
-                <select value={merged.currency ?? 'AUD'} onChange={(e) => set('currency')(e.target.value)}
+                <select value={merged.currency ?? 'INR'} onChange={(e) => set('currency')(e.target.value)}
                   className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ryze-400 bg-background text-text-primary">
                   {['AUD','USD','GBP','EUR','INR','CAD','NZD','SGD'].map(c => (
                     <option key={c} value={c}>{c}</option>

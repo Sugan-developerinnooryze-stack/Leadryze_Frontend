@@ -42,7 +42,7 @@ function InfoRow({ label, value }: { label: string; value?: React.ReactNode }) {
 
 function GenericTabList({ queryHook, customerId, onRowClick, columns }: any) {
   const [page, setPage] = useState(1);
-  const { data, isLoading } = queryHook({ page, limit: 10, search: customerId });
+  const { data, isLoading } = queryHook({ page, limit: 10, customerId });
   const items = data?.items ?? [];
   const meta = data?.meta ?? { total: 0, page: 1, totalPages: 1 };
 

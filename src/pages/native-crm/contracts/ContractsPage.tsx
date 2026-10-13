@@ -23,10 +23,11 @@ import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-
 import { useCustomerNameMap } from '../../../modules/native-crm/shared/useCustomerNameMap';
 import { useTeamNameMap } from '../../../modules/native-crm/shared/useTeamNameMap';
 import { useStaffNameMap } from '../../../modules/native-crm/shared/useStaffNameMap';
+import { formatDate } from '../../../utils/dateUtils';
 
 // LR-UI-004: matches the symbol map Quotations/Invoices/Receipts already
 // resolve from settings.currency — this list page was still hardcoding "$".
-const CUR_SYMBOL: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
+const CUR_SYMBOL: Record<string, string> = { INR:'₹',AUD:'A$',USD:'$',GBP:'£',EUR:'€',CAD:'C$',NZD:'NZ$',SGD:'S$' };
 const STEP_LABEL: Record<string, string> = { quotation: 'Quotation', workorder: 'WO', invoice: 'Invoice' };
 const STEP_PATH:  Record<string, string> = {
   quotation: '/native-crm/quotations',
@@ -100,12 +101,12 @@ export default function ContractsPage() {
         </span>
       );
     }},
-    { key: 'startDate',   label: 'Start', render: (r) => r.startDate ? new Date(r.startDate).toLocaleDateString() : '—' },
-    { key: 'endDate',     label: 'End',   render: (r) => r.endDate   ? new Date(r.endDate).toLocaleDateString()   : '—' },
-    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `${CUR_SYMBOL[settings?.currency ?? 'AUD'] ?? '$'}${Number(r.servicesAmountWithTax).toFixed(2)}` : '—' },
+    { key: 'startDate',   label: 'Start', render: (r) => formatDate(r.startDate) },
+    { key: 'endDate',     label: 'End',   render: (r) => formatDate(r.endDate) },
+    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `${CUR_SYMBOL[settings?.currency ?? 'INR'] ?? '₹'}${Number(r.servicesAmountWithTax).toFixed(2)}` : '—' },
     { key: 'status',   label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
     { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
-    { key: 'createdAt', label: 'Created Date', render: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—' },
+    { key: 'createdAt', label: 'Created Date', render: (r) => formatDate(r.createdAt) },
   ], [customerNames, teamNames, staffNames, settings?.currency]);
 
   useEffect(() => {

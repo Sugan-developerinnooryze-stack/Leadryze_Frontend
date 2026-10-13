@@ -1,9 +1,10 @@
 import type React from 'react';
 import type { FC, SVGProps } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { UserRoundPlus, Zap, TrendingUp } from 'lucide-react';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
+import { useRef } from 'react';
 
 type HeroIcon = FC<SVGProps<SVGSVGElement>>;
 
@@ -116,8 +117,23 @@ function FeatureHighlights() {
   );
 }
 
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const reducedMotion = usePrefersReducedMotion();
+  const heroRef = useRef<HTMLDivElement>(null);
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const springX = useSpring(mouseX, { stiffness: 40, damping: 20 });
+  const springY = useSpring(mouseY, { stiffness: 40, damping: 20 });
+  const imgRotateX = useTransform(springY, [-300, 300], [4, -4]);
+  const imgRotateY = useTransform(springX, [-400, 400], [-6, 6]);
+
+  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (reducedMotion || !heroRef.current) return;
+    const rect = heroRef.current.getBoundingClientRect();
+    mouseX.set(e.clientX - rect.left - rect.width / 2);
+    mouseY.set(e.clientY - rect.top - rect.height / 2);
+  }
 
   return (
     <div className="min-h-screen bg-background bg-[url('/auth-bg.png')] bg-cover bg-center bg-no-repeat dark:bg-none flex overflow-x-hidden">
@@ -130,8 +146,40 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         style={{ background: 'radial-gradient(circle at 72% 42%, rgba(0,158,181,0.10), transparent 55%)' }}
       />
 
+      {/* Animated ambient orbs — light mode subtle, dark mode vivid */}
+      <motion.div
+        aria-hidden
+        animate={reducedMotion ? undefined : {
+          scale: [1, 1.15, 1],
+          opacity: [0.3, 0.5, 0.3],
+        }}
+        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+        className="fixed top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle, rgba(0,158,181,0.18), transparent 70%)',
+          filter: 'blur(60px)',
+        }}
+      />
+      <motion.div
+        aria-hidden
+        animate={reducedMotion ? undefined : {
+          scale: [1.1, 1, 1.1],
+          opacity: [0.2, 0.4, 0.2],
+        }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+        className="fixed bottom-[-10%] left-[30%] w-[600px] h-[400px] rounded-full pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle, rgba(44,191,208,0.15), transparent 70%)',
+          filter: 'blur(80px)',
+        }}
+      />
+
       {/* ── Left hero pane — hidden below lg, matches the reference's 56/44 split ── */}
-      <div className="hidden lg:flex lg:w-[56%] flex-col relative z-10 px-10 xl:px-14 py-9 gap-7 overflow-y-auto">
+      <div
+        ref={heroRef}
+        onMouseMove={handleMouseMove}
+        className="hidden lg:flex lg:w-[56%] flex-col relative z-10 px-10 xl:px-14 py-9 gap-7 overflow-y-auto"
+      >
         <motion.header
           initial={reducedMotion ? undefined : { opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -150,11 +198,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <PlatformBadge />
           </motion.div>
 
-          {/* Headline + handwritten tagline sit in the same flex row so the
-             tagline naturally lands in the open space beside the headline
-             on wide viewports, and drops below it on narrower ones — a
-             flex-wrap layout instead of guessing at absolute-position
-             coordinates that would only hold at one exact viewport width. */}
+          {/* Headline + handwritten tagline */}
           <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
             <h2
               className="font-display text-[clamp(2.8rem,4.6vw,4.7rem)] font-extrabold leading-[1.01] tracking-[-0.03em] text-text-primary shrink-0"
@@ -172,13 +216,18 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                   className="absolute left-0 -bottom-2 w-full h-3 text-ryze-400/70"
                   viewBox="0 0 320 12" preserveAspectRatio="none" fill="none" aria-hidden
                 >
-                  <path d="M2 8.5C60 2 140 2 160 6C180 10 260 10 318 4" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                  <motion.path
+                    d="M2 8.5C60 2 140 2 160 6C180 10 260 10 318 4"
+                    stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+                    initial={reducedMotion ? undefined : { pathLength: 0, opacity: 0 }}
+                    animate={{ pathLength: 1, opacity: 1 }}
+                    transition={{ duration: 1.2, delay: 1, ease: 'easeOut' }}
+                  />
                 </svg>
               </span>
             </h2>
 
-            {/* Handwritten accent callout — the original headline copy,
-               demoted to a small tagline beside the new one. */}
+            {/* Handwritten accent callout */}
             <motion.div
               initial={reducedMotion ? undefined : { opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -213,18 +262,28 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <FeatureHighlights />
         </motion.div>
 
+        {/* Dashboard preview — floating laptop image with soft glow */}
         <motion.div
           initial={reducedMotion ? undefined : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.36, ease: EASE }}
           className="flex-1 flex items-center justify-center min-h-0 py-4"
         >
-          <img
-            src="/dashboard-preview.png"
-            alt="LeadRyze AI dashboard preview with AI Chatbot, WhatsApp, Automation, and Integrations"
-            className="w-full max-w-[920px] h-auto select-none pointer-events-none"
-            draggable={false}
-          />
+          <div className="relative w-full max-w-[920px]">
+            {/* Laptop image — floats up/down continuously, with mouse-parallax 3D tilt */}
+            <motion.div
+              style={reducedMotion ? undefined : { rotateX: imgRotateX, rotateY: imgRotateY, perspective: 1200 }}
+            >
+              <motion.img
+                src="/dashboard-preview.png"
+                alt="LeadRyze AI dashboard preview with AI Chatbot, WhatsApp, Automation, and Integrations"
+                className="w-full h-auto select-none pointer-events-none"
+                draggable={false}
+                animate={reducedMotion ? undefined : { y: [0, -10, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            </motion.div>
+          </div>
         </motion.div>
       </div>
 

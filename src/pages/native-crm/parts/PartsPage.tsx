@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { CubeIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import FSDrawer from '../../../modules/native-crm/shared/FSDrawer';
@@ -43,7 +43,7 @@ export default function PartsPage() {
     { key: 'partId',     label: 'ID' },
     { key: 'name',       label: 'Part Name' },
     { key: 'partNumber', label: 'Part No.' },
-    { key: 'price',      label: 'Price',    render: (r) => r.price != null ? `${CUR_SYMBOL[settings?.currency ?? 'AUD'] ?? '$'}${Number(r.price).toFixed(2)}` : '—' },
+    { key: 'price',      label: 'Price',    render: (r) => r.price != null ? `${CUR_SYMBOL[settings?.currency ?? 'INR'] ?? '₹'}${Number(r.price).toFixed(2)}` : '—' },
     { key: 'quantity',   label: 'Qty',      render: (r) => r.quantity ?? '—' },
     { key: 'status',     label: 'Status',   render: (r) => <FSStatusBadge value={r.status ?? 'active'} /> },
     { key: 'branchId', label: 'Company', render: (r: any) => <CompanyBadge branchId={r.branchId} /> },

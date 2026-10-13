@@ -52,6 +52,28 @@ export interface FlowNode {
   backReferenceField?: string;
   retryCount?: 0 | 1 | 2 | 3;
   retryBackoffMs?: 1000 | 5000 | 30000 | 60000;
+  /** Inert today — see automation-flow.model.ts's own comment (backend).
+   * Present now so a future per-tenant Connections system is additive. */
+  connectionId?: string;
+
+  // Send Email (actionType === 'send_email' only). emailTo overrides
+  // recipientStrategy when set; emailBody overrides templateId when set —
+  // both exactly mirror the backend's own fallback order.
+  emailTo?: FieldMapping;
+  emailSubject?: string;
+  emailBody?: string;
+  emailCc?: string;
+  emailBcc?: string;
+  emailReplyTo?: string;
+  emailAttachPdf?: boolean;
+
+  // Send WhatsApp / Send SMS (actionType === 'send_whatsapp'/'send_sms' only)
+  whatsappTo?: FieldMapping;
+  whatsappBody?: string;
+  /** Only 'text' is actually sendable today — see the model's own comment. */
+  whatsappMessageType?: 'text' | 'template' | 'image' | 'document';
+  smsTo?: FieldMapping;
+  smsBody?: string;
 
   // Add Note (actionType === 'add_note' only)
   noteSubject?: string;
@@ -120,7 +142,12 @@ export interface AutomationFlow {
 }
 
 export type FlowRunStatus = 'running' | 'completed' | 'partial' | 'failed' | 'paused';
-export type FlowRunStepStatus = 'success' | 'failed' | 'skipped';
+/** 'unknown' — a send's outcome couldn't be confirmed (the provider's
+ * response was lost or timed out after possibly already accepting the
+ * request) — see classifySendError()/the send branch in the backend's
+ * automation-flow.service.ts. Distinct from 'failed' so the UI never
+ * falsely claims a message definitely wasn't sent. */
+export type FlowRunStepStatus = 'success' | 'failed' | 'skipped' | 'unknown';
 
 export interface FlowRunStep {
   nodeId: string;
@@ -133,6 +160,12 @@ export interface FlowRunStep {
   error?: string;
   result?: string;
   variables?: Record<string, string>;
+  /** Real structured input/output for this step — redacted (known-sensitive
+   * keys masked) and size-capped before storage; see redactAndCapForLog()/
+   * forLog() (automation-flow.service.ts, backend). Absent on node types
+   * that don't have a meaningful input/output shape (delay, merge, …). */
+  input?: Record<string, unknown>;
+  output?: Record<string, unknown>;
   createdRecordModule?: string;
   createdRecordId?: string;
   attempt?: number;
@@ -154,6 +187,20 @@ export interface AutomationFlowRun {
   finishedAt?: string;
   durationMs?: number;
   steps: FlowRunStep[];
+  /** Only present while status === 'paused' — which kind of pause (a Delay
+   * timer vs. an Approval gate) and, for approval, which node is waiting on
+   * a decision. Absent/'kind' undefined means a Delay pause (the only other
+   * kind today); see decideApproval()/pollPausedFlows() (backend). */
+  pauseState?: { kind?: 'approval'; pausedNodeId?: string };
+  /** A pinned copy of the flow's own nodes/edges as of the moment THIS run
+   * started — populated unconditionally by executeFlow() (backend,
+   * automation-flow-run.model.ts's own doc comment), already sent on every
+   * run response, just not previously read here. The CORRECT source for
+   * rendering a run's diagram — unlike the current flow definition, it's
+   * accurate even after the flow has been edited/republished, or even
+   * deleted, since the run doesn't depend on the live flow document at
+   * all. Absent only for a run created before this field existed. */
+  flowSnapshot?: { nodes: FlowNode[]; edges: FlowEdge[] };
 }
 
 export interface DryRunStep {
@@ -161,6 +208,12 @@ export interface DryRunStep {
   nodeType: string;
   label: string;
   result: string;
+  /** 'would-skip' means dry-run determined this step would NOT actually
+   * fire for real (no template/inline body, no resolvable recipient) — see
+   * IDryRunStep (backend). */
+  status: 'ok' | 'would-skip';
+  /** Only set on a condition node — which port was actually taken. */
+  branch?: 'true' | 'false';
 }
 
 export interface DryRunResult {
@@ -219,6 +272,22 @@ export function useDeleteAutomationFlow() {
   });
 }
 
+// One-shot read used by both the hub's and the builder's "Duplicate" action
+// — not a query hook since nothing needs to subscribe to it, just a single
+// fetch immediately followed by a create.
+export async function fetchFlowForDuplicate(id: string): Promise<AutomationFlow | null> {
+  const res = await api.get(`${BASE}/${id}`);
+  return res.data.data as AutomationFlow;
+}
+
+// One-shot read used by the old standalone Executions URL's redirect
+// (AutomationExecutionsPage.tsx) to resolve a runId to its owning flowId
+// before forwarding into that flow's own Studio Executions tab.
+export async function fetchFlowRunById(runId: string): Promise<AutomationFlowRun | null> {
+  const res = await api.get(`${BASE}/runs/${runId}`);
+  return res.data.data as AutomationFlowRun;
+}
+
 // ── Versioning: publish / discard draft ──────────────────────────────────
 
 export function usePublishFlow() {
@@ -248,11 +317,15 @@ export function useDryRunFlow() {
 
 // ── Execution history ─────────────────────────────────────────────────────
 
-export function useFlowRunsQuery(flowId?: string, status?: string) {
+// flowId omitted lists runs across every flow for the tenant (the standalone
+// Executions page) — the backend's listFlowRuns already treats flowId as an
+// optional filter; this hook previously hardcoded `enabled: !!flowId`
+// because its only caller (the in-builder History panel) always has one, not
+// because the backend requires it.
+export function useFlowRunsQuery(flowId?: string, status?: string, page = 1) {
   return useQuery({
-    queryKey: [...KEY, 'runs', flowId, status],
-    queryFn: () => api.get(`${BASE}/runs`, { params: { flowId, status, limit: 50 } }).then((r) => r.data.data as AutomationFlowRun[]),
-    enabled: !!flowId,
+    queryKey: [...KEY, 'runs', flowId, status, page],
+    queryFn: () => api.get(`${BASE}/runs`, { params: { flowId, status, page, limit: 50 } }).then((r) => r.data.data as AutomationFlowRun[]),
   });
 }
 

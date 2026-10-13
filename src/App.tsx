@@ -71,9 +71,9 @@ const FSSettingsPage          = lazy(() => import('./pages/native-crm/settings/F
 const NotificationSettingsPage = lazy(() => import('./pages/native-crm/settings/NotificationSettingsPage'));
 const PipelineSettingsPage     = lazy(() => import('./pages/native-crm/settings/PipelineSettingsPage'));
 const ConfigurationHubPage     = lazy(() => import('./pages/native-crm/settings/ConfigurationHubPage'));
-const AutomationRulesPage      = lazy(() => import('./pages/native-crm/settings/AutomationRulesPage'));
 const AutomationFlowsPage      = lazy(() => import('./pages/native-crm/settings/AutomationFlowsPage'));
 const AutomationFlowBuilderPage = lazy(() => import('./pages/native-crm/settings/AutomationFlowBuilderPage'));
+const AutomationExecutionsPage = lazy(() => import('./pages/native-crm/settings/AutomationExecutionsPage'));
 const ImportExportPage         = lazy(() => import('./pages/native-crm/settings/ImportExportPage'));
 const WidgetSettingsPage       = lazy(() => import('./pages/native-crm/settings/WidgetSettingsPage'));
 const VoicePlaygroundPage      = lazy(() => import('./pages/native-crm/settings/VoicePlaygroundPage'));
@@ -106,6 +106,7 @@ const TicketsPage     = lazy(() => import('./modules/crm/tickets/pages/TicketsPa
 const CallsPage       = lazy(() => import('./modules/crm/calls/pages/CallsPage'));
 const MeetingsPage    = lazy(() => import('./modules/crm/meetings/pages/MeetingsPage'));
 const ConversationsInboxPage = lazy(() => import('./modules/crm/conversations/pages/ConversationsInboxPage'));
+const NotFoundPage           = lazy(() => import('./pages/NotFoundPage'));
 
 function PageLoader() {
   return (
@@ -228,7 +229,8 @@ export default function App() {
           <Route path="native-crm/assets"               element={S(AssetsPage)} />
           <Route path="native-crm/vehicles"             element={S(VehiclesPage)} />
           <Route path="native-crm/configuration"          element={S(ConfigurationHubPage)} />
-          <Route path="native-crm/settings/automations"    element={S(AutomationRulesPage)} />
+          <Route path="native-crm/settings/automations"    element={S(AutomationFlowsPage)} />
+          <Route path="native-crm/settings/automations/executions" element={S(AutomationExecutionsPage)} />
           <Route path="native-crm/settings/automation-flows"     element={S(AutomationFlowsPage)} />
           <Route path="native-crm/settings/automation-flows/:id" element={S(AutomationFlowBuilderPage)} />
           <Route path="native-crm/settings/import-export"  element={S(ImportExportPage)} />
@@ -250,6 +252,11 @@ export default function App() {
           <Route path="native-crm/workflow-builder"   element={S(WorkflowBuilderPage)} />
           <Route path="native-crm/custom-modules"     element={S(CustomModuleBuilderPage)} />
           <Route path="native-crm/custom/:slug"       element={S(CustomModulePage)} />
+          {/* LR-C3-NAV-001: Redirect direct /native-crm/* requests to their real /crm/* modules to prevent crashes */}
+          <Route path="native-crm/tasks"              element={<Navigate to="/crm/tasks" replace />} />
+          <Route path="native-crm/meetings"           element={<Navigate to="/crm/meetings" replace />} />
+          <Route path="native-crm/calls"              element={<Navigate to="/crm/calls" replace />} />
+          <Route path="native-crm/tickets"            element={<Navigate to="/crm/tickets" replace />} />
           <Route path="native-crm/:module"    element={S(NativeCRMPage)} />
           <Route path="crm/contacts"           element={S(ContactsPage)} />
           <Route path="crm/contacts/:id"       element={S(ContactViewPage)} />
@@ -263,6 +270,8 @@ export default function App() {
           <Route path="crm/meetings"           element={S(MeetingsPage)} />
           <Route path="crm/conversations"             element={S(ConversationsInboxPage)} />
           <Route path="crm/conversations/:sessionId"  element={S(ConversationsInboxPage)} />
+          {/* LR-C3-NAV-001: In-app 404 for any unknown route inside authenticated layout */}
+          <Route path="*"                             element={S(NotFoundPage)} />
         </Route>
 
         {/* Public customer portal — no auth required */}

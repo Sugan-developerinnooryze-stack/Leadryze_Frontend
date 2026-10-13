@@ -1,10 +1,12 @@
-import { useRef } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { FlowNode, FlowRecipientStrategy } from '../../../modules/native-crm/queries/automation-flows.queries';
-import { AutomationModule, TargetFieldDef } from '../../../modules/native-crm/queries/automation-rules.queries';
+import { AutomationModule, TargetFieldDef, FieldMapping } from '../../../modules/native-crm/queries/automation-rules.queries';
 import { useStaffsListQuery } from '../../../modules/native-crm/queries/staffs.queries';
 import FieldMappingsEditor from './FieldMappingsEditor';
 import VariablePicker from './VariablePicker';
+import GroupedSearchableSelect from '../../../modules/native-crm/shared/GroupedSearchableSelect';
+import { groupModules } from './automation-module-groups';
 
 const SENSITIVE_HEADER_KEYS = new Set(['authorization', 'cookie', 'x-api-key', 'api-key', 'x-auth-token', 'proxy-authorization']);
 const MASKED_PLACEHOLDER = '••••••••';
@@ -47,6 +49,141 @@ function WebhookHeadersEditor({ headers, onChange }: {
   );
 }
 
+/** Single-mapping recipient override for send_email/send_whatsapp/send_sms's
+ * emailTo/whatsappTo/smsTo — same FieldMapping shape assign_record/
+ * change_status already use for one mapped value, but those two always
+ * write a static staff id/stage, never "from a field." This is the fuller
+ * version: pick a source field (e.g. Lead.Email) OR type a fixed value/
+ * variable, OR leave it unset to fall back to the simpler recipientStrategy
+ * dropdown shown above it. `targetField` is set to a fixed placeholder —
+ * the engine only reads sourceType/sourceField/staticValue off this one
+ * (automation-flow.service.ts), never targetField, so its value is
+ * never actually consulted; it's set purely to satisfy the schema's
+ * `targetField: non-empty string` requirement. */
+function RecipientMappingField({ mapping, onChange, sourceFields, variableModule, placeholder }: {
+  mapping: FieldMapping | undefined;
+  onChange: (m: FieldMapping | undefined) => void;
+  sourceFields: { key: string; label: string }[];
+  variableModule: AutomationModule | '';
+  placeholder: string;
+}) {
+  const staticRef = useRef<HTMLInputElement>(null);
+  const mode: 'default' | 'field' | 'static' = !mapping ? 'default' : mapping.sourceType;
+
+  return (
+    <div className="space-y-1.5">
+      <select
+        value={mode}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (v === 'default') onChange(undefined);
+          else if (v === 'field') onChange({ targetField: 'to', sourceType: 'field', sourceField: '' });
+          else onChange({ targetField: 'to', sourceType: 'static', staticValue: '' });
+        }}
+        className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary"
+      >
+        <option value="default">Use default recipient (above)</option>
+        <option value="field">From a field…</option>
+        <option value="static">Fixed value / variable…</option>
+      </select>
+      {mode === 'field' && (
+        <select
+          value={mapping?.sourceField ?? ''}
+          onChange={(e) => onChange({ targetField: 'to', sourceType: 'field', sourceField: e.target.value })}
+          className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary"
+        >
+          <option value="">Source field…</option>
+          {sourceFields.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+        </select>
+      )}
+      {mode === 'static' && (
+        <div className="flex items-center gap-1.5">
+          <input
+            ref={staticRef} value={mapping?.staticValue ?? ''} placeholder={placeholder}
+            onChange={(e) => onChange({ targetField: 'to', sourceType: 'static', staticValue: e.target.value })}
+            className="flex-1 min-w-0 px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary"
+          />
+          <VariablePicker
+            module={variableModule} targetRef={staticRef} value={mapping?.staticValue ?? ''}
+            onChange={(v) => onChange({ targetField: 'to', sourceType: 'static', staticValue: v })}
+            className="shrink-0 text-[10px] text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 px-1.5 py-1 border border-ryze-200 dark:border-ryze-800 rounded bg-ryze-600/10 hover:bg-ryze-600/15"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Single-line text field + VariablePicker header, mirrors the existing
+ * add_note Subject pattern (below) factored out — now reused across Send
+ * Email/WhatsApp/SMS's own Subject/CC-free fields instead of repeating the
+ * header-row boilerplate three more times. */
+function TextVariableField({ label, value, onChange, module, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; module: AutomationModule | ''; placeholder?: string;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <label className="label mb-0 text-xs font-semibold text-text-muted uppercase tracking-wide">{label}</label>
+        <VariablePicker module={module} targetRef={ref} value={value} onChange={onChange} />
+      </div>
+      <input ref={ref} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+        className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary" />
+    </div>
+  );
+}
+
+/** Multi-line counterpart of TextVariableField — mirrors add_note's own
+ * Note body pattern, reused for Email/WhatsApp/SMS body composition. */
+function TextareaVariableField({ label, value, onChange, module, placeholder, rows = 4 }: {
+  label: string; value: string; onChange: (v: string) => void; module: AutomationModule | ''; placeholder?: string; rows?: number;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <label className="label mb-0 text-xs font-semibold text-text-muted uppercase tracking-wide">{label}</label>
+        <VariablePicker module={module} targetRef={ref} value={value} onChange={onChange} />
+      </div>
+      <textarea ref={ref} value={value} onChange={(e) => onChange(e.target.value)} rows={rows} placeholder={placeholder}
+        className="w-full px-3 py-2 text-sm border border-border rounded-lg font-mono bg-background text-text-primary" />
+    </div>
+  );
+}
+
+/** Groups a block of fields under a visible heading — Recipient / Message /
+ * Options, per the usability review: the send_* drawers previously read as
+ * one undifferentiated list of controls with no indication of which ones
+ * relate to each other. `required` marks a section where leaving its
+ * field(s) empty is a real, save-blocking error (not just a style choice),
+ * mirroring how the backend actually validates it. */
+function SectionHeader({ children, required }: { children: ReactNode; required?: boolean }) {
+  return (
+    <div className="flex items-center gap-1 pt-1 first:pt-0">
+      <h4 className="text-[11px] font-bold text-text-muted uppercase tracking-wider">{children}</h4>
+      {required && <span className="text-red-500 text-xs leading-none" title="Required">*</span>}
+    </div>
+  );
+}
+
+/** Forward-compat placeholder for the deferred per-tenant Connections
+ * project (see automation-flow.model.ts's own comment on connectionId) —
+ * shown so the node's own architecture visibly has a slot for it, without
+ * building real multi-account support now. Always disabled; every flow
+ * sends from this platform's one shared Brevo/Meta/Twilio account today. */
+function ConnectionPlaceholder() {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Connection</label>
+      <select disabled value="" className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-muted opacity-60 cursor-not-allowed">
+        <option>Default platform account</option>
+      </select>
+      <p className="text-[11px] text-text-muted mt-1">Per-tenant connections are coming soon — every flow currently sends from this platform's shared account.</p>
+    </div>
+  );
+}
+
 interface ActionNodeConfigProps {
   node: FlowNode;
   onChange: (patch: Partial<FlowNode>) => void;
@@ -85,10 +222,7 @@ export default function ActionNodeConfig({ node, onChange, triggerModule, trigge
       <>
         <div>
           <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Target module</label>
-          <select value={node.targetModule ?? ''} onChange={(e) => onChange({ targetModule: e.target.value })} className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
-            <option value="">Select…</option>
-            {everyModule.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
-          </select>
+          <GroupedSearchableSelect groups={groupModules(everyModule)} value={node.targetModule ?? ''} onChange={(key) => onChange({ targetModule: key })} placeholder="Select a module…" />
         </div>
         <div>
           <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Field mappings</label>
@@ -227,22 +361,145 @@ export default function ActionNodeConfig({ node, onChange, triggerModule, trigge
     );
   }
 
-  // send_email / send_sms / send_whatsapp
+  if (node.actionType === 'send_email') {
+    const hasOverride = !!node.emailTo;
+    return (
+      <>
+        <ConnectionPlaceholder />
+
+        <SectionHeader>Recipient</SectionHeader>
+        <div>
+          <label className="block text-[10px] font-semibold text-text-muted mb-1 uppercase">Default strategy</label>
+          <select
+            value={node.recipientStrategy ?? 'record_contact'} onChange={(e) => onChange({ recipientStrategy: e.target.value as any })}
+            disabled={hasOverride}
+            className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {Object.entries(RECIPIENT_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+          </select>
+          {hasOverride && <p className="text-[11px] text-text-muted mt-1">Ignored — the override below takes priority whenever it's set.</p>}
+        </div>
+        <div>
+          <label className="block text-[10px] font-semibold text-text-muted mb-1 uppercase">Override (optional)</label>
+          <RecipientMappingField mapping={node.emailTo} onChange={(m) => onChange({ emailTo: m })} sourceFields={triggerFields} variableModule={triggerModule} placeholder="e.g. customer@example.com" />
+        </div>
+
+        <SectionHeader required>Message</SectionHeader>
+        <p className="text-[11px] text-text-muted -mt-1">Required: write the email below, or pick a saved template at the bottom of this section — whichever is filled in is used, inline always wins if both are.</p>
+        <TextVariableField label="Subject" value={node.emailSubject ?? ''} onChange={(v) => onChange({ emailSubject: v })} module={triggerModule} placeholder="e.g. Welcome, {{record.firstName}}!" />
+        <TextareaVariableField label="Body" value={node.emailBody ?? ''} onChange={(v) => onChange({ emailBody: v })} module={triggerModule} placeholder="Write the email here, or leave blank to use a saved template below" rows={5} />
+        <div>
+          <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Or use a saved template instead</label>
+          <select value={node.templateId ?? ''} onChange={(e) => onChange({ templateId: e.target.value })} className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
+            <option value="">No template — use Subject/Body above</option>
+            {templates.map((t) => <option key={t._id} value={t._id}>{t.name}</option>)}
+          </select>
+        </div>
+
+        <SectionHeader>Options</SectionHeader>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-[10px] font-semibold text-text-muted mb-1 uppercase">CC</label>
+            <input value={node.emailCc ?? ''} onChange={(e) => onChange({ emailCc: e.target.value })} placeholder="comma-separated"
+              className="w-full px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-semibold text-text-muted mb-1 uppercase">BCC</label>
+            <input value={node.emailBcc ?? ''} onChange={(e) => onChange({ emailBcc: e.target.value })} placeholder="comma-separated"
+              className="w-full px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary" />
+          </div>
+        </div>
+        <div>
+          <label className="block text-[10px] font-semibold text-text-muted mb-1 uppercase">Reply-To</label>
+          <input value={node.emailReplyTo ?? ''} onChange={(e) => onChange({ emailReplyTo: e.target.value })} placeholder="e.g. support@yourcompany.com"
+            className="w-full px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary" />
+        </div>
+        <label className="flex items-center gap-2 text-xs text-text-primary">
+          <input type="checkbox" checked={!!node.emailAttachPdf} onChange={(e) => onChange({ emailAttachPdf: e.target.checked })} className="rounded border-border" />
+          Attach this record's PDF (Quotation / Invoice / Work Order / Contract)
+        </label>
+      </>
+    );
+  }
+
+  if (node.actionType === 'send_whatsapp') {
+    const hasOverride = !!node.whatsappTo;
+    return (
+      <>
+        <ConnectionPlaceholder />
+
+        <SectionHeader>Recipient</SectionHeader>
+        <div>
+          <label className="block text-[10px] font-semibold text-text-muted mb-1 uppercase">Default strategy</label>
+          <select
+            value={node.recipientStrategy ?? 'record_contact'} onChange={(e) => onChange({ recipientStrategy: e.target.value as any })}
+            disabled={hasOverride}
+            className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {Object.entries(RECIPIENT_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+          </select>
+          {hasOverride && <p className="text-[11px] text-text-muted mt-1">Ignored — the override below takes priority whenever it's set.</p>}
+        </div>
+        <div>
+          <label className="block text-[10px] font-semibold text-text-muted mb-1 uppercase">Override (optional)</label>
+          <RecipientMappingField mapping={node.whatsappTo} onChange={(m) => onChange({ whatsappTo: m })} sourceFields={triggerFields} variableModule={triggerModule} placeholder="e.g. +1 555 0100" />
+        </div>
+
+        <SectionHeader required>Message</SectionHeader>
+        <div>
+          <label className="block text-[10px] font-semibold text-text-muted mb-1 uppercase">Message type</label>
+          <select value={node.whatsappMessageType ?? 'text'} onChange={(e) => onChange({ whatsappMessageType: e.target.value as any })}
+            className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
+            <option value="text">Text message</option>
+            <option value="template" disabled>Template message — coming soon, not yet operational</option>
+            <option value="image" disabled>Image — coming soon, not yet operational</option>
+            <option value="document" disabled>Document — coming soon, not yet operational</option>
+          </select>
+        </div>
+        <p className="text-[11px] text-text-muted">Required: write the message below, or pick a saved template at the bottom of this section — whichever is filled in is used, inline always wins if both are.</p>
+        <TextareaVariableField label="Message" value={node.whatsappBody ?? ''} onChange={(v) => onChange({ whatsappBody: v })} module={triggerModule} placeholder="e.g. Hi {{record.firstName}}, thanks for reaching out!" rows={4} />
+        <div>
+          <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Or use a saved template instead</label>
+          <select value={node.templateId ?? ''} onChange={(e) => onChange({ templateId: e.target.value })} className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
+            <option value="">No template — use the message above</option>
+            {templates.map((t) => <option key={t._id} value={t._id}>{t.name}</option>)}
+          </select>
+        </div>
+      </>
+    );
+  }
+
+  // send_sms
+  const hasOverride = !!node.smsTo;
   return (
     <>
+      <ConnectionPlaceholder />
+
+      <SectionHeader>Recipient</SectionHeader>
       <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="label mb-0 text-xs font-semibold text-text-muted uppercase tracking-wide">Template</label>
-        </div>
-        <select value={node.templateId ?? ''} onChange={(e) => onChange({ templateId: e.target.value })} className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
-          <option value="">Select template…</option>
-          {templates.map((t) => <option key={t._id} value={t._id}>{t.name}</option>)}
+        <label className="block text-[10px] font-semibold text-text-muted mb-1 uppercase">Default strategy</label>
+        <select
+          value={node.recipientStrategy ?? 'record_contact'} onChange={(e) => onChange({ recipientStrategy: e.target.value as any })}
+          disabled={hasOverride}
+          className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {Object.entries(RECIPIENT_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </select>
+        {hasOverride && <p className="text-[11px] text-text-muted mt-1">Ignored — the override below takes priority whenever it's set.</p>}
       </div>
       <div>
-        <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Recipient</label>
-        <select value={node.recipientStrategy ?? 'record_contact'} onChange={(e) => onChange({ recipientStrategy: e.target.value as any })} className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
-          {Object.entries(RECIPIENT_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+        <label className="block text-[10px] font-semibold text-text-muted mb-1 uppercase">Override (optional)</label>
+        <RecipientMappingField mapping={node.smsTo} onChange={(m) => onChange({ smsTo: m })} sourceFields={triggerFields} variableModule={triggerModule} placeholder="e.g. +1 555 0100" />
+      </div>
+
+      <SectionHeader required>Message</SectionHeader>
+      <p className="text-[11px] text-text-muted -mt-1">Required: write the message below, or pick a saved template at the bottom of this section — whichever is filled in is used, inline always wins if both are.</p>
+      <TextareaVariableField label="Message" value={node.smsBody ?? ''} onChange={(v) => onChange({ smsBody: v })} module={triggerModule} placeholder="e.g. Hi {{record.firstName}}, your appointment is confirmed." rows={3} />
+      <div>
+        <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Or use a saved template instead</label>
+        <select value={node.templateId ?? ''} onChange={(e) => onChange({ templateId: e.target.value })} className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text-primary">
+          <option value="">No template — use the message above</option>
+          {templates.map((t) => <option key={t._id} value={t._id}>{t.name}</option>)}
         </select>
       </div>
     </>

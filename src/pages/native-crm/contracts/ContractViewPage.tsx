@@ -21,14 +21,15 @@ import ActivityFeedPanel from '../../../modules/native-crm/shared/ActivityFeedPa
 import RecordTimeline from '../../../modules/native-crm/shared/RecordTimeline';
 import { useAuthStore } from '../../../stores/auth.store';
 import api from '../../../services/api';
+import { downloadDocumentPdf } from '../../../modules/native-crm/shared/downloadPdf';
+import { formatDate } from '../../../utils/dateUtils';
 
-const CUR: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
-function fmt(n: number | undefined | null, cur = '$') {
+const CUR: Record<string, string> = { INR:'₹',AUD:'A$',USD:'$',GBP:'£',EUR:'€',CAD:'C$',NZD:'NZ$',SGD:'S$' };
+function fmt(n: number | undefined | null, cur = '₹') {
   return `${cur}${n != null ? Number(n).toFixed(2) : '0.00'}`;
 }
 function fmtD(d: string | Date | undefined | null) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatDate(d);
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -87,7 +88,7 @@ const FREQ_LABELS: Record<string, string> = {
 };
 
 /** Contract master engine — schedule grouped frequency-wise with per-visit Work Order actions. */
-function ScheduleSection({ item, navigate }: { item: any; navigate: (to: any, opts?: any) => void }) {
+function ScheduleSection({ item, navigate, cur }: { item: any; navigate: (to: any, opts?: any) => void; cur: string }) {
   const [pageData, setPageData] = useState<Record<string, number>>({});
   const [generating, setGenerating] = useState(false);
   const visitStatusMutation = useVisitStatusUpdate();
@@ -123,6 +124,29 @@ function ScheduleSection({ item, navigate }: { item: any; navigate: (to: any, op
     setPageData((prev) => ({ ...prev, [freq]: next }));
 
   const createWorkorderFor = (v: any) => {
+    const matchedSvc = (item.services ?? []).find((cs: any) =>
+      (v.services ?? []).some((vs: any) => cs.name === vs.name || (cs.serviceId && cs.serviceId === vs.serviceId))
+    ) ?? (item.services ?? [])[0];
+
+    const disc = v.services?.find((s: any) => s.discountPercent != null)?.discountPercent
+      ?? matchedSvc?.discountPercent
+      ?? item.discount
+      ?? 0;
+
+    const gst = v.services?.find((s: any) => s.taxPercent != null)?.taxPercent
+      ?? matchedSvc?.taxPercent
+      ?? item.gstPercentage
+      ?? 0;
+
+    const services = (v.services ?? []).map((vs: any) => {
+      const match = (item.services ?? []).find((cs: any) => cs.name === vs.name || (cs.serviceId && cs.serviceId === vs.serviceId));
+      return {
+        ...vs,
+        taxPercent: vs.taxPercent ?? match?.taxPercent ?? (Number(gst) || 0),
+        discountPercent: vs.discountPercent ?? match?.discountPercent ?? (Number(disc) || 0),
+      };
+    });
+
     navigate('/native-crm/workorders', {
       state: {
         openDrawer: true,
@@ -131,7 +155,9 @@ function ScheduleSection({ item, navigate }: { item: any; navigate: (to: any, op
           contractId:          item.contractId,
           contractVisitNumber: v.visitNumber,
           title:               `${item.title} — Visit ${v.visitNumber}`,
-          services:            v.services ?? [],
+          services,
+          discount:            Number(disc) || 0,
+          gstPercentage:       Number(gst) || 0,
           scheduledDate:       toDatetimeLocal(v.serviceDate),
           teamId:              item.teamId ?? '',
           staffIds:            item.staffIds?.length ? item.staffIds : (item.staffId ? [item.staffId] : []),
@@ -229,7 +255,7 @@ function ScheduleSection({ item, navigate }: { item: any; navigate: (to: any, op
                           )}
                         </td>
                         <td className="py-2.5 px-4 text-text-muted whitespace-nowrap">{fmtD(v.serviceDate)}</td>
-                        <td className="py-2.5 px-4 text-right text-text-primary">{Number(v.amount ?? 0).toFixed(2)}</td>
+                        <td className="py-2.5 px-4 text-right text-text-primary">{fmt(v.amount, cur)}</td>
                         <td className="py-2.5 px-4">
                           <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${VISIT_STATUS_COLORS[v.status] ?? 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted'}`}>
                             {v.status}
@@ -331,7 +357,7 @@ export default function ContractViewPage() {
   const canShareContact = canViewPII('customers', settings, user?.role);
 
   const customer = custList?.items?.find((c: any) => c.customerId === item?.customerId) ?? null;
-  const cur = CUR[settings?.currency ?? 'AUD'] ?? '$';
+  const cur = CUR[settings?.currency ?? 'INR'] ?? '₹';
 
   const svcSubtotal = (item?.services ?? []).reduce((s: number, sv: any) => s + (sv.amount ?? 0) * (sv.count ?? 1), 0);
   const prtSubtotal = (item?.parts ?? []).reduce((s: number, pt: any) => s + (pt.amount ?? 0) * (pt.count ?? 1), 0);
@@ -365,13 +391,17 @@ export default function ContractViewPage() {
     if (!id) return;
     setDownloading(true);
     try {
-      const res = await api.get(`/api/v1/native-crm/pdf/contracts/${id}?template=classic`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-      const a = document.createElement('a');
-      a.href = url; a.download = `contract-${item?.contractId ?? id}.pdf`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch { } finally { setDownloading(false); }
+      await downloadDocumentPdf({
+        module: 'contracts',
+        id,
+        filename: `contract-${item?.contractId ?? id}.pdf`,
+        template: 'classic',
+      });
+    } catch {
+      // toast shown in downloadDocumentPdf
+    } finally {
+      setDownloading(false);
+    }
   };
 
   if (isLoading) return (
@@ -555,7 +585,7 @@ export default function ContractViewPage() {
         </Card>
 
         {/* Contract Schedule — generated visits + per-visit Work Order actions */}
-        <ScheduleSection item={item} navigate={navigate} />
+        <ScheduleSection item={item} navigate={navigate} cur={cur} />
 
         {/* Parts */}
         {(item.parts ?? []).length > 0 && (

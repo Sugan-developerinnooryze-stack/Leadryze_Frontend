@@ -21,10 +21,11 @@ interface Props {
    * both dynamic groups), so it always produces a visible result no matter
    * which category is currently open. */
   pinAll: (ids: string[]) => void;
-  /** "Reset to Default" — the undo for Show All (and for any other pin/
-   * order customization): reverts everything back to the small curated
-   * starter set. Same action the separate Customize modal exposes, kept
-   * here too so Show All always has a nearby way back. */
+  restorePreShowAll: () => void;
+  saveAsDefault: () => void;
+  hasCustomDefault: boolean;
+  isAllPinned: (allIds: string[]) => boolean;
+  /** "Reset to Default" — reverts to client's custom default or system default */
   resetToDefault: () => void;
   /** Pixel offset from the viewport's left edge — 56 behind the collapsed
    * rail, 240 behind the expanded sidebar — so this always sits immediately
@@ -49,7 +50,7 @@ const LEFT_GROUPS: { key: string; label: string }[] = [
   { key: 'fieldService', label: 'Field Service' },
   { key: 'configuration',label: 'Configuration' },
   { key: 'customModules',label: 'Custom Modules' },
-  { key: 'automation',   label: 'Automation' },
+  { key: 'automation',   label: 'Connector Data' },
 ];
 
 /** crmData / customModules are synthetic — group-level toggles with no
@@ -66,9 +67,12 @@ const isDynamicGroupKey = (key: string): key is 'crmData' | 'customModules' =>
  * here is immediate — no Done/Cancel, since there's nothing staged. */
 export default function SidebarMorePanel({
   categories, isPinned, togglePin, reorder, isGroupVisible, toggleGroup,
-  hasCrmDataGroup, hasCustomModulesGroup, pinAll, resetToDefault, anchorLeft, onClose,
+  hasCrmDataGroup, hasCustomModulesGroup, pinAll, resetToDefault,
+  restorePreShowAll, saveAsDefault, hasCustomDefault, isAllPinned,
+  anchorLeft, onClose,
 }: Props) {
   const everyItemId = categories.flatMap((c) => c.items.map((i) => i.id));
+  const allPinned   = isAllPinned(everyItemId);
 
   const visibleLeftGroups = LEFT_GROUPS.filter(({ key }) => {
     if (key === 'crmData') return hasCrmDataGroup;
@@ -163,20 +167,42 @@ export default function SidebarMorePanel({
               </button>
             ))}
           </div>
-          <div className="border-t border-border p-2 shrink-0 space-y-0.5">
+          <div className="border-t border-border p-2 shrink-0 space-y-1">
             <button
-              onClick={() => pinAll(everyItemId)}
-              title="Pin every item to the sidebar"
-              className="w-full px-2 py-1.5 text-xs font-medium rounded-lg text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] hover:text-text-primary transition-colors"
+              onClick={() => {
+                if (allPinned) {
+                  restorePreShowAll();
+                } else {
+                  pinAll(everyItemId);
+                }
+              }}
+              title={allPinned ? "Restore your previous pinned layout" : "Pin every item to the sidebar"}
+              className={`w-full px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center justify-between ${
+                allPinned
+                  ? 'bg-ryze-600/10 text-ryze-600 dark:text-ryze-400 font-semibold'
+                  : 'text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] hover:text-text-primary'
+              }`}
             >
-              Show All
+              <span>{allPinned ? 'Show Less' : 'Show All'}</span>
+              <span className="text-[11px] opacity-70">{allPinned ? '↩' : '⇲'}</span>
+            </button>
+            <button
+              onClick={saveAsDefault}
+              title="Save current pinned items and ordering as your personal default"
+              className="w-full px-2.5 py-1.5 text-xs font-medium rounded-lg text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] hover:text-text-primary transition-colors flex items-center justify-between"
+            >
+              <span>Set as Default</span>
+              <span className={`text-[11px] ${hasCustomDefault ? 'text-ryze-600 dark:text-ryze-400 font-bold' : 'opacity-60'}`}>
+                {hasCustomDefault ? '✓' : '★'}
+              </span>
             </button>
             <button
               onClick={resetToDefault}
-              title="Revert to the default sidebar"
-              className="w-full px-2 py-1.5 text-xs font-medium rounded-lg text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] hover:text-text-primary transition-colors"
+              title={hasCustomDefault ? "Reset to your saved default layout" : "Revert to default sidebar"}
+              className="w-full px-2.5 py-1.5 text-xs font-medium rounded-lg text-text-muted hover:bg-black/[0.04] dark:hover:bg-white/[0.06] hover:text-text-primary transition-colors flex items-center justify-between"
             >
-              Reset to Default
+              <span>Reset to Default</span>
+              <span className="text-[11px] opacity-60">↺</span>
             </button>
           </div>
         </div>

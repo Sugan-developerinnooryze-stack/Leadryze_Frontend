@@ -56,10 +56,14 @@ interface Props {
   value:    ContractServiceLine[];
   onChange: (lines: ContractServiceLine[]) => void;
   availableServices: any[];
+  startDate?: string;
+  endDate?:   string;
 }
 
-export default function ContractServiceLinesEditor({ value, onChange, availableServices }: Props) {
+export default function ContractServiceLinesEditor({ value, onChange, availableServices, startDate, endDate }: Props) {
   const lines = value ?? [];
+  const startStr = startDate ? String(startDate).slice(0, 10) : undefined;
+  const endStr   = endDate   ? String(endDate).slice(0, 10)   : undefined;
 
   const patch = (i: number, p: Partial<ContractServiceLine>) => {
     onChange(lines.map((l, idx) => (idx === i ? { ...l, ...p } : l)));
@@ -220,27 +224,66 @@ export default function ContractServiceLinesEditor({ value, onChange, availableS
                 </div>
               )}
 
-              {rule.frequency === 'custom_dates' && (
-                <div className="flex-1 min-w-[260px]">
-                  <label className="block text-[10px] font-semibold text-text-muted uppercase mb-1">Specific dates</label>
-                  <div className="flex flex-wrap gap-1.5 items-center">
-                    {(rule.dates ?? []).map((d, di) => (
-                      <span key={di} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-ryze-600/10 text-ryze-700 dark:text-ryze-400 text-xs border border-ryze-200 dark:border-ryze-800">
-                        {d}
-                        <button type="button" onClick={() => patchRule(i, { dates: (rule.dates ?? []).filter((_, x) => x !== di) })}
-                          className="text-ryze-400 hover:text-red-500">×</button>
-                      </span>
-                    ))}
-                    <input type="date" className={`${inp}`}
-                      onChange={(e) => {
-                        if (e.target.value && !(rule.dates ?? []).includes(e.target.value)) {
-                          patchRule(i, { dates: [...(rule.dates ?? []), e.target.value].sort() });
-                          e.target.value = '';
-                        }
-                      }} />
+              {rule.frequency === 'custom_dates' && (() => {
+                const dates = rule.dates ?? [];
+                const outOfRange = dates.filter((d) => (startStr && d < startStr) || (endStr && d > endStr));
+                return (
+                  <div className="flex-1 min-w-[260px]">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[10px] font-semibold text-text-muted uppercase">Specific dates</label>
+                      {outOfRange.length > 0 && (
+                        <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                          {outOfRange.length} date{outOfRange.length > 1 ? 's' : ''} outside contract period
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 items-center">
+                      {dates.map((d, di) => {
+                        const isOutOfRange = (startStr && d < startStr) || (endStr && d > endStr);
+                        return (
+                          <span
+                            key={di}
+                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs border transition-colors ${
+                              isOutOfRange
+                                ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700'
+                                : 'bg-ryze-600/10 text-ryze-700 dark:text-ryze-400 border-ryze-200 dark:border-ryze-800'
+                            }`}
+                          >
+                            {isOutOfRange && <span title="Date is outside contract period">⚠️</span>}
+                            <span>{d}</span>
+                            {isOutOfRange && <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">(outside)</span>}
+                            <button
+                              type="button"
+                              onClick={() => patchRule(i, { dates: dates.filter((_, x) => x !== di) })}
+                              className="text-text-muted hover:text-red-500 ml-0.5"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        );
+                      })}
+                      <input
+                        type="date"
+                        className={`${inp}`}
+                        onChange={(e) => {
+                          if (e.target.value && !(rule.dates ?? []).includes(e.target.value)) {
+                            patchRule(i, { dates: [...(rule.dates ?? []), e.target.value].sort() });
+                            e.target.value = '';
+                          }
+                        }}
+                      />
+                    </div>
+                    {outOfRange.length > 0 && (
+                      <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400 flex items-start gap-1">
+                        <span className="shrink-0 mt-0.5">⚠️</span>
+                        <span>
+                          Out of contract period ({outOfRange.join(', ')}): these dates fall outside {startStr ?? 'start'} to {endStr ?? 'end'} and will not be scheduled.
+                        </span>
+                      </p>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               <div className="ml-auto text-right">
                 <p className="text-[10px] font-semibold text-text-muted uppercase mb-0.5">Line total / visit</p>

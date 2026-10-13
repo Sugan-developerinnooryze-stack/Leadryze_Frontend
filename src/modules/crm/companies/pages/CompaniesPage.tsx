@@ -7,6 +7,8 @@ const config: ModulePageConfig = {
   labelSingular: 'Company',
   apiBase:       '/api/v1/native-crm/companies',
   statusField:   'companyStatus',
+  altView:       'kanban',
+  altViewLabel:  'Kanban board',
   detailRoute:   (id) => `/crm/companies/${id}`,
   fields: [
     { key: 'name',          label: 'Company Name',     type: 'text',   required: true },

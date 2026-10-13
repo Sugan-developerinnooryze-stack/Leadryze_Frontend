@@ -21,11 +21,12 @@ import { useFSSettingsQuery } from '../../../modules/native-crm/queries/fs-setti
 import { buildPrefill } from '../../../modules/native-crm/shared/buildPrefill';
 import { usePipelineStages } from '../../../modules/native-crm/queries/pipeline-config.queries';
 import { useCustomerNameMap } from '../../../modules/native-crm/shared/useCustomerNameMap';
+import { formatDate } from '../../../utils/dateUtils';
 
 // LR-QUOTE-002: matches the symbol map every Quotation view/print page
 // already resolves from settings.currency — this list page was the one
 // place still hardcoding "$".
-const CUR_SYMBOL: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
+const CUR_SYMBOL: Record<string, string> = { INR:'₹',AUD:'A$',USD:'$',GBP:'£',EUR:'€',CAD:'C$',NZD:'NZ$',SGD:'S$' };
 
 const FIELDS: FSFieldDef[] = [
   { key: 'branchId',      label: 'Company',       type: 'branch-select' },
@@ -93,11 +94,11 @@ export default function QuotationsPage() {
       render: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '—',
       exportValue: (r) => customerNames.get(r.customerId) ?? r.customerId ?? '' },
     { key: 'customerId',  label: 'Customer ID' },
-    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `${CUR_SYMBOL[settings?.currency ?? 'AUD'] ?? '$'}${Number(r.servicesAmountWithTax).toFixed(2)}` : '—' },
-    { key: 'validUntil',  label: 'Valid Until', render: (r) => r.validUntil ? new Date(r.validUntil).toLocaleDateString() : '—' },
+    { key: 'servicesAmountWithTax', label: 'Total', render: (r) => r.servicesAmountWithTax != null ? `${CUR_SYMBOL[settings?.currency ?? 'INR'] ?? '₹'}${Number(r.servicesAmountWithTax).toFixed(2)}` : '—' },
+    { key: 'validUntil',  label: 'Valid Until', render: (r) => formatDate(r.validUntil) },
     { key: 'status',   label: 'Status',  render: (r) => <FSStatusBadge value={r.status ?? 'draft'} /> },
     { key: 'branchId', label: 'Company', render: (r) => <CompanyBadge branchId={r.branchId} /> },
-    { key: 'createdAt', label: 'Created Date', render: (r) => r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—' },
+    { key: 'createdAt', label: 'Created Date', render: (r) => formatDate(r.createdAt) },
   ], [customerNames, settings?.currency]);
 
   // Open drawer pre-filled when navigated here from another module
@@ -159,13 +160,15 @@ export default function QuotationsPage() {
           ))}
         </select>
 
-        <button
-          onClick={() => setDrawer({ open: true, record: null })}
-          className="flex items-center gap-2 px-4 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 transition-colors shrink-0"
-        >
-          <PlusIcon className="h-4 w-4" />
-          New Quotation
-        </button>
+        {((error as any)?.response?.status !== 403) && (
+          <button
+            onClick={() => setDrawer({ open: true, record: null })}
+            className="flex items-center gap-2 px-4 py-2 bg-ryze-600 text-white text-sm font-medium rounded-lg hover:bg-ryze-700 transition-colors shrink-0"
+          >
+            <PlusIcon className="h-4 w-4" />
+            New Quotation
+          </button>
+        )}
       </div>
 
       <div className="px-6 pt-3 shrink-0">
@@ -177,6 +180,7 @@ export default function QuotationsPage() {
         data={items}
         loading={isLoading}
         errorStatus={(error as any)?.response?.status}
+        errorMessage={(error as any)?.response?.data?.message}
         total={meta.total}
         page={meta.page}
         totalPages={meta.totalPages}

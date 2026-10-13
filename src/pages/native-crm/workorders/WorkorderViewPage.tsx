@@ -18,14 +18,15 @@ import { canViewPII } from '../../../modules/native-crm/shared/piiAccess';
 import ActivityFeedPanel from '../../../modules/native-crm/shared/ActivityFeedPanel';
 import { useAuthStore } from '../../../stores/auth.store';
 import api from '../../../services/api';
+import { downloadDocumentPdf } from '../../../modules/native-crm/shared/downloadPdf';
+import { formatDate } from '../../../utils/dateUtils';
 
-const CUR: Record<string, string> = { AUD:'$',USD:'$',GBP:'£',EUR:'€',INR:'₹',CAD:'$',NZD:'$',SGD:'$' };
-function fmt(n: number | undefined | null, cur = '$') {
+const CUR: Record<string, string> = { INR:'₹',AUD:'A$',USD:'$',GBP:'£',EUR:'€',CAD:'C$',NZD:'NZ$',SGD:'S$' };
+function fmt(n: number | undefined | null, cur = '₹') {
   return `${cur}${n != null ? Number(n).toFixed(2) : '0.00'}`;
 }
 function fmtD(d: string | Date | undefined | null) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatDate(d);
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -87,7 +88,7 @@ export default function WorkorderViewPage() {
   const site = siteList?.items?.find((s: any) => s.siteId === item?.siteId || s._id === item?.siteId) ?? null;
   const team = teamList?.items?.find((t: any) => t.teamId === item?.teamId || t._id === item?.teamId) ?? null;
   const staff = staffList?.items?.find((s: any) => s.staffId === item?.staffId || s._id === item?.staffId) ?? null;
-  const cur = CUR[settings?.currency ?? 'AUD'] ?? '$';
+  const cur = CUR[settings?.currency ?? 'INR'] ?? '₹';
 
   const svcSubtotal = (item?.services ?? []).reduce((s: number, sv: any) => s + (sv.amount ?? 0) * (sv.count ?? 1), 0);
   const prtSubtotal = (item?.parts ?? []).reduce((s: number, pt: any) => s + (pt.amount ?? 0) * (pt.count ?? 1), 0);
@@ -95,9 +96,25 @@ export default function WorkorderViewPage() {
   const discount = item?.discount ?? 0;
   const gst = item?.gstPercentage ?? 0;
   // discount is a percentage (0-100), not a flat amount — matches Quotation/Invoice.
-  const discountAmt = (combined * discount) / 100;
-  const afterDiscount = combined - discountAmt;
-  const total = afterDiscount * (1 + gst / 100);
+  const hasLineTaxOrDisc = (item?.services ?? []).some((s: any) => (Number(s.taxPercent) > 0 || Number(s.discountPercent) > 0));
+  let discountAmt = (combined * discount) / 100;
+  let afterDiscount = combined - discountAmt;
+  let total = afterDiscount * (1 + gst / 100);
+
+  if (discount === 0 && gst === 0 && hasLineTaxOrDisc) {
+    let lineAfter = 0;
+    let lineWithTax = 0;
+    for (const sv of (item?.services ?? [])) {
+      const g = (sv.amount ?? 0) * (sv.count ?? 1);
+      const ad = g * (1 - (Number(sv.discountPercent) || 0) / 100);
+      const wt = ad * (1 + (Number(sv.taxPercent) || 0) / 100);
+      lineAfter += ad;
+      lineWithTax += wt;
+    }
+    afterDiscount = lineAfter + prtSubtotal;
+    total = lineWithTax + prtSubtotal;
+    discountAmt = combined - lineAfter;
+  }
 
   const steps: string[] = settings?.workflowSteps ?? ['quotation', 'workorder', 'invoice'];
   const idx = steps.indexOf('workorder');
@@ -121,13 +138,17 @@ export default function WorkorderViewPage() {
     if (!id) return;
     setDownloading(true);
     try {
-      const res = await api.get(`/api/v1/native-crm/pdf/workorders/${id}?template=classic`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-      const a = document.createElement('a');
-      a.href = url; a.download = `workorder-${item?.workOrderId ?? id}.pdf`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch { } finally { setDownloading(false); }
+      await downloadDocumentPdf({
+        module: 'workorders',
+        id,
+        filename: `workorder-${item?.workOrderId ?? id}.pdf`,
+        template: 'classic',
+      });
+    } catch {
+      // toast shown in downloadDocumentPdf
+    } finally {
+      setDownloading(false);
+    }
   };
 
   if (isLoading) return (

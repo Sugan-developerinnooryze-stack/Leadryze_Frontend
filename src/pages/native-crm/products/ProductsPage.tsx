@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { CubeIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import FSTable from '../../../modules/native-crm/shared/FSTable';
 import FSDrawer from '../../../modules/native-crm/shared/FSDrawer';
@@ -51,7 +51,7 @@ export default function ProductsPage() {
     { key: 'name',         label: 'Name' },
     { key: 'sku',          label: 'SKU',   render: (r) => r.sku ?? '—' },
     { key: 'category',     label: 'Category', render: (r) => r.category ?? '—' },
-    { key: 'sellingPrice', label: 'Price', render: (r) => r.sellingPrice != null ? `${CUR_SYMBOL[settings?.currency ?? 'AUD'] ?? '$'}${Number(r.sellingPrice).toFixed(2)}` : '—' },
+    { key: 'sellingPrice', label: 'Price', render: (r) => r.sellingPrice != null ? `${CUR_SYMBOL[settings?.currency ?? 'INR'] ?? '₹'}${Number(r.sellingPrice).toFixed(2)}` : '—' },
     { key: 'stock',        label: 'Stock', render: (r) => r.stock ?? 0 },
     {
       key: 'status',

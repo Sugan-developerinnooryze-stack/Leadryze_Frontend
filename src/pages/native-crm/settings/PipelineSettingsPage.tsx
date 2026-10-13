@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ChevronUpIcon, ChevronDownIcon, ChevronRightIcon, TrashIcon, PlusIcon, CheckIcon,
-  Squares2X2Icon, LockClosedIcon,
+  Squares2X2Icon, LockClosedIcon, ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 import {
   usePipelineStages, useUpdatePipelineStages, PipelineModule, BuiltInPipelineModule, PipelineStage,
@@ -231,6 +232,7 @@ function StageCard({
 
 /* ── Page ─────────────────────────────────────────────────────────────────── */
 export default function PipelineSettingsPage() {
+  const navigate = useNavigate();
   const [module, setModule] = useState<PipelineModule>('lead');
   const { stages: loaded, isLoading } = usePipelineStages(module);
   const updateMut = useUpdatePipelineStages(module);
@@ -311,6 +313,15 @@ export default function PipelineSettingsPage() {
   return (
     <div className="flex flex-col h-full">
       <div className="bg-surface border-b border-border px-6 py-4 flex items-center gap-4 shrink-0">
+        <button
+          type="button"
+          onClick={() => navigate('/native-crm/configuration')}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-border/60 transition-colors shrink-0"
+          title="Back to Configuration"
+        >
+          <ArrowLeftIcon className="h-4 w-4" />
+          <span>Back</span>
+        </button>
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="h-9 w-9 rounded-lg bg-black/[0.06] dark:bg-white/[0.08] flex items-center justify-center shrink-0">
             <Squares2X2Icon className="h-5 w-5 text-text-muted" />

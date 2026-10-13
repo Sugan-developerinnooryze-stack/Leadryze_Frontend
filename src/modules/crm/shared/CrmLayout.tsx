@@ -6,6 +6,8 @@ import {
   TableCellsIcon, ChevronDownIcon, ChevronUpIcon,
   ChevronUpDownIcon, AdjustmentsHorizontalIcon,
   ClockIcon, LinkIcon, LockClosedIcon,
+  ViewColumnsIcon, Squares2X2Icon, CalendarDaysIcon,
+  CheckIcon, EnvelopeIcon, PhoneIcon,
 } from '@heroicons/react/24/outline';
 import type { FC, SVGProps } from 'react';
 import api from '../../../services/api';
@@ -23,6 +25,7 @@ import { statusColor } from './crm.colors';
 import type { FieldConfig, ModulePageConfig, CrmRecord, CrmPageMeta, FilterFieldConfig, BulkActionConfig } from './types/crm.types';
 import { useCustomFieldsQuery } from '../../native-crm/queries/custom-fields.queries';
 import { usePipelineStages } from '../../native-crm/queries/pipeline-config.queries';
+import { usePermission } from '../../../hooks/usePermission';
 
 /* ── Helpers ────────────────────────────────────────────────────────────────── */
 function StatusBadge({ value }: { value: string }) {
@@ -336,7 +339,18 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
   const [page,    setPage]    = useState(1);
   const [limit,   setLimit]   = useState(20);
   const [viewTab, setViewTab] = useState<ViewTab>('all');
-  const [viewMode, setViewMode] = useState<'table' | 'alt'>('table');
+  type ViewMode = 'table' | 'alt' | 'cards';
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    try {
+      const saved = localStorage.getItem(`crm-view-${moduleName}`);
+      if (saved === 'alt' || saved === 'cards' || saved === 'table') return saved;
+    } catch {}
+    return 'table';
+  });
+  const handleSetViewMode = (mode: ViewMode) => {
+    setViewMode(mode);
+    try { localStorage.setItem(`crm-view-${moduleName}`, mode); } catch {}
+  };
   const [tableViewMenuOpen, setTableViewMenuOpen] = useState(false);
   const [upcomingOnly, setUpcomingOnly] = useState(false);
   const [linkedFilter, setLinkedFilter] = useState<FsRelation>({});
@@ -360,6 +374,12 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
   const [columnEditorOpen, setColumnEditorOpen] = useState(false);
   const [filterOpen,       setFilterOpen]       = useState(false);
   const [bulkDeleteOpen,   setBulkDeleteOpen]   = useState(false);
+
+  /* ── permissions ── */
+  const moduleSlug = config.apiBase.split('/').pop() ?? '';
+  const canCreate = usePermission(`native_crm.${moduleSlug}.create`);
+  const canEdit = usePermission(`native_crm.${moduleSlug}.edit`);
+  const canDelete = usePermission(`native_crm.${moduleSlug}.delete`);
 
   /* ── custom fields ── */
   const { data: rawCustomFields = [] } = useCustomFieldsQuery(moduleName);
@@ -454,13 +474,16 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
+  const displayName = (r: CrmRecord) =>
+    String(r.firstName && r.lastName ? `${r.firstName} ${r.lastName}` : r.name ?? r.title ?? r.subject ?? r.contactName ?? '—');
+
   /* ── client-side sort ── */
   const sortedRecords = useMemo(() => {
     if (!sortKey) return records;
     return [...records].sort((a, b) => {
-      const av = String(a[sortKey] ?? '');
-      const bv = String(b[sortKey] ?? '');
-      const cmp = av.localeCompare(bv, undefined, { numeric: true });
+      const av = String(sortKey === '_displayName' ? displayName(a) : (a[sortKey] ?? ''));
+      const bv = String(sortKey === '_displayName' ? displayName(b) : (b[sortKey] ?? ''));
+      const cmp = av.localeCompare(bv, undefined, { numeric: true, sensitivity: 'base' });
       return sortDir === 'asc' ? cmp : -cmp;
     });
   }, [records, sortKey, sortDir]);
@@ -520,8 +543,6 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
     try { await api.put(`${config.apiBase}/${r._id}`, { [config.statusField]: next }); }
     catch { fetchRecords(); }
   };
-  const displayName = (r: CrmRecord) =>
-    String(r.firstName && r.lastName ? `${r.firstName} ${r.lastName}` : r.name ?? r.title ?? r.subject ?? r.contactName ?? '—');
 
   return (
     <div className="flex flex-col h-full bg-surface">
@@ -577,44 +598,82 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
         </div>
 
         <div className="flex items-center gap-2 ml-auto flex-wrap">
-          {/* View switcher — only interactive when this module has an
-              alternate view (Kanban/Calendar); otherwise a plain label. */}
-          {config.altView ? (
-            <div className="relative">
-              <button
-                onClick={() => setTableViewMenuOpen((v) => !v)}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 border border-border rounded-lg text-sm text-text-muted bg-surface hover:bg-background transition-colors"
-              >
-                <TableCellsIcon className="h-4 w-4" />
-                <span>{viewMode === 'table' ? 'Table view' : (config.altViewLabel ?? 'Board view')}</span>
-                <ChevronDownIcon className="h-3.5 w-3.5 text-text-muted" />
-              </button>
-              {tableViewMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setTableViewMenuOpen(false)} />
-                  <div className="absolute top-full mt-1.5 left-0 z-20 bg-surface border border-border rounded-xl shadow-lg py-1 min-w-[160px]">
-                    <button
-                      onClick={() => { setViewMode('table'); setTableViewMenuOpen(false); }}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-background ${viewMode === 'table' ? 'text-ryze-700 dark:text-ryze-400 font-medium' : 'text-text-primary'}`}
-                    >
-                      Table view
-                    </button>
-                    <button
-                      onClick={() => { setViewMode('alt'); setTableViewMenuOpen(false); }}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-background ${viewMode === 'alt' ? 'text-ryze-700 dark:text-ryze-400 font-medium' : 'text-text-primary'}`}
-                    >
-                      {config.altViewLabel ?? (config.altView === 'kanban' ? 'Kanban board' : 'Calendar')}
-                    </button>
-                  </div>
-                </>
+          {/* View switcher dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setTableViewMenuOpen((v) => !v)}
+              className="flex items-center gap-1.5 px-3 py-2 border border-border rounded-lg text-sm text-text-primary bg-surface hover:bg-background transition-colors shadow-xs"
+              title="Change view"
+            >
+              {viewMode === 'table' && <TableCellsIcon className="h-4 w-4 text-ryze-600 dark:text-ryze-400" />}
+              {viewMode === 'alt' && (
+                config.altView === 'kanban'
+                  ? <ViewColumnsIcon className="h-4 w-4 text-ryze-600 dark:text-ryze-400" />
+                  : <CalendarDaysIcon className="h-4 w-4 text-ryze-600 dark:text-ryze-400" />
               )}
-            </div>
-          ) : (
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 border border-border rounded-lg text-sm text-text-muted bg-surface cursor-default select-none">
-              <TableCellsIcon className="h-4 w-4" />
-              <span>Table view</span>
-            </div>
-          )}
+              {viewMode === 'cards' && <Squares2X2Icon className="h-4 w-4 text-ryze-600 dark:text-ryze-400" />}
+              <span className="font-medium">
+                {viewMode === 'table'
+                  ? 'Table view'
+                  : viewMode === 'cards'
+                  ? 'Cards view'
+                  : (config.altViewLabel ?? (config.altView === 'kanban' ? 'Kanban board' : 'Calendar'))}
+              </span>
+              <ChevronDownIcon className={`h-3.5 w-3.5 text-text-muted transition-transform duration-150 ${tableViewMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {tableViewMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setTableViewMenuOpen(false)} />
+                <div className="absolute top-full mt-1.5 left-0 z-20 bg-surface border border-border rounded-xl shadow-lg py-1 min-w-[175px]">
+                  <div className="px-3 py-1.5 text-[10px] font-bold text-text-muted uppercase tracking-wider border-b border-border/60 mb-0.5">
+                    Select view
+                  </div>
+                  <button
+                    onClick={() => { handleSetViewMode('table'); setTableViewMenuOpen(false); }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-background transition-colors ${
+                      viewMode === 'table' ? 'text-ryze-600 dark:text-ryze-400 font-medium bg-ryze-600/5' : 'text-text-primary'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <TableCellsIcon className="h-4 w-4 text-text-muted" />
+                      <span>Table view</span>
+                    </div>
+                    {viewMode === 'table' && <CheckIcon className="h-4 w-4 text-ryze-600 dark:text-ryze-400" />}
+                  </button>
+                  {config.altView && (
+                    <button
+                      onClick={() => { handleSetViewMode('alt'); setTableViewMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-background transition-colors ${
+                        viewMode === 'alt' ? 'text-ryze-600 dark:text-ryze-400 font-medium bg-ryze-600/5' : 'text-text-primary'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {config.altView === 'kanban' ? (
+                          <ViewColumnsIcon className="h-4 w-4 text-text-muted" />
+                        ) : (
+                          <CalendarDaysIcon className="h-4 w-4 text-text-muted" />
+                        )}
+                        <span>{config.altViewLabel ?? (config.altView === 'kanban' ? 'Kanban board' : 'Calendar')}</span>
+                      </div>
+                      {viewMode === 'alt' && <CheckIcon className="h-4 w-4 text-ryze-600 dark:text-ryze-400" />}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { handleSetViewMode('cards'); setTableViewMenuOpen(false); }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-background transition-colors ${
+                      viewMode === 'cards' ? 'text-ryze-600 dark:text-ryze-400 font-medium bg-ryze-600/5' : 'text-text-primary'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Squares2X2Icon className="h-4 w-4 text-text-muted" />
+                      <span>Cards view</span>
+                    </div>
+                    {viewMode === 'cards' && <CheckIcon className="h-4 w-4 text-ryze-600 dark:text-ryze-400" />}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Edit columns */}
           <button
@@ -743,36 +802,42 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
               className="flex items-center gap-1.5 px-3 py-2 border border-ryze-300 dark:border-ryze-700 bg-ryze-600/10 rounded-lg text-sm text-ryze-700 dark:text-ryze-400 hover:bg-ryze-600/20 transition-colors"
             >
               {sortDir === 'asc' ? <ChevronUpIcon className="h-3.5 w-3.5" /> : <ChevronDownIcon className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{config.fields.find((f) => f.key === sortKey)?.label ?? sortKey}</span>
+              <span className="hidden sm:inline">
+                {sortKey === '_displayName' ? 'Name' : (config.fields.find((f) => f.key === sortKey)?.label ?? (sortKey === 'createdAt' ? 'Create Date' : sortKey))}
+              </span>
               <XMarkIcon className="h-3 w-3" />
             </button>
           )}
 
           {/* File dropdown (Export Excel/CSV + Template + Import) */}
-          <FileActionsDropdown
-            moduleName={moduleName}
-            tableCols={tableCols}
-            allCols={allDerivedFields}
-            sortedRecords={sortedRecords}
-            selectedIds={selectedIds}
-            apiBase={config.apiBase}
-            onRefresh={fetchRecords}
-            page={page}
-            limit={limit}
-          />
+          {errorStatus !== 403 && (
+            <FileActionsDropdown
+              moduleName={moduleName}
+              tableCols={tableCols}
+              allCols={allDerivedFields}
+              sortedRecords={sortedRecords}
+              selectedIds={selectedIds}
+              apiBase={config.apiBase}
+              onRefresh={fetchRecords}
+              page={page}
+              limit={limit}
+            />
+          )}
 
           {/* Add button */}
-          <button
-            onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2 bg-ryze-600 hover:bg-ryze-700 text-white text-sm font-medium rounded-lg transition-colors"
-          >
-            <PlusIcon className="h-4 w-4" />
-            {/* LR-UI-006: naive "append s" broke for Company -> Companys —
-                this button always adds exactly one record, so the singular
-                form is also just correct, not only grammatical. */}
-            <span>Add {config.labelSingular}</span>
-            <ChevronDownIcon className="h-3.5 w-3.5 text-text-muted" />
-          </button>
+          {errorStatus !== 403 && canCreate && (
+            <button
+              onClick={openCreate}
+              className="flex items-center gap-2 px-4 py-2 bg-ryze-600 hover:bg-ryze-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <PlusIcon className="h-4 w-4" />
+              {/* LR-UI-006: naive "append s" broke for Company -> Companys —
+                  this button always adds exactly one record, so the singular
+                  form is also just correct, not only grammatical. */}
+              <span>Add {config.labelSingular}</span>
+              <ChevronDownIcon className="h-3.5 w-3.5 text-text-muted" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -818,12 +883,14 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
                 busy={bulkBusy}
               />
             ))}
-            <button
-              onClick={() => setBulkDeleteOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-red-300 bg-surface rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
-            >
-              <TrashIcon className="h-3.5 w-3.5" /> Delete
-            </button>
+            {canDelete && (
+              <button
+                onClick={() => setBulkDeleteOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-red-300 bg-surface rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <TrashIcon className="h-3.5 w-3.5" /> Delete
+              </button>
+            )}
           </div>
           <button
             onClick={() => setSelectedIds(new Set())}
@@ -837,7 +904,21 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
       {/* ── Alternate view (Kanban/Calendar) ─────────────────────────────── */}
       {viewMode === 'alt' && config.altView && (
         <div className="flex-1 overflow-auto">
-          {config.altView === 'kanban' ? (
+          {errorStatus === 403 ? (
+            <div className="flex flex-col items-center justify-center h-64 gap-4 text-center px-4">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-amber-100 dark:bg-amber-900/20">
+                <LockClosedIcon className="h-8 w-8 text-amber-500" />
+              </div>
+              <div>
+                <p className="text-text-primary font-semibold">
+                  {errorMessage && errorMessage.toLowerCase().includes('not enabled') ? "This module isn't available" : "You don't have permission to view this"}
+                </p>
+                <p className="text-text-muted text-sm mt-1">
+                  {errorMessage ?? 'Ask a Tenant Admin to grant access under Settings → Permissions.'}
+                </p>
+              </div>
+            </div>
+          ) : config.altView === 'kanban' ? (
             <KanbanBoard
               records={sortedRecords}
               statusField={config.statusField ?? ''}
@@ -845,7 +926,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
               stageColors={stageColors}
               iconColor={iconColor}
               displayName={displayName}
-              onOpenRecord={openEdit}
+              onOpenRecord={(r) => (config.detailRoute ? navigate(config.detailRoute(r._id)) : (canEdit ? openEdit(r) : undefined))}
               onStatusChange={handleKanbanStatusChange}
             />
           ) : (
@@ -854,14 +935,121 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
               dateField={config.calendarDateField ?? 'createdAt'}
               iconColor={iconColor}
               displayName={displayName}
-              onOpenRecord={openEdit}
+              onOpenRecord={(r) => (config.detailRoute ? navigate(config.detailRoute(r._id)) : (canEdit ? openEdit(r) : undefined))}
             />
           )}
         </div>
       )}
 
+      {/* ── Cards / Grid View ────────────────────────────────────────────── */}
+      {viewMode === 'cards' && (
+        <div className="flex-1 overflow-auto p-4 sm:p-6">
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="flex gap-2">
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className="w-2.5 h-2.5 rounded-full bg-ryze-600 animate-bounce"
+                    style={{ animationDelay: `${i * 150}ms` }}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : errorStatus === 403 ? (
+            <div className="flex flex-col items-center justify-center h-64 gap-4 text-center px-4">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-amber-100 dark:bg-amber-900/20">
+                <LockClosedIcon className="h-8 w-8 text-amber-500" />
+              </div>
+              <div>
+                <p className="text-text-primary font-semibold">
+                  {errorMessage && errorMessage.toLowerCase().includes('not enabled') ? "This module isn't available" : "You don't have permission to view this"}
+                </p>
+                <p className="text-text-muted text-sm mt-1">
+                  {errorMessage ?? 'Ask a Tenant Admin to grant access under Settings → Permissions.'}
+                </p>
+              </div>
+            </div>
+          ) : sortedRecords.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 gap-3 text-center">
+              <p className="text-text-muted text-sm">No records to display in cards view</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {sortedRecords.map((r, i) => (
+                <div
+                  key={r._id}
+                  onClick={() => (config.detailRoute ? navigate(config.detailRoute(r._id)) : openEdit(r))}
+                  className="bg-surface border border-border hover:border-ryze-400 dark:hover:border-ryze-500 rounded-xl p-4 shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2.5 mb-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold text-white shadow-xs"
+                          style={{ backgroundColor: iconColor }}
+                        >
+                          {displayName(r).slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-sm text-text-primary group-hover:text-ryze-600 dark:group-hover:text-ryze-400 transition-colors truncate">
+                            {displayName(r)}
+                          </h3>
+                          {Boolean(r.jobTitle || r.company || r.companyName) && (
+                            <p className="text-xs text-text-muted truncate">
+                              {[r.jobTitle, r.company || r.companyName].filter(Boolean).join(' • ')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {Boolean(config.statusField && r[config.statusField]) && (
+                        <StatusBadge value={String(r[config.statusField!])} />
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5 text-xs text-text-muted mt-2 border-t border-border/60 pt-2.5">
+                      {Boolean(r.email) && (
+                        <div className="flex items-center gap-2 truncate">
+                          <EnvelopeIcon className="h-3.5 w-3.5 text-text-muted shrink-0" />
+                          <span className="truncate">{String(r.email)}</span>
+                        </div>
+                      )}
+                      {Boolean(r.phone) && (
+                        <div className="flex items-center gap-2 truncate">
+                          <PhoneIcon className="h-3.5 w-3.5 text-text-muted shrink-0" />
+                          <span className="truncate">{String(r.phone)}</span>
+                        </div>
+                      )}
+                      {Boolean(r.lifecycleStage) && (
+                        <div className="flex items-center gap-1.5 pt-0.5">
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Lifecycle:</span>
+                          <span className="text-[11px] font-medium text-text-primary capitalize">{String(r.lifecycleStage).replace(/_/g, ' ')}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-border pt-3 mt-4 text-xs text-text-muted">
+                    <span className="tabular-nums">#{page > 1 ? (page - 1) * limit + i + 1 : i + 1}</span>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); openEdit(r); }}
+                        className="px-2 py-1 text-xs font-medium text-ryze-600 dark:text-ryze-400 hover:bg-ryze-600/10 rounded transition-colors"
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Table ─────────────────────────────────────────────────────────── */}
-      <div className={`flex-1 overflow-auto ${viewMode === 'alt' && config.altView ? 'hidden' : ''}`}>
+      <div className={`flex-1 overflow-auto ${(viewMode === 'alt' && config.altView) || viewMode === 'cards' ? 'hidden' : ''}`}>
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="flex gap-2">
@@ -904,7 +1092,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
                   : `Click "Add ${config.labelSingular}" to get started`}
               </p>
             </div>
-            {!search && !statusF && (
+            {!search && !statusF && canCreate && (
               <button
                 onClick={openCreate}
                 className="flex items-center gap-2 px-4 py-2 bg-ryze-600 hover:bg-ryze-700 text-white text-sm font-medium rounded-lg transition-colors"
@@ -1052,20 +1240,24 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
                       {/* Row actions */}
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => openEdit(r)}
-                            className="p-1.5 rounded-lg hover:bg-ryze-600/10 text-text-muted hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300 transition-colors"
-                            title="Edit"
-                          >
-                            <PencilSquareIcon className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget(r)}
-                            className="p-1.5 rounded-lg hover:bg-red-50 text-text-muted hover:text-red-500 transition-colors"
-                            title="Delete"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={() => openEdit(r)}
+                              className="p-1.5 rounded-lg hover:bg-ryze-600/10 text-text-muted hover:text-ryze-600 dark:text-ryze-400 dark:hover:text-ryze-300 transition-colors"
+                              title="Edit"
+                            >
+                              <PencilSquareIcon className="h-4 w-4" />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => setDeleteTarget(r)}
+                              className="p-1.5 rounded-lg hover:bg-red-50 text-text-muted hover:text-red-500 transition-colors"
+                              title="Delete"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1121,6 +1313,7 @@ export default function CrmLayout({ config, iconColor, Icon }: CrmLayoutProps) {
           moduleName={moduleName}
           onClose={() => { setDrawerOpen(false); setEditRecord(null); }}
           onSaved={fetchRecords}
+          canEdit={canEdit}
         />
       )}
       {deleteTarget && (

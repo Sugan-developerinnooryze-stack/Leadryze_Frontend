@@ -7,6 +7,8 @@ export const config: ModulePageConfig = {
   labelSingular: 'Contact',
   apiBase:       '/api/v1/native-crm/contacts',
   statusField:   'status',
+  altView:       'kanban',
+  altViewLabel:  'Kanban board',
   detailRoute:   (id) => `/crm/contacts/${id}`,
   fields: [
     /* ── Identity ── */

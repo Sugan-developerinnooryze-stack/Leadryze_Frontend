@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import * as XLSX from 'xlsx';
 import api from '../../../services/api';
@@ -9,7 +10,7 @@ import {
   PhotoIcon, TrashIcon, Cog6ToothIcon, CalendarDaysIcon, UserGroupIcon,
   CpuChipIcon, SwatchIcon, Square3Stack3DIcon, KeyIcon, InformationCircleIcon,
   MicrophoneIcon, CircleStackIcon, ChartBarIcon, 
-  UserIcon,
+  UserIcon, ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../../stores/auth.store';
 import { useTeamsListQuery, useTeamUpdate } from '../../../modules/native-crm/queries/teams.queries';
@@ -335,6 +336,7 @@ function SectionHeader({
 }
 
 export default function WidgetSettingsPage() {
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const isAdmin = ['SUPER_ADMIN', 'TENANT_ADMIN'].includes(user?.role ?? '');
   const tenantId = user?.tenantId ?? '';
@@ -1038,6 +1040,15 @@ export default function WidgetSettingsPage() {
     <div className="flex flex-col h-full">
       <div className="bg-surface border-b border-border px-6 py-4 flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
+          <button
+            type="button"
+            onClick={() => navigate('/native-crm/configuration')}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-border/60 transition-colors shrink-0"
+            title="Back to Configuration"
+          >
+            <ArrowLeftIcon className="h-4 w-4" />
+            <span>Back</span>
+          </button>
           <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-ryze-500 to-ryze-700 flex items-center justify-center shrink-0 shadow-sm">
             <ChatBubbleLeftRightIcon className="h-5 w-5 text-white" />
           </div>
