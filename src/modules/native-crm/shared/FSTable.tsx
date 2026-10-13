@@ -50,7 +50,17 @@ function deriveAllColumns(predefined: FSColumnDef[], data: any[]): FSColumnDef[]
 
   for (const key of Object.keys(firstRow)) {
     if (SKIP_KEYS.has(key) || existingKeys.has(key) || cfKeys.has(key)) continue;
-    // Skip arrays and objects — they can't be rendered as plain cell text
+    // Skip arrays and objects — they can't be rendered as plain cell text.
+    // This comment used to be the only trace of that intent — the actual
+    // check was never written, so any module using auto-derived columns
+    // (moduleKey set) crashed the whole page the moment a record had an
+    // object-valued field (e.g. a populated reference like
+    // `category: {_id, name, color, icon}`) that wasn't one of the
+    // explicitly predefined columns with its own render function. Mirrors
+    // the check getCellValue() below already correctly has (`typeof v ===
+    // 'object'`) for the export path — this was the one place it was missing.
+    const value = firstRow[key];
+    if (value !== null && typeof value === 'object') continue;
     const isWorkflowOrStatus = key === 'workflowState' || key.toLowerCase().includes('status') || key.toLowerCase().includes('stage');
     result.push({
       key,
