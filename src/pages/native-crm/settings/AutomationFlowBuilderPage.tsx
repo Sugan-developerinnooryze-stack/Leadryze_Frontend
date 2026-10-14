@@ -182,7 +182,7 @@ function NodeConfigPanel({
       </div>
 
       {tab === 'data' && (
-        <div className="p-4 space-y-4 flex-1 overflow-y-auto">
+        <div className="p-4 space-y-4 flex-1 overflow-y-auto min-h-0">
           {runStep ? (
             <>
               <div className="flex items-center gap-2">
@@ -242,7 +242,7 @@ function NodeConfigPanel({
         </div>
       )}
 
-      <div className={`p-4 space-y-4 flex-1 ${tab === 'data' ? 'hidden' : ''}`}>
+      <div className={`p-4 space-y-4 flex-1 overflow-y-auto min-h-0 ${tab === 'data' ? 'hidden' : ''}`}>
         {/* Kept mounted (hidden, not unmounted) while the Data tab is open —
             cheaper than remounting every field's local state/refs on every
             tab switch, and matches this panel's existing "never lose
@@ -1061,6 +1061,26 @@ function BuilderInner() {
     toast.success("Node duplicated — its connections weren't copied");
   };
 
+  // Approval gets an extra confirmation on top of the already-approved
+  // "disabled nodes skip and continue down their default path" behavior —
+  // for every other node type that's just "don't run this step"; for
+  // Approval specifically it means every future run auto-continues with no
+  // human review for as long as it stays off, which is consequential enough
+  // to double-check. Same window.confirm pattern already used by this exact
+  // file for Delete node/Delete flow/Discard changes, not a new UI pattern.
+  const toggleNodeDisabled = (nodeId: string) => {
+    const target = nodes.find((n) => n.id === nodeId);
+    if (!target) return;
+    const flowNode = (target.data as any).node as FlowNode;
+    if (!flowNode.disabled && flowNode.type === 'approval') {
+      const ok = window.confirm(
+        "Deactivating this Approval node means every future run will automatically continue down the Approve path with no human review, for as long as it stays off. Continue?"
+      );
+      if (!ok) return;
+    }
+    setNodes((nds) => nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, node: { ...(n.data as any).node, disabled: !flowNode.disabled } } } : n)));
+  };
+
   // Generalized so it's callable both from the drawer's own Delete button
   // (no id — defaults to whichever node the drawer has open) and from a
   // node's own "⋯" card menu (an explicit id, independent of selection).
@@ -1459,7 +1479,7 @@ function BuilderInner() {
       {tab === 'editor' && incompleteCount > 0 && (
         <div className="bg-amber-50 border-b border-amber-100 px-4 py-2 text-xs text-amber-700 flex items-center gap-1.5">
           <ExclamationTriangleIcon className="h-3.5 w-3.5 shrink-0" />
-          {incompleteCount} step{incompleteCount === 1 ? '' : 's'} look unconfigured — review before publishing (look for the amber dot on a node).
+          {incompleteCount} step{incompleteCount === 1 ? '' : 's'} look unconfigured — review before publishing (look for the ! badge on a node).
         </div>
       )}
 
@@ -1510,6 +1530,7 @@ function BuilderInner() {
                 onDuplicate: duplicateNode,
                 onDelete: deleteNode,
                 onTest: handleTest,
+                onToggleDisabled: toggleNodeDisabled,
               }}>
                 <ReactFlow
                   nodes={nodes}

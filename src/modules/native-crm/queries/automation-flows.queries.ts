@@ -28,6 +28,13 @@ export type LoopSourceModule = AutomationModule | 'customer';
 export interface FlowNode {
   id: string;
   type: FlowNodeType;
+  /** When true, this node's own effect is skipped at run time — see
+   * passThroughEdges()/the disabled guard in automation-flow.service.ts
+   * (backend) for exactly what happens instead. Never meaningful on the
+   * trigger node, and has no effect on a merge node (merge is a pure
+   * synchronization point, never dispatched through the code path that
+   * checks this flag — see that same backend file's processOneNode). */
+  disabled?: boolean;
 
   // Trigger
   module?: AutomationModule;

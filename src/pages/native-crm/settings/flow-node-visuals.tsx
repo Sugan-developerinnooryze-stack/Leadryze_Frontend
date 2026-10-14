@@ -1,9 +1,9 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { Handle, Position, type NodeProps, type NodeTypes } from '@xyflow/react';
+import { Handle, NodeToolbar, Position, type NodeProps, type NodeTypes } from '@xyflow/react';
 import {
   BoltIcon, ClockIcon, ArrowPathIcon, FunnelIcon, PaperAirplaneIcon,
   Squares2X2Icon, ArrowsPointingOutIcon, UserGroupIcon,
-  EllipsisHorizontalIcon, DocumentDuplicateIcon, TrashIcon, BeakerIcon,
+  EllipsisHorizontalIcon, DocumentDuplicateIcon, TrashIcon, BeakerIcon, PowerIcon,
 } from '@heroicons/react/24/outline';
 import { type FlowNode, type FlowNodeType, type FlowRecipientStrategy } from '../../../modules/native-crm/queries/automation-flows.queries';
 
@@ -78,6 +78,12 @@ const ACTION_LABEL: Partial<Record<NonNullable<FlowNode['actionType']>, string>>
  * nothing checkable here is missing (not a guarantee the node will save —
  * only that this cheap local check found nothing). */
 export function configurationIssue(node: FlowNode): string | undefined {
+  // Deactivated nodes are fully exempt — the whole point of turning a node
+  // off instead of deleting it is not having to finish configuring it yet.
+  // assertValidNodes (backend) applies the identical exemption at Publish
+  // time, so this is never a case of the UI promising more than the server
+  // will actually allow.
+  if (node.disabled) return undefined;
   if (node.type === 'trigger') {
     if (node.triggerType === 'scheduled') {
       if (!node.scheduleModule) return 'Pick which records to watch';
@@ -150,6 +156,10 @@ export interface NodeActions {
   onDuplicate: (nodeId: string) => void;
   onDelete: (nodeId: string) => void;
   onTest?: (nodeId: string) => void;
+  /** Toggles FlowNode.disabled for this node. Never offered for a trigger
+   * (can't be disabled) or a merge node (no effect of its own to skip —
+   * see automation-flow.service.ts's processOneNode doc comment). */
+  onToggleDisabled?: (nodeId: string) => void;
 }
 export const NodeActionsContext = createContext<NodeActions | null>(null);
 
@@ -172,10 +182,12 @@ export const RUN_OVERLAY_BADGE: Record<DiagramNodeStatus, { icon: string; classN
   unknown:      { icon: '?', className: 'bg-purple-500 text-white' },
 };
 
-function NodeMoreMenu({ nodeId, actions, allowDuplicateDelete, selected }: { nodeId: string; actions: NodeActions; allowDuplicateDelete: boolean; selected: boolean }) {
+/** "···" menu — Duplicate only. Test moved to the toolbar's own Play button
+ * and Delete to its own Trash button (both promoted to top-level icons,
+ * matching n8n's layout), so this menu only ever has one thing to offer. */
+function NodeMoreMenu({ nodeId, actions }: { nodeId: string; actions: NodeActions }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  if (!actions.onTest && !allowDuplicateDelete) return null; // nothing this menu could offer for this node right now
 
   useEffect(() => {
     if (!open) return;
@@ -185,19 +197,10 @@ function NodeMoreMenu({ nodeId, actions, allowDuplicateDelete, selected }: { nod
   }, [open]);
 
   return (
-    <div className="nodrag nopan relative ml-auto" ref={ref}>
+    <div className="nodrag nopan relative" ref={ref}>
       <button
         onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
-        // Always in the DOM (never conditionally unmounted) so it's reachable
-        // via keyboard Tab even without hover; visible on hover, on focus
-        // (keyboard), or when the node is selected (`selected` forces full
-        // opacity directly, not a CSS pseudo-class). Below the `sm`
-        // breakpoint it's unconditionally visible instead (max-sm:opacity-100)
-        // — selecting a node there opens NodeConfigPanel's own `w-full`
-        // drawer (see AutomationFlowBuilderPage.tsx), which immediately
-        // covers the canvas, so a button that only reveals itself AFTER
-        // selection would never be reachable by a tap on a touch screen.
-        className={`max-sm:opacity-100 ${selected ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 aria-expanded:opacity-100 p-0.5 rounded text-text-muted hover:text-text-primary hover:bg-black/[0.06] dark:hover:bg-white/[0.1] transition-opacity`}
+        className="p-1 rounded text-text-muted hover:text-text-primary hover:bg-black/[0.06] dark:hover:bg-white/[0.1]"
         aria-expanded={open}
         title="More actions"
       >
@@ -206,26 +209,62 @@ function NodeMoreMenu({ nodeId, actions, allowDuplicateDelete, selected }: { nod
       {open && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="absolute right-0 top-full mt-1 z-20 w-40 bg-surface border border-border rounded-lg shadow-lg py-1"
+          className="absolute left-0 top-full mt-1 z-20 w-36 bg-surface border border-border rounded-lg shadow-lg py-1"
         >
-          {actions.onTest && (
-            <button onClick={() => { setOpen(false); actions.onTest!(nodeId); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">
-              <BeakerIcon className="h-3.5 w-3.5 text-text-muted" /> Test this step
-            </button>
-          )}
-          {allowDuplicateDelete && (
-            <>
-              <button onClick={() => { setOpen(false); actions.onDuplicate(nodeId); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">
-                <DocumentDuplicateIcon className="h-3.5 w-3.5 text-text-muted" /> Duplicate
-              </button>
-              <button onClick={() => { setOpen(false); actions.onDelete(nodeId); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
-                <TrashIcon className="h-3.5 w-3.5" /> Delete
-              </button>
-            </>
-          )}
+          <button onClick={() => { setOpen(false); actions.onDuplicate(nodeId); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">
+            <DocumentDuplicateIcon className="h-3.5 w-3.5 text-text-muted" /> Duplicate
+          </button>
         </div>
       )}
     </div>
+  );
+}
+
+/** n8n-style floating toolbar above a node: Play (Test) / Power (Deactivate)
+ * / Trash (Delete), with Duplicate tucked into "···". Built on React Flow's
+ * own NodeToolbar primitive rather than hand-rolled absolute positioning —
+ * it's screen-space (doesn't shrink with canvas zoom) and portaled, so it's
+ * never clipped by a node's own box or covered by a neighboring node. Visible
+ * on hover or whenever this node is selected — the latter is also how a
+ * keyboard-focused-and-activated node reaches it, since selecting a node is
+ * already keyboard-reachable elsewhere in this same canvas. */
+function NodeHoverToolbar({ nodeId, node, actions, hovered, selected }: {
+  nodeId: string; node: FlowNode; actions: NodeActions; hovered: boolean; selected: boolean;
+}) {
+  const isTrigger = node.type === 'trigger';
+  // A merge node has no effect of its own to skip — it's a pure
+  // synchronization point, never dispatched through the backend code path
+  // that checks `disabled` (see processOneNode's own doc comment). Offering
+  // a Deactivate toggle there would do nothing, so it's left out entirely
+  // rather than shipping a control with no effect.
+  const canToggleDisabled = !isTrigger && node.type !== 'merge' && !!actions.onToggleDisabled;
+  const canDeleteOrDuplicate = !isTrigger;
+
+  return (
+    <NodeToolbar nodeId={nodeId} isVisible={hovered || selected} position={Position.Top} offset={8} className="nodrag nopan">
+      <div className="flex items-center gap-0.5 bg-surface border border-border rounded-lg shadow-lg px-1 py-1">
+        {actions.onTest && (
+          <button onClick={(e) => { e.stopPropagation(); actions.onTest!(nodeId); }} className="p-1.5 rounded text-text-muted hover:text-ryze-600 dark:hover:text-ryze-400 hover:bg-black/[0.06] dark:hover:bg-white/[0.1]" title="Test this step">
+            <BeakerIcon className="h-4 w-4" />
+          </button>
+        )}
+        {canToggleDisabled && (
+          <button
+            onClick={(e) => { e.stopPropagation(); actions.onToggleDisabled!(nodeId); }}
+            className={`p-1.5 rounded hover:bg-black/[0.06] dark:hover:bg-white/[0.1] ${node.disabled ? 'text-amber-600 dark:text-amber-400' : 'text-text-muted hover:text-text-primary'}`}
+            title={node.disabled ? 'Activate this node' : 'Deactivate this node'}
+          >
+            <PowerIcon className="h-4 w-4" />
+          </button>
+        )}
+        {canDeleteOrDuplicate && (
+          <button onClick={(e) => { e.stopPropagation(); actions.onDelete(nodeId); }} className="p-1.5 rounded text-text-muted hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30" title="Delete">
+            <TrashIcon className="h-4 w-4" />
+          </button>
+        )}
+        {canDeleteOrDuplicate && <NodeMoreMenu nodeId={nodeId} actions={actions} />}
+      </div>
+    </NodeToolbar>
   );
 }
 
@@ -237,6 +276,7 @@ export function FlowNodeCard({ id, data, selected }: NodeProps) {
   const runStatusMap = useContext(RunOverlayContext);
   const runStatus = runStatusMap?.[id];
   const nodeActions = useContext(NodeActionsContext);
+  const [hovered, setHovered] = useState(false);
   // Whenever an overlay IS active (a run/dry-run is selected — the map is
   // non-null) but this particular node has no entry, it means that
   // run/dry-run never reached this node — e.g. the untaken side of a
@@ -245,7 +285,12 @@ export function FlowNodeCard({ id, data, selected }: NodeProps) {
   const notReached = runStatusMap !== null && !runStatus;
 
   return (
-    <div className={`group relative rounded-xl border-2 ${selected ? 'border-ryze-500 shadow-lg' : meta.ring} ${meta.bg} px-3 py-2.5 min-w-[190px] max-w-[240px] ${runStatus ? RUN_OVERLAY_RING[runStatus] : ''} ${notReached ? 'opacity-45' : ''}`}>
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={`group relative rounded-xl border-2 ${selected ? 'border-ryze-500 shadow-lg' : meta.ring} ${meta.bg} px-3 py-2.5 min-w-[190px] max-w-[240px] ${runStatus ? RUN_OVERLAY_RING[runStatus] : ''} ${notReached ? 'opacity-45' : ''} ${node.disabled ? 'opacity-50 !border-dashed' : ''}`}
+    >
+      {nodeActions && <NodeHoverToolbar nodeId={id} node={node} actions={nodeActions} hovered={hovered} selected={!!selected} />}
       {runStatus && (
         <span
           title={`This run: ${runStatus}`}
@@ -257,14 +302,16 @@ export function FlowNodeCard({ id, data, selected }: NodeProps) {
       {configIssue && (
         <span
           title={configIssue}
-          className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 rounded-full bg-amber-400 border-2 border-surface"
-        />
+          className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 rounded-full bg-red-500 border-2 border-surface flex items-center justify-center text-[9px] font-bold text-white"
+        >
+          !
+        </span>
       )}
       {node.type !== 'trigger' && <Handle type="target" position={Position.Top} className="!bg-gray-400 dark:!bg-gray-500 !w-2.5 !h-2.5" />}
       <div className="flex items-center gap-1.5 mb-1">
         <Icon className={`h-3.5 w-3.5 ${meta.color} shrink-0`} />
         <span className={`text-[10px] font-semibold uppercase tracking-wide ${meta.color}`}>{meta.label}</span>
-        {nodeActions && <NodeMoreMenu nodeId={id} actions={nodeActions} allowDuplicateDelete={node.type !== 'trigger'} selected={!!selected} />}
+        {node.disabled && <span className="text-[9px] font-semibold text-text-muted uppercase tracking-wide ml-auto">Deactivated</span>}
       </div>
       <p className="text-xs text-text-primary font-medium truncate">{(data as any).label as string}</p>
       <p className="text-[11px] text-text-muted truncate mt-0.5">{describeNode(node)}</p>

@@ -581,7 +581,18 @@ export default function FSTable({
     const wsData = [
       cols.map((c) => c.label),
       ...rows.map((row) => cols.map((c) => {
-        const raw = row[c.key];
+        // Resolve the real value via col.exportValue FIRST when the column
+        // defines one — exactly how a column whose real data isn't a
+        // top-level row[c.key] (custom-module fields live under
+        // row.data[key], cf__-prefixed customFields columns live under
+        // row.customFields[key], hierarchy/formula columns compute their
+        // own value) reports it. Reading row[c.key] unconditionally and
+        // returning '' the moment it's undefined — before this function
+        // ever reached its own getCellValue(...)/exportValue fallback
+        // further down — silently exported every such column blank.
+        // exportToCSV doesn't have this bug; it always goes through
+        // getCellValue() first, never attempts row[c.key] directly.
+        const raw = c.exportValue ? c.exportValue(row) : row[c.key];
         if (raw === null || raw === undefined || raw === '') return '';
         if (typeof raw === 'number') return raw;
         if (typeof raw === 'boolean') return raw;
