@@ -106,7 +106,7 @@ function BotAvatar({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
 export default function ChatWidget() {
   const user  = useAuthStore((s) => s.user);
   const { flags } = useFeatureFlagsStore();
-  const { messages, isLoading, sendMessage, clearChat } = useChat();
+  const { messages, isLoading, sendMessage, respondToConfirmation, clearChat } = useChat();
 
   const [open, setOpen]         = useState(false);
   const [minimised, setMin]     = useState(false);
@@ -281,6 +281,40 @@ export default function ChatWidget() {
                           ? renderMarkdown(msg.content)
                           : <p className="text-xs leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                         }
+
+                        {msg.role === 'assistant' && msg.source && (
+                          <span className="inline-block text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-ryze-50 dark:bg-ryze-900/30 text-ryze-600 dark:text-ryze-400 border border-ryze-100 dark:border-ryze-800/40 mb-1.5">
+                            {msg.source}
+                          </span>
+                        )}
+
+                        {msg.confirmation && (
+                          <div className="mt-2 pt-2 border-t border-border space-y-2">
+                            <p className="text-xs text-text-primary font-medium leading-relaxed">{msg.confirmation.summary}</p>
+                            {msg.confirmation.resolved ? (
+                              <p className="text-xs text-text-muted italic">
+                                {msg.confirmation.resolved === 'confirm' ? 'Confirmed' : 'Cancelled'}
+                              </p>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => respondToConfirmation(msg.id, msg.confirmation!.operationId, 'confirm')}
+                                  disabled={isLoading}
+                                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-ryze-600 text-white hover:bg-ryze-700 disabled:opacity-40 transition-colors"
+                                >
+                                  Confirm
+                                </button>
+                                <button
+                                  onClick={() => respondToConfirmation(msg.id, msg.confirmation!.operationId, 'cancel')}
+                                  disabled={isLoading}
+                                  className="px-3 py-1.5 text-xs font-medium rounded-lg border border-border text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-40 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         {msg.escalated && (
                           <div className="flex items-center gap-1 mt-2 pt-2 border-t border-yellow-200 dark:border-yellow-500/30">
