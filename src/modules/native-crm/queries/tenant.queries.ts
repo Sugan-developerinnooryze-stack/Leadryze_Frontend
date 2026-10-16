@@ -80,6 +80,31 @@ export interface TenantHumanHandoffConfig {
   offlineMessage?: string;
 }
 
+export interface TenantConnectBranchField {
+  key: string;
+  label: string;
+  type: 'text' | 'email' | 'phone' | 'textarea' | 'dropdown';
+  required: boolean;
+  enabled: boolean;
+  order: number;
+  options?: string[];
+}
+
+/** "Connect with Your Local Branch" — a SEPARATE, independent feature from
+ * TenantHumanHandoffConfig above: a deterministic lead-capture form embedded
+ * in the chat panel (no live agent), submitted straight into the Native CRM
+ * via the same pipeline the AI's own conversational capture already uses.
+ * OFF by default for every tenant. */
+export interface TenantConnectBranchConfig {
+  enabled: boolean;
+  buttonText: string;
+  formTitle: string;
+  formDescription: string;
+  submitButtonText: string;
+  successMessage: string;
+  fields: TenantConnectBranchField[];
+}
+
 export interface TenantWidgetConfig {
   enabled: boolean;
   widgetKey?: string;
@@ -109,6 +134,7 @@ export interface TenantWidgetConfig {
   booking?: TenantBookingHoursConfig;
   voice?: TenantVoiceConfig;
   humanHandoff?: TenantHumanHandoffConfig;
+  connectBranch?: TenantConnectBranchConfig;
 }
 
 export interface CrawlStatus {

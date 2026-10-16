@@ -9,8 +9,8 @@ import {
   LockClosedIcon, XMarkIcon, PlusIcon, GlobeAltIcon, DocumentArrowUpIcon,
   PhotoIcon, TrashIcon, Cog6ToothIcon, CalendarDaysIcon, UserGroupIcon,
   CpuChipIcon, SwatchIcon, Square3Stack3DIcon, KeyIcon, InformationCircleIcon,
-  MicrophoneIcon, CircleStackIcon, ChartBarIcon, 
-  UserIcon, ArrowLeftIcon,
+  MicrophoneIcon, CircleStackIcon, ChartBarIcon,
+  UserIcon, ArrowLeftIcon, MapPinIcon, ChevronUpIcon, ChevronDownIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../../../stores/auth.store';
 import { useTeamsListQuery, useTeamUpdate } from '../../../modules/native-crm/queries/teams.queries';
@@ -20,7 +20,11 @@ import {
   useUploadWidgetBackgroundImage, useRemoveWidgetBackgroundImage,
   useUpdateTenantAIConfig, useUpdateTenantBranding, useTenantAiUsageQuery,
   type TenantWidgetConfig, type ToolModelPreset, type VoiceProvider, type TenantVoicePreset, type TenantWidgetTheme,
+  type TenantConnectBranchField,
 } from '../../../modules/native-crm/queries/tenant.queries';
+import {
+  useCustomFieldsQuery, useCustomFieldCreate, useCustomFieldUpdate, useCustomFieldDelete,
+} from '../../../modules/native-crm/queries/custom-fields.queries';
 import { useCatalogSources, useImportCatalog } from '../../../modules/native-crm/queries/catalog.queries';
 import CatalogImportPreview from '../../../modules/native-crm/shared/CatalogImportPreview';
 import { useServicesListQuery } from '../../../modules/native-crm/queries/services.queries';
@@ -105,6 +109,7 @@ const NAV_SECTIONS: Array<{ id: string; label: string; icon: React.ComponentType
   { id: 'section-ai-usage',    label: 'AI Usage & Limits', icon: ChartBarIcon },
   { id: 'section-voice',       label: 'Voice',             icon: MicrophoneIcon },
   { id: 'section-human-handoff', label: 'Human Handoff',  icon: UserIcon },
+  { id: 'section-connect-branch', label: 'Connect with Branch', icon: MapPinIcon },
   { id: 'section-appearance',  label: 'Appearance',        icon: SwatchIcon },
   { id: 'section-website',     label: 'Website Content',   icon: GlobeAltIcon },
   { id: 'section-catalog',     label: 'Product Catalog',   icon: Square3Stack3DIcon },
@@ -129,6 +134,31 @@ const SIZE_OPTIONS: { value: NonNullable<TenantWidgetTheme['size']>; label: stri
   { value: 'standard', label: 'Standard', description: '392 × 600 — bigger, easier to read at a glance' },
   { value: 'large',    label: 'Large',    description: '420 × 680 — the most screen real estate' },
 ];
+
+// Seeded only when a tenant has never configured Connect with Branch yet
+// (hydration falls back to this when tenant.widget.connectBranch.fields is
+// empty/absent) — matches the reference design exactly: plain City/State
+// text fields. Submitted values map straight onto the matching Lead fields;
+// there's no branch lookup/attribution involved.
+const CONNECT_BRANCH_DEFAULT_FIELDS: TenantConnectBranchField[] = [
+  { key: 'firstName', label: 'First Name',        type: 'text',     required: true,  enabled: true, order: 0 },
+  { key: 'company',   label: 'Company Name',       type: 'text',     required: true,  enabled: true, order: 1 },
+  { key: 'email',     label: 'Work Email',         type: 'email',    required: true,  enabled: true, order: 2 },
+  { key: 'phone',     label: 'Phone',              type: 'phone',    required: false, enabled: true, order: 3 },
+  { key: 'city',      label: 'City',               type: 'text',     required: true,  enabled: true, order: 4 },
+  { key: 'state',     label: 'State',              type: 'text',     required: true,  enabled: true, order: 5 },
+  { key: 'message',   label: 'How can we help?',   type: 'textarea', required: true,  enabled: true, order: 6 },
+];
+
+// 'cbf_' (Connect-with-Branch Field) — a distinct prefix from any other
+// custom-field naming convention in the codebase, so the sync in
+// handleConnectBranchSave can unambiguously tell "a NativeCustomField this
+// page owns and manages" apart from one an admin created directly on the
+// Custom Fields page, without needing a second ownership marker.
+function slugifyFieldKey(label: string): string {
+  const slug = label.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  return `cbf_${slug || Math.random().toString(36).slice(2, 8)}`;
+}
 
 // backgroundImageUrl is excluded from the Required<> — unlike every color
 // field, there's no sensible "default" image to resolve to; it's genuinely
@@ -335,6 +365,49 @@ function SectionHeader({
   );
 }
 
+/** Chip-based dropdown-options editor, same type-and-press-Enter pattern as
+ * CustomFieldsAdminPage.tsx's own "Dropdown Options" editor — used only for
+ * CUSTOM dropdown fields on the Connect with Branch form. The built-in
+ * `branch` field never uses this; its options always come from the
+ * tenant's live Branch list at runtime. */
+function ConnectBranchOptionsEditor({ options, onChange }: { options: string[]; onChange: (next: string[]) => void }) {
+  const [draft, setDraft] = useState('');
+  const addOption = () => {
+    const v = draft.trim();
+    if (v && !options.includes(v)) onChange([...options, v]);
+    setDraft('');
+  };
+  return (
+    <div className="mt-2">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOption(); } }}
+          placeholder="Type option and press Enter"
+          className="flex-1 rounded-lg bg-surface border border-border px-2.5 py-1.5 text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400"
+        />
+        <button type="button" onClick={addOption} className="px-2.5 py-1.5 bg-ryze-600 text-white text-xs font-medium rounded-lg hover:bg-ryze-700 transition-colors">
+          Add
+        </button>
+      </div>
+      {options.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {options.map((o) => (
+            <span key={o} className="flex items-center gap-1 px-2 py-0.5 bg-background border border-border text-text-primary text-[11px] font-medium rounded-md">
+              {o}
+              <button type="button" onClick={() => onChange(options.filter((x) => x !== o))} className="text-text-muted hover:text-red-500">
+                <XMarkIcon className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function WidgetSettingsPage() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
@@ -431,6 +504,26 @@ export default function WidgetSettingsPage() {
   const [humanHandoffWaitingMessage, setHumanHandoffWaitingMessage] = useState('');
   const [humanHandoffOfflineMessage, setHumanHandoffOfflineMessage] = useState('');
   const [humanHandoffMessage, setHumanHandoffMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  // "Connect with Your Local Branch" — a SEPARATE feature from Human
+  // Handoff above (a deterministic lead-capture form, not live chat). OFF
+  // by default for every tenant until explicitly turned on.
+  const [connectBranchEnabled, setConnectBranchEnabled] = useState(false);
+  const [connectBranchButtonText, setConnectBranchButtonText] = useState('Connect with Your Local Branch');
+  const [connectBranchFormTitle, setConnectBranchFormTitle] = useState('Connect with a branch');
+  const [connectBranchFormDescription, setConnectBranchFormDescription] = useState("Leave your details and we'll be in touch shortly.");
+  const [connectBranchSubmitButtonText, setConnectBranchSubmitButtonText] = useState('Submit');
+  const [connectBranchSuccessMessage, setConnectBranchSuccessMessage] = useState("Thanks! We've received your details and will be in touch shortly.");
+  const [connectBranchFields, setConnectBranchFields] = useState<TenantConnectBranchField[]>(CONNECT_BRANCH_DEFAULT_FIELDS);
+  const [connectBranchMessage, setConnectBranchMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [connectBranchPreviewOpen, setConnectBranchPreviewOpen] = useState(false);
+  // Keeps every "cbf_"-prefixed custom field configured below in sync with a
+  // matching NativeCustomField (module:'leads') record, so a field added
+  // here actually appears on the Lead edit/view screens — see
+  // handleConnectBranchSave's own syncConnectBranchCustomFields().
+  const { data: leadCustomFieldDefs = [] } = useCustomFieldsQuery('leads');
+  const createLeadCustomField = useCustomFieldCreate();
+  const updateLeadCustomField = useCustomFieldUpdate();
+  const deleteLeadCustomField = useCustomFieldDelete();
   const [departmentsMessage, setDepartmentsMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [togglingTeamId, setTogglingTeamId] = useState<string | null>(null);
   const [message, setMessage]           = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -543,6 +636,15 @@ export default function WidgetSettingsPage() {
       setHumanHandoffButtonText(humanHandoff?.buttonText ?? 'Connect with an expert');
       setHumanHandoffWaitingMessage(humanHandoff?.waitingMessage ?? '');
       setHumanHandoffOfflineMessage(humanHandoff?.offlineMessage ?? '');
+
+      const connectBranch = tenant.widget.connectBranch;
+      setConnectBranchEnabled(connectBranch?.enabled ?? false);
+      setConnectBranchButtonText(connectBranch?.buttonText ?? 'Connect with Your Local Branch');
+      setConnectBranchFormTitle(connectBranch?.formTitle ?? 'Connect with a branch');
+      setConnectBranchFormDescription(connectBranch?.formDescription ?? "Leave your details and we'll be in touch shortly.");
+      setConnectBranchSubmitButtonText(connectBranch?.submitButtonText ?? 'Submit');
+      setConnectBranchSuccessMessage(connectBranch?.successMessage ?? "Thanks! We've received your details and will be in touch shortly.");
+      setConnectBranchFields(connectBranch?.fields?.length ? connectBranch.fields : CONNECT_BRANCH_DEFAULT_FIELDS);
     }
     setToolModelPreset(tenant?.aiConfig?.toolModelPreset ?? '');
     setAutoConvertLeadOnMeetingCompleted(tenant?.aiConfig?.autoConvertLeadOnMeetingCompleted ?? false);
@@ -776,6 +878,94 @@ export default function WidgetSettingsPage() {
     } catch (err: any) {
       setHumanHandoffMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
     }
+  };
+
+  // Mirrors each "cbf_"-prefixed field here onto a real NativeCustomField
+  // (module:'leads') so it actually renders on the Lead edit/view screens
+  // (those read from useCustomFieldsQuery('leads'), not from this page's own
+  // state) — without this, a field configured here would validate and even
+  // get stored on Lead.customFields, but stay invisible everywhere in the
+  // CRM UI. Runs AFTER the main widget-config save succeeds; a sync failure
+  // is reported but never undoes the settings that did save.
+  const syncConnectBranchCustomFields = async (fields: TenantConnectBranchField[]) => {
+    const cbfFields = fields.filter((f) => f.key.startsWith('cbf_'));
+    const existingCbf = leadCustomFieldDefs.filter((cf) => cf.fieldKey.startsWith('cbf_'));
+
+    for (const field of cbfFields) {
+      const existing = existingCbf.find((cf) => cf.fieldKey === field.key);
+      const payload = {
+        module: 'leads', fieldKey: field.key, label: field.label, fieldType: field.type,
+        options: field.options ?? [], required: field.required, order: field.order, isActive: field.enabled,
+      };
+      if (existing) {
+        const changed = existing.label !== field.label || existing.fieldType !== field.type
+          || existing.required !== field.required || existing.isActive !== field.enabled
+          || existing.order !== field.order
+          || JSON.stringify(existing.options ?? []) !== JSON.stringify(field.options ?? []);
+        if (changed) await updateLeadCustomField.mutateAsync({ id: existing._id, data: payload });
+      } else {
+        await createLeadCustomField.mutateAsync(payload);
+      }
+    }
+
+    const currentKeys = new Set(cbfFields.map((f) => f.key));
+    for (const cf of existingCbf) {
+      if (!currentKeys.has(cf.fieldKey)) await deleteLeadCustomField.mutateAsync(cf._id);
+    }
+  };
+
+  // Same reuse-updateMutation pattern — connectBranch is just one more field
+  // on the same widget object, independent of humanHandoff above.
+  const handleConnectBranchSave = async () => {
+    setConnectBranchMessage(null);
+    const orderedFields = connectBranchFields.map((f, idx) => ({ ...f, order: idx }));
+    try {
+      await updateMutation.mutateAsync({
+        connectBranch: {
+          enabled: connectBranchEnabled,
+          buttonText: connectBranchButtonText.trim() || 'Connect with Your Local Branch',
+          formTitle: connectBranchFormTitle.trim() || 'Connect with a branch',
+          formDescription: connectBranchFormDescription.trim() || "Leave your details and we'll be in touch shortly.",
+          submitButtonText: connectBranchSubmitButtonText.trim() || 'Submit',
+          successMessage: connectBranchSuccessMessage.trim() || "Thanks! We've received your details and will be in touch shortly.",
+          fields: orderedFields,
+        },
+      });
+      try {
+        await syncConnectBranchCustomFields(orderedFields);
+        setConnectBranchMessage({ type: 'ok', text: 'Connect with Branch settings saved.' });
+      } catch {
+        setConnectBranchMessage({ type: 'err', text: 'Settings saved, but one of your custom fields could not be synced to the Lead form — please retry Save.' });
+      }
+    } catch (err: any) {
+      setConnectBranchMessage({ type: 'err', text: err?.response?.data?.message ?? 'Save failed.' });
+    }
+  };
+
+  const moveConnectBranchField = (index: number, dir: -1 | 1) => {
+    setConnectBranchFields((prev) => {
+      const next = [...prev];
+      const target = index + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
+
+  const updateConnectBranchField = (index: number, patch: Partial<TenantConnectBranchField>) => {
+    setConnectBranchFields((prev) => prev.map((f, i) => (i === index ? { ...f, ...patch } : f)));
+  };
+
+  const removeConnectBranchField = (index: number) => {
+    setConnectBranchFields((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const addConnectBranchCustomField = () => {
+    const label = `Custom Field ${connectBranchFields.filter((f) => f.key.startsWith('cbf_')).length + 1}`;
+    setConnectBranchFields((prev) => [
+      ...prev,
+      { key: slugifyFieldKey(label), label, type: 'text', required: false, enabled: true, order: prev.length },
+    ]);
   };
 
   // Synthesizes a short sample sentence with the currently-selected preset
@@ -1904,6 +2094,227 @@ export default function WidgetSettingsPage() {
                   Open Conversations Inbox →
                 </a>
               </div>
+            </div>
+          </div>
+
+          <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
+            <SectionHeader
+              id="section-connect-branch"
+              icon={MapPinIcon}
+              iconClassName="bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
+              title="Connect with Branch"
+              description='A separate button — "Connect with Your Local Branch" — opens a short lead-capture form inside the chat. Independent of Human Handoff above; no live agent is involved.'
+              right={
+                <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                  <span className="text-xs text-text-muted">{connectBranchEnabled ? 'Enabled' : 'Disabled'}</span>
+                  <input
+                    type="checkbox"
+                    checked={connectBranchEnabled}
+                    onChange={(e) => setConnectBranchEnabled(e.target.checked)}
+                    className="h-4 w-4 rounded text-ryze-600 dark:text-ryze-400 focus:ring-ryze-400"
+                  />
+                </label>
+              }
+            />
+            <div className="px-6 py-5 space-y-5">
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Button Text</label>
+                  <input
+                    value={connectBranchButtonText}
+                    onChange={(e) => setConnectBranchButtonText(e.target.value)}
+                    className={input}
+                    placeholder="Connect with Your Local Branch"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Submit Button Text</label>
+                  <input
+                    value={connectBranchSubmitButtonText}
+                    onChange={(e) => setConnectBranchSubmitButtonText(e.target.value)}
+                    className={input}
+                    placeholder="Submit"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Form Title</label>
+                  <input
+                    value={connectBranchFormTitle}
+                    onChange={(e) => setConnectBranchFormTitle(e.target.value)}
+                    className={input}
+                    placeholder="Connect with a branch"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Success Message</label>
+                  <input
+                    value={connectBranchSuccessMessage}
+                    onChange={(e) => setConnectBranchSuccessMessage(e.target.value)}
+                    className={input}
+                    placeholder="Thanks! We've received your details and will be in touch shortly."
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Form Description</label>
+                  <input
+                    value={connectBranchFormDescription}
+                    onChange={(e) => setConnectBranchFormDescription(e.target.value)}
+                    className={input}
+                    placeholder="Leave your details and we'll be in touch shortly."
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-semibold text-text-muted uppercase tracking-wide">Form Fields</label>
+                  <button
+                    type="button"
+                    onClick={addConnectBranchCustomField}
+                    className="text-xs font-medium text-ryze-600 dark:text-ryze-400 hover:text-ryze-700 flex items-center gap-1"
+                  >
+                    <PlusIcon className="h-3.5 w-3.5" /> Add Custom Field
+                  </button>
+                </div>
+                <p className="text-[11px] text-text-muted mb-2">
+                  First Name, Company, Work Email, Phone, City, State and How can we help? map straight onto the matching
+                  built-in Lead fields. Any custom field you add here is saved on the Lead and also added to your Lead custom
+                  fields (visible on the Lead edit/view screen) once you save.
+                </p>
+                <div className="space-y-2">
+                  {connectBranchFields.map((field, idx) => {
+                    const isBuiltIn = !field.key.startsWith('cbf_');
+                    // firstName is Lead's one hard-required field in the data
+                    // model (Lead.create() rejects without it) — can't be
+                    // safely hidden or made optional from this UI.
+                    const isLocked = field.key === 'firstName';
+                    return (
+                      <div key={field.key} className="rounded-lg border border-border bg-background p-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex flex-col shrink-0">
+                            <button type="button" disabled={idx === 0} onClick={() => moveConnectBranchField(idx, -1)} className="text-text-muted hover:text-text-primary disabled:opacity-25 disabled:cursor-default">
+                              <ChevronUpIcon className="h-3.5 w-3.5" />
+                            </button>
+                            <button type="button" disabled={idx === connectBranchFields.length - 1} onClick={() => moveConnectBranchField(idx, 1)} className="text-text-muted hover:text-text-primary disabled:opacity-25 disabled:cursor-default">
+                              <ChevronDownIcon className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                          <input
+                            value={field.label}
+                            onChange={(e) => updateConnectBranchField(idx, { label: e.target.value })}
+                            className="flex-1 min-w-0 rounded-lg bg-surface border border-border px-2.5 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400"
+                          />
+                          {isBuiltIn ? (
+                            <span className="shrink-0 text-[11px] font-medium px-2 py-1 rounded-md bg-surface border border-border text-text-muted capitalize">{field.type}</span>
+                          ) : (
+                            <select
+                              value={field.type}
+                              onChange={(e) => updateConnectBranchField(idx, { type: e.target.value as TenantConnectBranchField['type'] })}
+                              className="shrink-0 rounded-lg bg-surface border border-border px-2 py-1.5 text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-ryze-400"
+                            >
+                              <option value="text">Text</option>
+                              <option value="email">Email</option>
+                              <option value="phone">Phone</option>
+                              <option value="textarea">Textarea</option>
+                              <option value="dropdown">Dropdown</option>
+                            </select>
+                          )}
+                          <label className="shrink-0 flex items-center gap-1.5 text-xs text-text-muted">
+                            <input
+                              type="checkbox"
+                              checked={field.required}
+                              disabled={isLocked}
+                              onChange={(e) => updateConnectBranchField(idx, { required: e.target.checked })}
+                              className="h-3.5 w-3.5 rounded text-ryze-600 disabled:opacity-40"
+                            />
+                            Required
+                          </label>
+                          <label className="shrink-0 flex items-center gap-1.5 text-xs text-text-muted">
+                            <input
+                              type="checkbox"
+                              checked={field.enabled}
+                              disabled={isLocked}
+                              onChange={(e) => updateConnectBranchField(idx, { enabled: e.target.checked })}
+                              className="h-3.5 w-3.5 rounded text-ryze-600 disabled:opacity-40"
+                            />
+                            Shown
+                          </label>
+                          {!isBuiltIn && (
+                            <button type="button" onClick={() => removeConnectBranchField(idx)} className="shrink-0 text-text-muted hover:text-red-500 hover:bg-red-50 rounded p-1 transition-colors">
+                              <TrashIcon className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        {!isBuiltIn && field.type === 'dropdown' && (
+                          <div className="pl-6">
+                            <ConnectBranchOptionsEditor
+                              options={field.options ?? []}
+                              onChange={(opts) => updateConnectBranchField(idx, { options: opts })}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setConnectBranchPreviewOpen((v) => !v)}
+                  className="text-xs font-medium text-ryze-600 dark:text-ryze-400 hover:text-ryze-700"
+                >
+                  {connectBranchPreviewOpen ? 'Hide Preview' : 'Preview Form'}
+                </button>
+                {connectBranchPreviewOpen && (
+                  <div className="mt-3 max-w-sm rounded-xl border border-border bg-surface p-4 shadow-sm">
+                    <p className="text-sm font-semibold text-text-primary">{connectBranchFormTitle}</p>
+                    <p className="text-xs text-text-muted mt-0.5 mb-3">{connectBranchFormDescription}</p>
+                    <div className="space-y-2">
+                      {connectBranchFields.filter((f) => f.enabled).map((f) => (
+                        <div key={f.key}>
+                          <label className="block text-[11px] font-medium text-text-muted mb-1">
+                            {f.label}{f.required && <span className="text-red-500"> *</span>}
+                          </label>
+                          {f.type === 'textarea' ? (
+                            <textarea disabled rows={2} className="w-full rounded-lg bg-background border border-border px-2.5 py-1.5 text-xs text-text-muted" />
+                          ) : f.type === 'dropdown' ? (
+                            <select disabled className="w-full rounded-lg bg-background border border-border px-2.5 py-1.5 text-xs text-text-muted">
+                              <option>Select…</option>
+                            </select>
+                          ) : (
+                            <input disabled className="w-full rounded-lg bg-background border border-border px-2.5 py-1.5 text-xs text-text-muted" />
+                          )}
+                        </div>
+                      ))}
+                      <button disabled className="w-full mt-1 px-3 py-2 rounded-lg bg-ryze-600/40 text-white text-xs font-medium">
+                        {connectBranchSubmitButtonText}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {connectBranchMessage && (
+                <div className={`text-sm px-4 py-2.5 rounded-lg border ${
+                  connectBranchMessage.type === 'ok'
+                    ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                    : 'bg-red-50 border-red-100 text-red-600'
+                }`}>
+                  {connectBranchMessage.text}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleConnectBranchSave}
+                disabled={updateMutation.isPending}
+                className="px-5 py-2.5 rounded-xl bg-ryze-600 text-white text-sm font-medium hover:bg-ryze-700 disabled:opacity-50 transition-colors"
+              >
+                {updateMutation.isPending ? 'Saving…' : 'Save Connect with Branch Settings'}
+              </button>
             </div>
           </div>
 
