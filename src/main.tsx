@@ -2,25 +2,19 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 import './index.css';
 import { applyTheme, getInitialTheme } from './utils/theme';
+// Created in its own module (not inline here) so auth.store.ts can import
+// the SAME instance and clear it on login/logout — see queryClient.ts's own
+// comment for why that clear is load-bearing, not just hygiene.
+import { queryClient } from './services/queryClient';
 
 // As early as possible, before the first paint of app content — see
 // utils/theme.ts for why this can't be an inline <script> in index.html
 // (the CSP has no 'unsafe-inline' for script-src).
 applyTheme(getInitialTheme());
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime:   60 * 1000,
-      retry:       1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

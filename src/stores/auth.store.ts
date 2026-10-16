@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authService } from '../services/auth.service';
 import api from '../services/api';
+import { queryClient } from '../services/queryClient';
 
 export interface SidebarLayout {
   items?:  Record<string, { order?: number; pinned?: boolean }>;
@@ -72,6 +73,14 @@ export const useAuthStore = create<AuthState>()(
           const res = await authService.login({ email, password });
           const { user: raw, accessToken, refreshToken, permissions } = res.data.data;
           const user = mapUser(raw);
+          // Query keys app-wide (dashboard, leads, customers, deals, etc.)
+          // carry no tenantId/userId segment, so without this a fresh login
+          // can instantly reuse whichever tenant's data was cached from a
+          // PREVIOUS session in this same tab — a real, confirmed
+          // cross-tenant stale-data bug (not hypothetical). Cleared here
+          // (not just in logout()) so this is also safe for any path that
+          // reaches login() without an explicit prior logout() call.
+          queryClient.clear();
           set({
             user,
             token:             accessToken,
@@ -94,6 +103,7 @@ export const useAuthStore = create<AuthState>()(
           const res = await authService.loginWithClientId({ clientId, password });
           const { user: raw, accessToken, refreshToken, permissions } = res.data.data;
           const user = mapUser(raw);
+          queryClient.clear(); // see login()'s own comment above — same reasoning
           set({
             user,
             token:             accessToken,
@@ -123,6 +133,13 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         const hasToken = !!get().token;
         set({ user: null, token: null, refreshTokenValue: null, permissions: null });
+        // Same cross-tenant stale-cache reasoning as login()'s own comment —
+        // cleared on the way OUT too, not just the way in, so a logged-out
+        // tab never holds onto the previous tenant's cached data either
+        // (e.g. a public/unauthenticated page that happens to read a
+        // tenant-scoped query key, or simply as defense in depth alongside
+        // the clear in login()).
+        queryClient.clear();
         if (hasToken) authService.logout().catch(() => {});
       },
 
