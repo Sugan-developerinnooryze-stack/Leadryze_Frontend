@@ -1,7 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { chatService } from '../services/chat.service';
 import { useAuthStore } from '../stores/auth.store';
 import api from '../services/api';
+import { tenantAiUsageQueryKey } from '../modules/native-crm/queries/tenant.queries';
 
 export interface ChatMessage {
   id: string;
@@ -61,6 +63,7 @@ export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const sessionId = useRef(`session-${Date.now()}`);
+  const queryClient = useQueryClient();
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -89,6 +92,10 @@ export function useChat() {
           response = res.data.data.response;
           source = res.data.data.source;
           confirmation = res.data.data.confirmation;
+          // The internal assistant just spent real tokens against this
+          // tenant's shared allowance — refresh the usage display rather
+          // than wait for its next background poll tick.
+          if (user) queryClient.invalidateQueries({ queryKey: tenantAiUsageQueryKey(user.tenantId) });
         } else if (isCrmQuery(content)) {
           // Route to local CRM + activities search
           const res = await api.post('/api/v1/bot/crm-chat', { message: content });

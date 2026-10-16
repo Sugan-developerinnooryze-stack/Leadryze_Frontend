@@ -11,6 +11,7 @@ import {
 import { SUPPORTED_LANGUAGES } from '../../modules/native-crm/shared/languages';
 import { useTenantQuery } from '../../modules/native-crm/queries/tenant.queries';
 import { ROLE_LABEL } from '../../components/layout/Header';
+import CrmChatbotSettingsPanel from './panels/CrmChatbotSettingsPanel';
 
 /* ── section wrapper ──────────────────────────────────────────────────── */
 function Section({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
@@ -1527,7 +1528,7 @@ function PermissionMatrixPanel() {
   );
 }
 
-type SettingsTab = 'general' | 'bot-training' | 'chat-history' | 'users' | 'roles' | 'permissions' | 'native-crm';
+type SettingsTab = 'general' | 'bot-training' | 'chat-history' | 'users' | 'roles' | 'permissions' | 'native-crm' | 'crm-chatbot';
 
 const BASE_TABS: { id: SettingsTab; label: string }[] = [
   { id: 'general',      label: 'General' },
@@ -1539,6 +1540,7 @@ const ADMIN_TABS: { id: SettingsTab; label: string }[] = [
   { id: 'roles',       label: 'Roles' },
   { id: 'permissions', label: 'Permissions' },
   { id: 'native-crm',  label: 'Native CRM' },
+  { id: 'crm-chatbot', label: 'CRM Chatbot' },
 ];
 
 export default function SettingsPage() {
@@ -1675,6 +1677,7 @@ export default function SettingsPage() {
       {activeTab === 'roles' && isAdmin && <RolesPanel />}
       {activeTab === 'permissions' && isAdmin && <PermissionMatrixPanel />}
       {activeTab === 'native-crm' && isAdmin && <NativeCRMPermissionsPanel />}
+      {activeTab === 'crm-chatbot' && isAdmin && <CrmChatbotSettingsPanel />}
 
       {/* General tab */}
       {activeTab === 'general' && (<>

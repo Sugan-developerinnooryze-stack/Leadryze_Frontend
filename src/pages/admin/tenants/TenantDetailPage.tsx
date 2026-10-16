@@ -36,7 +36,7 @@ const TABS: { id: Tab; label: string }[] = [
  * only displays these numbers read-only. Blank input = no override, use the
  * plan default (Platform Defaults → Plan Defaults, editable there). */
 function AiUsageTab({ tenantId, tenantName }: { tenantId: string; tenantName: string }) {
-  const { data: usage, isLoading, isError, refetch } = useTenantAiUsageQuery(tenantId);
+  const { data: usage, isLoading, isError, refetch, dataUpdatedAt } = useTenantAiUsageQuery(tenantId);
   const [hydrated, setHydrated]   = useState(false);
   const [tokenLimit, setTokenLimit]     = useState('');
   const [voiceLimit, setVoiceLimit]     = useState('');
@@ -118,6 +118,9 @@ function AiUsageTab({ tenantId, tenantName }: { tenantId: string; tenantName: st
         right={<span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${statusCls}`}>{statusLabel}</span>}
       />
       <div className="p-6 space-y-5">
+        {dataUpdatedAt > 0 && (
+          <p className="text-[11px] text-text-muted -mb-3">Last updated: {new Date(dataUpdatedAt).toLocaleTimeString()}</p>
+        )}
         <div>
           <div className="flex items-baseline justify-between mb-1.5">
             <span className="text-sm text-text-muted">{usage.tokensUsedThisMonth.toLocaleString()} / {usage.monthlyTokenLimit.toLocaleString()} tokens</span>
@@ -143,6 +146,26 @@ function AiUsageTab({ tenantId, tenantName }: { tenantId: string; tenantName: st
             This is a prepaid balance, not a monthly subscription — it does not refill on its own. It only resets when you grant more credits here.
           </p>
         </div>
+
+        {/* Public widget vs internal CRM assistant breakdown — informational
+            only. The combined total above (tokensUsedThisMonth) is the one
+            number enforcement ever reads; this never double-counts it, it
+            just shows where it came from. */}
+        <div className="pt-2 border-t border-border">
+          <p className="text-xs font-semibold text-text-primary uppercase tracking-wide mb-2">Usage by source</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-border px-3 py-2">
+              <p className="text-xs text-text-muted">Public Chatbot Widget</p>
+              <p className="text-sm font-semibold text-text-primary mt-0.5">{usage.usageBySource.publicWidget.toLocaleString()} tokens</p>
+            </div>
+            <div className="rounded-lg border border-border px-3 py-2">
+              <p className="text-xs text-text-muted">Internal CRM Assistant</p>
+              <p className="text-sm font-semibold text-text-primary mt-0.5">{usage.usageBySource.internalAssistant.toLocaleString()} tokens</p>
+            </div>
+          </div>
+          <p className="text-xs text-text-muted mt-2">Both draw from the same shared allowance above — this is a breakdown, not a second limit.</p>
+        </div>
+
         <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
           <div>
             <p className="text-xs text-text-muted">Voice minutes used</p>

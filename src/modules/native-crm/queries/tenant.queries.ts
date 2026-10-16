@@ -209,6 +209,11 @@ export interface TenantAiUsage {
   /** Prepaid-credit model: usage above is summed since this date, not since
    * the calendar month started — see tenant.service.ts's getAiUsage(). */
   creditsLastResetAt: string;
+  /** Informational breakdown of tokensUsedThisMonth above by which surface
+   * produced it — the public chatbot widget vs. the internal, staff-facing
+   * CRM assistant. Never consulted for enforcement; tokensUsedThisMonth
+   * (the combined total) remains the one authoritative, enforced figure. */
+  usageBySource: { publicWidget: number; internalAssistant: number };
 }
 
 /** Backs the "AI Usage & Limits" settings section — a self-service view of
@@ -222,6 +227,63 @@ export function useTenantAiUsageQuery(id: string) {
     queryFn: () => api.get(`${BASE}/${id}/ai-usage`).then((r) => r.data.data as TenantAiUsage),
     enabled: !!id,
     refetchInterval: 60_000,
+    // Re-opening this tab/panel, or switching back to the browser tab,
+    // shows current numbers rather than whatever the last 60s poll caught —
+    // cheap given the query's own short refetch interval already bounds how
+    // stale a background tick can get.
+    refetchOnWindowFocus: true,
+  });
+}
+
+/** Query key for useTenantAiUsageQuery(id) above, exported so other
+ * mutations (e.g. useChat.ts after a real internal-assistant turn actually
+ * spends tokens) can invalidate it directly without duplicating the key
+ * shape or importing the whole hook. */
+export function tenantAiUsageQueryKey(id: string) {
+  return [...KEY(id), 'ai-usage'];
+}
+
+export interface TenantAiUsageHistoryRow {
+  date: string;
+  source: 'public_widget' | 'internal_assistant';
+  totalTokens: number;
+  requestCount: number;
+  estimatedCostUsd: number;
+  isEstimated: boolean;
+}
+
+/** Backs the CRM Chatbot Settings tab's Usage History section — day-bucketed
+ * rows, each tagged with source and whether its token count is a real
+ * provider-reported figure or a rough fallback estimate. */
+export function useTenantAiUsageHistoryQuery(id: string) {
+  return useQuery({
+    queryKey: [...KEY(id), 'ai-usage', 'history'],
+    queryFn: () => api.get(`${BASE}/${id}/ai-usage/history`).then((r) => r.data.data.rows as TenantAiUsageHistoryRow[]),
+    enabled: !!id,
+  });
+}
+
+export interface CrmChatbotStatus {
+  botEnabled: boolean;
+  toolModelPreset: 'groq' | 'anthropic' | 'openai' | 'google' | null;
+  aiService: {
+    provider: string; model: string; fallbackProvider: string; fallbackModel: string;
+    connected: boolean;
+    rateLimit: { allowed: boolean; remaining: number; resetIn: number; max: number };
+  } | null;
+}
+
+/** Backs the CRM Chatbot Settings tab's AI Provider & Model, Rate Limits &
+ * Safety, and Feature & Access Controls sections. `aiService` is null when
+ * the AI microservice itself is unreachable — the panel shows that
+ * plainly rather than guessing at stale values. */
+export function useCrmChatbotStatusQuery(enabled: boolean) {
+  return useQuery({
+    queryKey: ['crm-chatbot-status'],
+    queryFn: () => api.get('/api/v1/ai/crm-chatbot/status').then((r) => r.data.data as CrmChatbotStatus),
+    enabled,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   });
 }
 
